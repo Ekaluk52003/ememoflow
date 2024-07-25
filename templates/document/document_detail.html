@@ -33,6 +33,8 @@
             <li class="list-group-item {% if approval.step == document.current_step and approval.is_approved is None  %}{% endif %} {% if approval.is_approved == False   %} list-group-item-secondary list-group-item-danger{% endif %} {% if approval.is_approved == True%}list-group-item-success {% endif %}">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">{{ approval.step.name }} - {{ approval.approver.username }}</h5>
+
+                    <span></span>
                     {% if approval.is_approved == True %}
                         <span class="badge bg-success">Approved</span>
                     {% elif approval.is_approved == False %}
@@ -43,6 +45,9 @@
                 </div>
                 {% if approval.comment %}
                     <p class="mb-1"><small>Comment: {{ approval.comment }}</small></p>
+                {% endif %}
+                {% if approval.recorded_at %}
+                <p class="mb-1"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
                 {% endif %}
             </li>
         {% endfor %}

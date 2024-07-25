@@ -5,6 +5,7 @@ from django.db.models import Q
 from .models import Document, Approval, ApprovalWorkflow, ApprovalStep
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 @login_required
 def document_list(request):
@@ -27,6 +28,7 @@ def document_detail(request, pk):
 
         user_approval.is_approved = is_approved
         user_approval.comment = comment
+        user_approval.recorded_at = timezone.now()
         user_approval.save()
 
         if is_approved:
