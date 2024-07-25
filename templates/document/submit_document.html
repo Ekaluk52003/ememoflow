@@ -1,0 +1,39 @@
+{% extends "_base.html" %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Submit New Document</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="title" class="form-label">Title:</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="content" class="form-label">Content:</label>
+            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+        </div>
+
+        <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
+        {% for step in workflow.steps.all %}
+            <div class="card mb-3">
+                <div class="card-header">{{ step.name }}</div>
+                <div class="card-body">
+                    <label for="approver_{{ step.id }}" class="form-label">Select Approver:</label>
+                    <select class="form-select" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
+                        <option value="">Choose an approver</option>
+                        {% for approver in potential_approvers %}
+                            <option value="{{ approver.id }}">{{ approver.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Submit Document</button>
+    </form>
+</div>
+{% endblock %}

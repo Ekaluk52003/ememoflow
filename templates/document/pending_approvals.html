@@ -1,0 +1,17 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<h1 class="text-2xl mb-4">Pending Approvals</h1>
+<div class="space-y-4">
+    {% for document in pending_docs %}
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="text-xl">{{ document.title }}</h2>
+            <p>Current Step: {{ document.current_step.name }}</p>
+            <p>Submitted by: {{ document.submitted_by.username }}</p>
+            <a href="{% url 'approve_document' document.id %}" class="bg-green-500 text-white px-4 py-2 rounded inline-block mt-2">Review</a>
+        </div>
+    {% empty %}
+        <p>No pending approvals.</p>
+    {% endfor %}
+</div>
+{% endblock %}

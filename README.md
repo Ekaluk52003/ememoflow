@@ -114,3 +114,8 @@ Give a ⭐️  if this project helped you!
 ## License
 
 [The MIT License](LICENSE)
+
+
+### Mynote
+1.For other document follow the same logic create approval first using the same for but ApprovalStep might need to add Approver field
+2.Submit view might need to be updated depending on ApprovalStep and ApprovalWorkflow

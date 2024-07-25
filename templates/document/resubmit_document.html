@@ -1,0 +1,30 @@
+{% extends "_base.html" %}
+
+{% block title %}Resubmit Document{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Resubmit Document</h1>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ document.title }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="content" class="form-label">Content</label>
+        <textarea class="form-control" id="content" name="content" rows="5" required>{{ document.content }}</textarea>
+    </div>
+    {% for step in workflow.steps.all %}
+    <div class="mb-3">
+        <label for="approver_{{ step.id }}" class="form-label">Approver for {{ step.name }}</label>
+        <select class="form-select" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
+            <option value="">Select an approver</option>
+            {% for approver in potential_approvers %}
+            <option value="{{ approver.id }}">{{ approver.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Resubmit Document</button>
+</form>
+{% endblock %}

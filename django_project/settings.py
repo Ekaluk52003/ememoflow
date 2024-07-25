@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     # Local
     "accounts",
     "pages",
+    "document",
+    'django_htmx',
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
