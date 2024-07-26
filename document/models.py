@@ -71,21 +71,12 @@ class Document(models.Model):
 
        # Delete only the approvals from the current review cycle
         self.approvals.filter(created_at__gt=self.last_submitted_at).delete()
-    
+
 
     def reject(self):
         self.status = 'rejected'
         self.save()
-        # Delete all pending approvals
-        # self.approvals.filter(is_approved=None).delete()
-
-    # def resubmit(self):
-    #     self.status = 'in_review'
-    #     self.save()
-    #      # Delete all pending approvals
-    #     self.approvals.filter(is_approved=None).delete()
-
-
+      
 
 class Approval(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')
