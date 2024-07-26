@@ -43,6 +43,7 @@ def document_detail(request, pk):
         document.status == 'in_review' and
         document.submitted_by == request.user and
         not document.approvals.filter(is_approved__isnull=False, created_at__gt=document.last_submitted_at).exists()
+    # There do not exist any approvals for this document that have been decided (approved or rejected) and were created after the document was last submitted or resubmitted.
     )
 
     context = {
