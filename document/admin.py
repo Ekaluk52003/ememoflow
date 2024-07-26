@@ -15,7 +15,7 @@ class ApprovalStepAdmin(admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'submitted_by', 'workflow', 'current_step', 'status', 'created_at', 'updated_at')
+    list_display = ('title', 'submitted_by', 'workflow', 'current_step', 'status', 'created_at', 'updated_at', 'last_submitted_at')
     list_filter = ('status', 'workflow', 'current_step')
     search_fields = ('title', 'submitted_by__username', 'content')
     date_hierarchy = 'created_at'

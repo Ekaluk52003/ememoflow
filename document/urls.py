@@ -10,4 +10,5 @@ urlpatterns = [
     path('submit/', views.submit_document, name='submit_document'),
     path('<int:pk>/resubmit/', views.resubmit_document, name='resubmit_document'),
     path('to-approve/', views.documents_to_approve_to_resubmit, name='documents_to_approve'),
+    path('<int:document_id>/withdraw/', views.withdraw_document, name='withdraw_document'),
 ]

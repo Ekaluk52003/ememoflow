@@ -3,20 +3,10 @@
 
 {% block content %}
 <h1 class="mb-4">Documents Your Action</h1>
-{% if documents or rejects %}
+{% if documents %}
     <div class="list-group">
-    {% for document in documents_to_approve %}
-        <a href="{% url 'document_approval:document_detail' pk=document.pk %}" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ document.title }}</h5>
-                <small>Current Step: {{ document.current_step.name }}</small>
 
-            </div>
-            <small>Status: {{ document.status }}</small>
-            <p class="mb-1">Submitted by: {{ document.submitted_by.username }}</p>
-        </a>
-    {% endfor %}
-    {% for document in documents_to_resubmit %}
+    {% for document in documents %}
 
     <a href="{% url 'document_approval:document_detail' pk=document.pk %}" class="list-group-item list-group-item-action">
         <div class="d-flex w-100 justify-content-between">

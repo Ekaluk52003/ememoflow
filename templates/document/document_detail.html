@@ -27,7 +27,10 @@
         </div>
     </div>
 
+    {% if document.approvals.all|length > 0  %}
     <h2 class="mb-3">Approval Process</h2>
+    {% endif %}
+
     <ul class="list-group mb-4">
         {% for approval in document.approvals.all %}
             <li class="list-group-item {% if approval.step == document.current_step and approval.is_approved is None  %}{% endif %} {% if approval.is_approved == False   %} list-group-item-secondary list-group-item-danger{% endif %} {% if approval.is_approved == True%}list-group-item-success {% endif %}">
@@ -80,5 +83,14 @@
 
     <a href="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-warning">Resubmit</a>
     {% endif %}
+
+
+    {% if can_draw %}
+<form method="post" action="{% url 'document_approval:withdraw_document' document.id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger mt-4">Withdrawal</button>
+</form>
+{% endif %}
+
 </div>
 {% endblock %}

@@ -1,6 +1,7 @@
 
 from django.db import models
 from accounts.models import CustomUser
+from django.core.exceptions import ValidationError
 
 class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
@@ -39,6 +40,7 @@ class Document(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    last_submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
@@ -57,6 +59,19 @@ class Document(models.Model):
         else:
             self.status = 'approved'
         self.save()
+
+    def withdraw(self):
+        if self.status != 'in_review' or self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists():
+            raise ValidationError("This document cannot be withdrawn.")
+
+
+        self.status = 'pending'
+        self.current_step = None
+        self.save()
+
+       # Delete only the approvals from the current review cycle
+        self.approvals.filter(created_at__gt=self.last_submitted_at).delete()
+    
 
     def reject(self):
         self.status = 'rejected'

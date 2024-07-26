@@ -6,6 +6,7 @@ from .models import Document, Approval, ApprovalWorkflow, ApprovalStep
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.contrib import messages
 
 @login_required
 def document_list(request):
@@ -38,11 +39,18 @@ def document_detail(request, pk):
 
         return redirect('document_approval:document_detail', pk=document.pk)
 
+    can_withdraw = (
+        document.status == 'in_review' and
+        document.submitted_by == request.user and
+        not document.approvals.filter(is_approved__isnull=False, created_at__gt=document.last_submitted_at).exists()
+    )
+
     context = {
         'document': document,
         'user_approval': user_approval,
         'can_approve': user_approval and document.status == 'in_review',
-        'can_resubmit': document.status == 'rejected' and request.user == document.submitted_by,
+        'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
+        'can_draw' : can_withdraw
     }
     return render(request, 'document/document_detail.html', context)
 
@@ -50,8 +58,9 @@ def document_detail(request, pk):
 def resubmit_document(request, pk):
     document = get_object_or_404(Document, pk=pk)
     workflow = document.workflow
-
-    if request.user != document.submitted_by or document.status != 'rejected':
+    un_authorize = request.user != document.submitted_by or document.status not in ['pending', 'rejected']
+    if (un_authorize):
+        (print(document.status))
         return HttpResponseForbidden("You don't have permission to resubmit this document.")
 
     if request.method == 'POST':
@@ -59,6 +68,7 @@ def resubmit_document(request, pk):
         document.content = request.POST.get('content')
         document.status = 'in_review'
         document.current_step = workflow.steps.first()
+        document.last_submitted_at = timezone.now()
         # Delete all pending approvals
         document.approvals.filter(is_approved=None).delete()
         document.save()
@@ -82,6 +92,20 @@ def resubmit_document(request, pk):
         'potential_approvers': CustomUser.objects.all(),  # Or a more specific queryset
     }
     return render(request, 'document/resubmit_document.html', context)
+
+@login_required
+def withdraw_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id, submitted_by=request.user)
+
+    if request.method == 'POST':
+        try:
+            document.withdraw()
+            messages.success(request, "Document has been successfully withdrawn.")
+        except ValidationError as e:
+            messages.error(request, str(e))
+
+    return redirect('document_approval:document_detail', pk=document.pk)
+
 
 @login_required
 def submit_document(request):
@@ -166,7 +190,6 @@ def documents_to_approve_to_resubmit(request):
 
     context = {
         'documents': documents,
-        'documents_to_approve': documents_to_approve,
-        'documents_to_resubmit': documents_to_resubmit,
+
     }
     return render(request, 'document/documents_to_action.html', context)
