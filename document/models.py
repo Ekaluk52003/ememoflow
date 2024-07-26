@@ -3,6 +3,29 @@ from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 
+
+class DynamicField(models.Model):
+    FIELD_TYPES = (
+        ('text', 'Text'),
+        ('number', 'Number'),
+        ('date', 'Date'),
+        ('boolean', 'Yes/No'),
+        ('choice', 'Multiple Choice'),
+    )
+
+    workflow = models.ForeignKey('ApprovalWorkflow', on_delete=models.CASCADE, related_name='dynamic_fields')
+    name = models.CharField(max_length=100)
+    field_type = models.CharField(max_length=20, choices=FIELD_TYPES)
+    required = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' field type")
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.workflow.name} - {self.name}"
+
 class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -76,7 +99,7 @@ class Document(models.Model):
     def reject(self):
         self.status = 'rejected'
         self.save()
-      
+
 
 class Approval(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')
