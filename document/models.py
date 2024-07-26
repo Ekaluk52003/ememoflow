@@ -11,7 +11,7 @@ class ApprovalWorkflow(models.Model):
         return self.name
 
 class ApprovalStep(models.Model):
-    
+
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField()
@@ -44,7 +44,7 @@ class Document(models.Model):
         return self.title
 
     def move_to_next_step(self):
-        self.approvals.filter(step=None).delete()
+        # self.approvals.filter(step=None).delete()
         current_step_order = self.current_step.order
         next_step = ApprovalStep.objects.filter(
             workflow=self.workflow,
