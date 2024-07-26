@@ -1,5 +1,16 @@
 from django.contrib import admin
-from .models import ApprovalWorkflow, ApprovalStep, Document, Approval
+from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue,  DynamicField
+
+class DynamicFieldValueInline(admin.TabularInline):
+    model = DynamicFieldValue
+    extra = 1
+    readonly_fields = ('field',)
+
+@admin.register(DynamicField)
+class DynamicFieldAdmin(admin.ModelAdmin):
+    list_display = ('name', 'workflow', 'field_type', 'required', 'order')
+    list_filter = ('workflow', 'field_type', 'required')
+    search_fields = ('name', 'workflow__name')
 
 @admin.register(ApprovalWorkflow)
 class ApprovalWorkflowAdmin(admin.ModelAdmin):
@@ -19,6 +30,7 @@ class DocumentAdmin(admin.ModelAdmin):
     list_filter = ('status', 'workflow', 'current_step')
     search_fields = ('title', 'submitted_by__username', 'content')
     date_hierarchy = 'created_at'
+    inlines = [DynamicFieldValueInline]
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # editing an existing object

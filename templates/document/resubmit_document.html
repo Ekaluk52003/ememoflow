@@ -14,6 +14,31 @@
         <label for="content" class="form-label">Content</label>
         <textarea class="form-control" id="content" name="content" rows="5" required>{{ document.content }}</textarea>
     </div>
+    {% for field in dynamic_fields %}
+    <div>
+        <label for="dynamic_{{ field.id }}">{{ field.name }}:</label>
+        {% if field.field_type == 'text' %}
+            <input type="text" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
+                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
+        {% elif field.field_type == 'number' %}
+            <input type="number" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
+                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
+        {% elif field.field_type == 'date' %}
+            <input type="date" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
+                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
+        {% elif field.field_type == 'boolean' %}
+            <input type="checkbox" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
+                   {% if field.required %}required{% endif %} {% if field.existing_value %}checked{% endif %}>
+        {% elif field.field_type == 'choice' %}
+            <select id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+                <option value="">Select an option</option>
+                {% for choice in field.choice_list %}
+                    <option value="{{ choice }}" {% if choice == field.existing_value %}selected{% endif %}>{{ choice }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
+    </div>
+    {% endfor %}
     {% for step in workflow.steps.all %}
     <div class="mb-3">
         <label for="approver_{{ step.id }}" class="form-label">Approver for {{ step.name }}</label>

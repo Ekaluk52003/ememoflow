@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.db.models import Q
-from .models import Document, Approval, ApprovalWorkflow, ApprovalStep
+from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -16,6 +16,7 @@ def document_list(request):
 @login_required
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
+    dynamic_field_values = document.dynamic_values.all()
     user_approval = document.approvals.filter(
         approver=request.user,
         step=document.current_step,
@@ -48,6 +49,7 @@ def document_detail(request, pk):
 
     context = {
         'document': document,
+        'dynamic_field_values': dynamic_field_values,
         'user_approval': user_approval,
         'can_approve': user_approval and document.status == 'in_review',
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
@@ -59,6 +61,16 @@ def document_detail(request, pk):
 def resubmit_document(request, pk):
     document = get_object_or_404(Document, pk=pk)
     workflow = document.workflow
+    dynamic_fields = workflow.dynamic_fields.all()
+
+    # Pre-process choices for each field and get existing values
+    for field in dynamic_fields:
+        if field.field_type == 'choice':
+            field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
+
+        # Get existing value for this field
+        existing_value = document.dynamic_values.filter(field=field).first()
+        field.existing_value = existing_value.value if existing_value else ''
     un_authorize = request.user != document.submitted_by or document.status not in ['pending', 'rejected']
     if (un_authorize):
         (print(document.status))
@@ -85,11 +97,25 @@ def resubmit_document(request, pk):
                     is_approved=None
                 )
 
+        for field in dynamic_fields:
+            value = request.POST.get(f'dynamic_{field.id}')
+            if field.required and not value:
+                messages.error(request, f"{field.name} is required.")
+                return render(request, 'resubmit_document.html',
+                              {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
+
+            DynamicFieldValue.objects.update_or_create(
+                document=document,
+                field=field,
+                defaults={'value': value or ''}
+            )
+
         return redirect('document_approval:document_detail', pk=document.pk)
 
     context = {
         'document': document,
         'workflow': workflow,
+        'dynamic_fields': dynamic_fields,
         'potential_approvers': CustomUser.objects.all(),  # Or a more specific queryset
     }
     return render(request, 'document/resubmit_document.html', context)
@@ -111,6 +137,7 @@ def withdraw_document(request, document_id):
 @login_required
 def submit_document(request):
     workflow = ApprovalWorkflow.objects.get(id=1)  # Hardcoded to workflow with ID 1
+    dynamic_fields = workflow.dynamic_fields.all()
 
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -123,6 +150,20 @@ def submit_document(request):
             workflow=workflow,
             status='in_review'
         )
+        for field in dynamic_fields:
+            value = request.POST.get(f'dynamic_{field.id}')
+            if field.field_type == 'choice':
+                field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
+            if field.required and not value:
+                messages.error(request, f"{field.name} is required.")
+                document.delete()
+                return render(request, 'submit_document.html', {'workflow': workflow, 'dynamic_fields': dynamic_fields})
+
+            DynamicFieldValue.objects.create(
+                document=document,
+                field=field,
+                value=value or ''
+            )
 
         # Create approval records for each step
         for step in workflow.steps.all():
@@ -147,6 +188,7 @@ def submit_document(request):
     context = {
         'workflow': workflow,
         'potential_approvers': potential_approvers,
+        'dynamic_fields': dynamic_fields
     }
     return render(request, 'document/submit_document.html', context)
 

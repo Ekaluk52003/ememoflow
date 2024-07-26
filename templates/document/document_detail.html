@@ -24,6 +24,12 @@
             <h6 class="card-subtitle mb-2 text-muted">Current Step: {{ document.current_step.name }}</h6>
             <p class="card-text">{{ document.content }}</p>
             <p class="card-text"><small class="text-muted">Submitted by: {{ document.submitted_by.username }}</small></p>
+            <h2>Dynamic Fields</h2>
+<ul>
+{% for field_value in dynamic_field_values %}
+    <li><strong>{{ field_value.field.name }}:</strong> {{ field_value.value }}</li>
+{% endfor %}
+</ul>
         </div>
     </div>
 

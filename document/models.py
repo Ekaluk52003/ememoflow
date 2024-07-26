@@ -4,6 +4,16 @@ from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 
 
+
+
+class ApprovalWorkflow(models.Model):
+    name = models.CharField(max_length=100)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
 class DynamicField(models.Model):
     FIELD_TYPES = (
         ('text', 'Text'),
@@ -12,8 +22,7 @@ class DynamicField(models.Model):
         ('boolean', 'Yes/No'),
         ('choice', 'Multiple Choice'),
     )
-
-    workflow = models.ForeignKey('ApprovalWorkflow', on_delete=models.CASCADE, related_name='dynamic_fields')
+    workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='dynamic_fields')
     name = models.CharField(max_length=100)
     field_type = models.CharField(max_length=20, choices=FIELD_TYPES)
     required = models.BooleanField(default=False)
@@ -26,13 +35,7 @@ class DynamicField(models.Model):
     def __str__(self):
         return f"{self.workflow.name} - {self.name}"
 
-class ApprovalWorkflow(models.Model):
-    name = models.CharField(max_length=100)
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.name
 
 class ApprovalStep(models.Model):
 
@@ -64,6 +67,7 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_submitted_at = models.DateTimeField(auto_now_add=True)
+    dynamic_field_values = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -115,3 +119,13 @@ class Approval(models.Model):
         return f"{self.document.title} - {self.step.name} - {self.approver.username}"
 
 
+class DynamicFieldValue(models.Model):
+    document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='dynamic_values')
+    field = models.ForeignKey('DynamicField', on_delete=models.CASCADE)
+    value = models.TextField()
+
+    class Meta:
+        unique_together = ('document', 'field')
+
+    def __str__(self):
+        return f"{self.document.title} - {self.field.name}: {self.value}"
