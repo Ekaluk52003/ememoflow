@@ -91,17 +91,6 @@ def resubmit_document(request, pk):
         document.approvals.filter(is_approved=None).delete()
         document.save()
 
-        # for step in workflow.steps.all():
-        #     approver_id = request.POST.get(f'approver_{step.id}')
-        #     if approver_id:
-        #         approver = CustomUser.objects.get(id=approver_id)
-        #         Approval.objects.create(
-        #             document=document,
-        #             step=step,
-        #             approver=approver,
-        #             is_approved=None
-        #         )
-
         for field in dynamic_fields:
             value = request.POST.get(f'dynamic_{field.id}')
             if field.required and not value:
@@ -115,15 +104,28 @@ def resubmit_document(request, pk):
                 defaults={'value': value or ''}
             )
 
+
         for step in workflow.steps.all():
             if step.evaluate_condition(document):
-                for approver in step.approvers.all():
-                    Approval.objects.create(
+                if not workflow.allow_custom_approvers:
+                    print('getting id 1')
+                    for approver in step.approvers.all():
+                        Approval.objects.create(
+                            document=document,
+                            step=step,
+                            approver=approver
+                        )
+
+                else :
+                    approver_id = request.POST.get(f'approver_{step.id}')
+                    if  approver_id:
+                        approver = CustomUser.objects.get(id=approver_id)
+                        Approval.objects.create(
                         document=document,
                         step=step,
-                        approver=approver
-                    )
-
+                        approver=approver,
+                        is_approved=None
+                )
 
 
         return redirect('document_approval:document_detail', pk=document.pk)
@@ -190,25 +192,25 @@ def submit_document(request, workflow_id):
                 value=value or ''
             )
 
-        # Create approval records for each step. This is workflow 1
-        # for step in workflow.steps.all():
-        #     approver_id = request.POST.get(f'approver_{step.id}')
-        #     if approver_id:
-        #         approver = CustomUser.objects.get(id=approver_id)
-        #         Approval.objects.create(
-        #             document=document,
-        #             step=step,
-        #             approver=approver,
-        #             is_approved=None
-        #         )
         for step in workflow.steps.all():
             if step.evaluate_condition(document):
-                for approver in step.approvers.all():
-                    Approval.objects.create(
+                if not workflow.allow_custom_approvers:
+                    for approver in step.approvers.all():
+                        Approval.objects.create(
+                            document=document,
+                            step=step,
+                            approver=approver                        )
+
+                else :
+                    approver_id = request.POST.get(f'approver_{step.id}')
+                    if  approver_id:
+                        approver = CustomUser.objects.get(id=approver_id)
+                        Approval.objects.create(
                         document=document,
                         step=step,
-                        approver=approver
-                    )
+                        approver=approver,
+                        is_approved=None
+                )
 
         # Set the current step to the first step of the workflow
         document.current_step = workflow.steps.first()

@@ -10,6 +10,7 @@ class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    allow_custom_approvers = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

@@ -41,7 +41,7 @@
     {% endfor %}
 
 
-    {% if workflow.id == 1 %}
+    {% if workflow.allow_custom_approvers %}
 
     {% for step in workflow.steps.all %}
     <div class="mb-3">
