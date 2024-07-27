@@ -39,6 +39,10 @@
         {% endif %}
     </div>
     {% endfor %}
+
+
+    {% if workflow.id == 1 %}
+
     {% for step in workflow.steps.all %}
     <div class="mb-3">
         <label for="approver_{{ step.id }}" class="form-label">Approver for {{ step.name }}</label>
@@ -50,6 +54,7 @@
         </select>
     </div>
     {% endfor %}
+    {% endif %}
     <button type="submit" class="btn btn-primary">Resubmit Document</button>
 </form>
 {% endblock %}

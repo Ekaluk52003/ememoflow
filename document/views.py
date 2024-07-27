@@ -102,15 +102,6 @@ def resubmit_document(request, pk):
         #             is_approved=None
         #         )
 
-        for step in workflow.steps.all():
-            if step.evaluate_condition(document):
-                for approver in step.approvers.all():
-                    Approval.objects.create(
-                        document=document,
-                        step=step,
-                        approver=approver
-                    )
-
         for field in dynamic_fields:
             value = request.POST.get(f'dynamic_{field.id}')
             if field.required and not value:
@@ -123,6 +114,17 @@ def resubmit_document(request, pk):
                 field=field,
                 defaults={'value': value or ''}
             )
+
+        for step in workflow.steps.all():
+            if step.evaluate_condition(document):
+                for approver in step.approvers.all():
+                    Approval.objects.create(
+                        document=document,
+                        step=step,
+                        approver=approver
+                    )
+
+
 
         return redirect('document_approval:document_detail', pk=document.pk)
 
