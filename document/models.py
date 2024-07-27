@@ -2,7 +2,7 @@
 from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
-
+from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email
 
 
 
@@ -11,9 +11,23 @@ class ApprovalWorkflow(models.Model):
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     allow_custom_approvers = models.BooleanField(default=False)
+    # Reject email fields
+    send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection")
+    reject_email_subject = models.TextField(blank=True, help_text="Subject for rejection emails")
+    reject_email_body = models.TextField(blank=True, help_text="Body template for rejection emails")
+
+    # Withdraw email fields
+    send_withdraw_email = models.BooleanField(default=True, help_text="Send email on document withdrawal")
+    withdraw_email_subject = models.TextField(blank=True, help_text="Subject for withdrawal emails")
+    withdraw_email_body = models.TextField(blank=True, help_text="Body template for withdrawal emails")
+
+    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC")
 
     def __str__(self):
         return self.name
+
+    def get_cc_list(self):
+        return [email.strip() for email in self.cc_emails.split(',') if email.strip()]
 
 class DynamicField(models.Model):
     FIELD_TYPES = (
@@ -39,6 +53,14 @@ class DynamicField(models.Model):
 
 
 class ApprovalStep(models.Model):
+    INPUT_TYPES = (
+        ('none', 'No Input Required'),
+        ('text', 'Text Input'),
+        ('number', 'Number Input'),
+        ('date', 'Date Input'),
+        ('choice', 'Multiple Choice'),
+        ('file', 'File Upload'),  # New file input type
+    )
 
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
@@ -58,8 +80,24 @@ class ApprovalStep(models.Model):
     ], null=True, blank=True)
     condition_value = models.CharField(max_length=255, null=True, blank=True)
 
+    # Fields for user input
+    requires_input = models.BooleanField(default=False)
+    input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
+    input_prompt = models.CharField(max_length=255, blank=True)
+    input_choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' input type")
+    allowed_file_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated file extensions for 'file' input type")
+
+    # Email notification fields
+    send_email = models.BooleanField(default=False)
+    email_subject = models.CharField(max_length=255, blank=True)
+    email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
+    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC")
+
     class Meta:
         ordering = ['workflow', 'order']
+
+    def get_cc_list(self):
+        return [email.strip() for email in self.cc_emails.split(',') if email.strip()]
 
     def __str__(self):
         return f"{self.workflow.name} - Step {self.order}: {self.name}"
@@ -142,10 +180,10 @@ class Document(models.Model):
 
         if next_step:
             if next_step.evaluate_condition(self):
-                print('next step',  next_step.name)
-                print('meet conidtion for next step')
                 self.current_step = next_step
                 self.status = 'in_review'
+                approval = self.approvals.get(step=next_step)
+                send_approval_email(approval)
             else:
                 print('no condition')
                 self.status = 'approved'
@@ -157,11 +195,12 @@ class Document(models.Model):
     def withdraw(self):
         if self.status != 'in_review' or self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists():
             raise ValidationError("This document cannot be withdrawn.")
-
-
+        #send email before change systus
+        send_withdraw_email(self)
         self.status = 'pending'
         self.current_step = None
         self.save()
+
 
        # Delete only the approvals from the current review cycle
         self.approvals.filter(created_at__gt=self.last_submitted_at).delete()
@@ -170,7 +209,28 @@ class Document(models.Model):
     def reject(self):
         self.status = 'rejected'
         self.save()
+        send_reject_email(self)
 
+
+    def get_current_approver(self):
+        if not self.current_step:
+            return None
+        current_approval = self.approvals.filter(step=self.current_step, is_approved__isnull=True).first()
+        return current_approval.approver if current_approval else None
+
+
+    def get_rejector(self):
+        # Find the most recent rejection
+        rejection = self.approvals.filter(
+            step=self.current_step,
+            is_approved=False
+        ).order_by('-updated_at').first()
+        return rejection.approver if rejection else None
+
+
+def user_directory_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+    return f'user_{instance.approver.id}/{filename}'
 
 class Approval(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')
@@ -178,6 +238,8 @@ class Approval(models.Model):
     approver = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     is_approved = models.BooleanField(null=True, default=None)
     comment = models.TextField(blank=True)
+    user_input = models.TextField(blank=True)
+    uploaded_file = models.FileField(upload_to=user_directory_path, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     recorded_at = models.DateTimeField(null=True)

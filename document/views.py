@@ -7,6 +7,9 @@ from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib import messages
+import os
+
+
 
 @login_required
 def workflow_list(request):
@@ -32,6 +35,33 @@ def document_detail(request, pk):
         # Handle approval submission
         is_approved = request.POST.get('is_approved') == 'true'
         comment = request.POST.get('comment', '')
+        user_input = request.POST.get('user_input', '')
+        uploaded_file = request.FILES.get('user_input_file')
+
+
+
+
+        if user_approval.step.requires_input:
+            if user_approval.step.input_type == 'file':
+                if not uploaded_file:
+                        print('not uploaded_filee',  uploaded_file)
+                        messages.error(request, "File upload is required for this step.")
+                        return redirect('document_approval:document_detail', pk=document.pk)
+
+                # Validate file extension
+                # allowed_extensions = [ext.strip() for ext in  user_approval.step.allowed_file_extensions.split(',')]
+                # file_extension = os.path.splitext(uploaded_file.name)
+                # if file_extension[1:] not in allowed_extensions:
+                #     messages.error(request, f"Invalid file type. Allowed types are: {', '.join(allowed_extensions)}")
+                #     return redirect('document_approval:document_detail', pk=document.pk)
+                print('uploading the file')
+                user_approval.uploaded_file = uploaded_file
+
+            elif not user_input:
+                    messages.error(request, "User input is required for this step.")
+                    return redirect('document_detail', pk=document.pk)
+            else:
+                user_approval.user_input = user_input
 
         user_approval.is_approved = is_approved
         user_approval.comment = comment
@@ -108,7 +138,6 @@ def resubmit_document(request, pk):
         for step in workflow.steps.all():
             if step.evaluate_condition(document):
                 if not workflow.allow_custom_approvers:
-                    print('getting id 1')
                     for approver in step.approvers.all():
                         Approval.objects.create(
                             document=document,

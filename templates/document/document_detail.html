@@ -33,6 +33,30 @@
         </div>
     </div>
 
+    <h2 class="mb-3">User Input</h2>
+    <ul class="list-group">
+    {% for approval in document.approvals.all %}
+    {% if approval.step.requires_input %}
+    <li class="list-group-item">
+    <br>{{ approval.step.input_prompt }}:
+    <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
+    </li>
+    {% if approval.step.input_type == 'file' %}
+    <li class="list-group-item">
+        {% if approval.uploaded_file %}
+            <a href="{{ approval.uploaded_file.url }}">{{ approval.uploaded_file.name }}</a>
+            <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
+        {% else %}
+            No file uploaded
+        {% endif %}
+    </li>
+    {% else %}
+        {{ approval.user_input|default:"No input provided" }}
+    {% endif %}
+{% endif %}
+        {% endfor %}
+</ul>
+
     {% if document.approvals.all|length > 0  %}
     <h2 class="mb-3">Approval Process</h2>
     {% endif %}
@@ -64,7 +88,7 @@
 
     {% if can_approve %}
         <h2 class="mb-3">Your Approval</h2>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="mb-3">
                 <label class="form-label">Decision:</label>
@@ -81,6 +105,23 @@
                 <label for="comment" class="form-label">Comment:</label>
                 <textarea class="form-control" name="comment" id="comment" rows="3"></textarea>
             </div>
+            {% if user_approval.step.requires_input %}
+            <div class="mb-3">
+                <label for="user_input" class="form-label">{{ user_approval.step.input_prompt }}</label>
+                {% if user_approval.step.input_type == 'text' %}
+                    <input type="text" class="form-control" id="user_input" name="user_input" required>
+                {% elif user_approval.step.input_type == 'number' %}
+                    <input type="number" class="form-control" id="user_input" name="user_input" required>
+                {% elif user_approval.step.input_type == 'date' %}
+                    <input type="date" class="form-control" id="user_input" name="user_input" required>
+
+                {% elif user_approval.step.input_type == 'file' %}
+                 
+                    <input type="file" class="form-control" id="user_input_file" name="user_input_file" required>
+                    <small class="form-text text-muted">Allowed file types: {{ user_approval.step.allowed_file_extensions }}</small>
+                {% endif %}
+            </div>
+        {% endif %}
             <button type="submit" class="btn btn-primary">Submit Approval</button>
         </form>
     {% endif %}

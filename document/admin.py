@@ -15,12 +15,13 @@ class DynamicFieldAdmin(admin.ModelAdmin):
 class ApprovalStepInline(admin.TabularInline):
     model = ApprovalStep
     extra = 1
-
 @admin.register(ApprovalWorkflow)
 class ApprovalWorkflowAdmin(admin.ModelAdmin):
     inlines = [ApprovalStepInline]
-    # list_display = ('name', 'created_by', 'created_at')
-    # search_fields = ('name', 'created_by__username')
+    list_display = ('name', 'created_by', 'created_at')
+    search_fields = ('name', 'created_by__username')
+
+    
 
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):
