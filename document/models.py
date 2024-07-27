@@ -42,6 +42,64 @@ class ApprovalStep(models.Model):
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField()
+    approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+
+    # Fields for conditional logic
+    is_conditional = models.BooleanField(default=False)
+    condition_field = models.ForeignKey(DynamicField, on_delete=models.SET_NULL, null=True, blank=True)
+    condition_operator = models.CharField(max_length=10, choices=[
+        ('eq', 'Equals'),
+        ('ne', 'Not Equals'),
+        ('gt', 'Greater Than'),
+        ('lt', 'Less Than'),
+        ('gte', 'Greater Than or Equal'),
+        ('lte', 'Less Than or Equal'),
+    ], null=True, blank=True)
+    condition_value = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        ordering = ['workflow', 'order']
+
+    def __str__(self):
+        return f"{self.workflow.name} - Step {self.order}: {self.name}"
+
+    def clean(self):
+        if self.is_conditional and (not self.condition_field or not self.condition_operator or self.condition_value is None):
+            raise ValidationError("Conditional steps must have a condition field, operator, and value.")
+
+    def evaluate_condition(self, document):
+        if not self.is_conditional:
+            return True
+
+        dynamic_value = document.dynamic_values.filter(field=self.condition_field).first()
+        if not dynamic_value:
+            return False
+
+        actual_value = dynamic_value.value
+        condition_value = self.condition_value
+
+        if self.condition_field.field_type == 'number':
+            try:
+                actual_value = float(actual_value)
+                condition_value = float(condition_value)
+            except ValueError:
+                return False
+
+        if self.condition_operator == 'eq':
+            return actual_value == condition_value
+        elif self.condition_operator == 'ne':
+            return actual_value != condition_value
+        elif self.condition_operator == 'gt':
+            return actual_value > condition_value
+        elif self.condition_operator == 'lt':
+            return actual_value < condition_value
+        elif self.condition_operator == 'gte':
+            return actual_value >= condition_value
+        elif self.condition_operator == 'lte':
+            return actual_value <= condition_value
+
+        return False
+
 
     class Meta:
         ordering = ['order']
@@ -67,13 +125,14 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_submitted_at = models.DateTimeField(auto_now_add=True)
-    dynamic_field_values = models.JSONField(null=True, blank=True)
+
 
     def __str__(self):
         return self.title
 
     def move_to_next_step(self):
         # self.approvals.filter(step=None).delete()
+
         current_step_order = self.current_step.order
         next_step = ApprovalStep.objects.filter(
             workflow=self.workflow,
@@ -81,8 +140,15 @@ class Document(models.Model):
         ).order_by('order').first()
 
         if next_step:
-            self.current_step = next_step
-            self.status = 'in_review'
+            if next_step.evaluate_condition(self):
+                print('next step',  next_step.name)
+                print('meet conidtion for next step')
+                self.current_step = next_step
+                self.status = 'in_review'
+            else:
+                print('no condition')
+                self.status = 'approved'
+                self.save()
         else:
             self.status = 'approved'
         self.save()

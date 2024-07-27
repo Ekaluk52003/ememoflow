@@ -19,5 +19,5 @@
 {% else %}
     <p class="alert alert-info">You haven't submitted any documents yet.</p>
 {% endif %}
-<a href="{% url 'document_approval:submit_document' %}" class="btn btn-primary mt-3">Submit New Document</a>
+<a href="{% url 'document_approval:workflow_list' %}" class="btn btn-primary mt-3">Submit New Document</a>
 {% endblock %}

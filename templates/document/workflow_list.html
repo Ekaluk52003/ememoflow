@@ -1,0 +1,24 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Available Workflows</h1>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for workflow in workflows %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ workflow.name }}</h5>
+                    <p class="card-text">Created on: {{ workflow.created_at|date:"F d, Y" }}</p>
+                    <a href="{% url 'document_approval:submit_document' workflow.id %}" class="btn btn-primary">Submit Document</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">No workflows available.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

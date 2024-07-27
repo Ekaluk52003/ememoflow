@@ -9,6 +9,11 @@ from django.utils import timezone
 from django.contrib import messages
 
 @login_required
+def workflow_list(request):
+    workflows = ApprovalWorkflow.objects.all()
+    return render(request, 'document/workflow_list.html', {'workflows': workflows})
+
+@login_required
 def document_list(request):
     documents = Document.objects.all().order_by('-created_at')
     return render(request, 'document/document_list.html', {'documents': documents})
@@ -86,16 +91,25 @@ def resubmit_document(request, pk):
         document.approvals.filter(is_approved=None).delete()
         document.save()
 
+        # for step in workflow.steps.all():
+        #     approver_id = request.POST.get(f'approver_{step.id}')
+        #     if approver_id:
+        #         approver = CustomUser.objects.get(id=approver_id)
+        #         Approval.objects.create(
+        #             document=document,
+        #             step=step,
+        #             approver=approver,
+        #             is_approved=None
+        #         )
+
         for step in workflow.steps.all():
-            approver_id = request.POST.get(f'approver_{step.id}')
-            if approver_id:
-                approver = CustomUser.objects.get(id=approver_id)
-                Approval.objects.create(
-                    document=document,
-                    step=step,
-                    approver=approver,
-                    is_approved=None
-                )
+            if step.evaluate_condition(document):
+                for approver in step.approvers.all():
+                    Approval.objects.create(
+                        document=document,
+                        step=step,
+                        approver=approver
+                    )
 
         for field in dynamic_fields:
             value = request.POST.get(f'dynamic_{field.id}')
@@ -135,11 +149,19 @@ def withdraw_document(request, document_id):
 
 
 @login_required
-def submit_document(request):
-    workflow = ApprovalWorkflow.objects.get(id=1)  # Hardcoded to workflow with ID 1
+def submit_document(request, workflow_id):
+    workflow = ApprovalWorkflow.objects.get(id=workflow_id)  # Hardcoded to workflow with ID 1
     dynamic_fields = workflow.dynamic_fields.all()
 
+     # Process choices for each field
+    for field in dynamic_fields:
+        if field.field_type == 'choice':
+            field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
+        else:
+            field.choice_list = []
+
     if request.method == 'POST':
+        value = request.POST.get(f'dynamic_{field.id}')
         title = request.POST.get('title')
         content = request.POST.get('content')
 
@@ -150,32 +172,41 @@ def submit_document(request):
             workflow=workflow,
             status='in_review'
         )
+
+        # Save dynamic field values
         for field in dynamic_fields:
             value = request.POST.get(f'dynamic_{field.id}')
-            if field.field_type == 'choice':
-                field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
             if field.required and not value:
                 messages.error(request, f"{field.name} is required.")
                 document.delete()
                 return render(request, 'submit_document.html', {'workflow': workflow, 'dynamic_fields': dynamic_fields})
 
+            # Each dynamic file should be added
             DynamicFieldValue.objects.create(
                 document=document,
                 field=field,
                 value=value or ''
             )
 
-        # Create approval records for each step
+        # Create approval records for each step. This is workflow 1
+        # for step in workflow.steps.all():
+        #     approver_id = request.POST.get(f'approver_{step.id}')
+        #     if approver_id:
+        #         approver = CustomUser.objects.get(id=approver_id)
+        #         Approval.objects.create(
+        #             document=document,
+        #             step=step,
+        #             approver=approver,
+        #             is_approved=None
+        #         )
         for step in workflow.steps.all():
-            approver_id = request.POST.get(f'approver_{step.id}')
-            if approver_id:
-                approver = CustomUser.objects.get(id=approver_id)
-                Approval.objects.create(
-                    document=document,
-                    step=step,
-                    approver=approver,
-                    is_approved=None
-                )
+            if step.evaluate_condition(document):
+                for approver in step.approvers.all():
+                    Approval.objects.create(
+                        document=document,
+                        step=step,
+                        approver=approver
+                    )
 
         # Set the current step to the first step of the workflow
         document.current_step = workflow.steps.first()

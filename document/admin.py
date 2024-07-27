@@ -12,17 +12,39 @@ class DynamicFieldAdmin(admin.ModelAdmin):
     list_filter = ('workflow', 'field_type', 'required')
     search_fields = ('name', 'workflow__name')
 
+class ApprovalStepInline(admin.TabularInline):
+    model = ApprovalStep
+    extra = 1
+
 @admin.register(ApprovalWorkflow)
 class ApprovalWorkflowAdmin(admin.ModelAdmin):
-    list_display = ('name', 'created_by', 'created_at')
-    search_fields = ('name', 'created_by__username')
+    inlines = [ApprovalStepInline]
+    # list_display = ('name', 'created_by', 'created_at')
+    # search_fields = ('name', 'created_by__username')
 
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):
-    list_display = ('workflow', 'name', 'order')
-    list_filter = ('workflow',)
-    search_fields = ('name', 'workflow__name')
-    ordering = ('workflow', 'order')
+    list_display = ('workflow', 'name', 'order', 'is_conditional')
+    list_filter = ('workflow', 'is_conditional')
+    filter_horizontal = ('approvers',)
+    fieldsets = (
+        (None, {
+            'fields': ('workflow', 'name', 'order', 'approvers')
+        }),
+        ('Conditional Logic', {
+            'fields': ('is_conditional', 'condition_field', 'condition_operator', 'condition_value'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "condition_field":
+            if 'workflow' in request.GET:
+                workflow_id = request.GET['workflow']
+                kwargs["queryset"] = DynamicField.objects.filter(workflow_id=workflow_id)
+            else:
+                kwargs["queryset"] = DynamicField.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):

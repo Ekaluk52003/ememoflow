@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Submit New Document</h1>
-
+    <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
     <form method="post">
         {% csrf_token %}
         <div class="mb-3">
@@ -18,15 +18,17 @@
         </div>
         {% for field in dynamic_fields %}
         <div>
-            <label for="dynamic_{{ field.id }}">{{ field.name }}:</label>
+            <label for="dynamic_{{ field.id }}" class="form-label" >{{ field.name }}:</label>
             {% if field.field_type == 'text' %}
-                <input type="text" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+                <input type="text" class="form-control id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
             {% elif field.field_type == 'number' %}
-                <input type="number" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+                <input type="number" class="form-control id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
             {% elif field.field_type == 'date' %}
-                <input type="date" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+                <input type="date" class="form-control id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
             {% elif field.field_type == 'boolean' %}
-                <input type="checkbox" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+                <input type="checkbox" class="form-control id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
+
+
             {% elif field.field_type == 'choice' %}
                 <select id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
                     <option value="">Select an option</option>
@@ -35,10 +37,17 @@
                     {% endfor %}
                 </select>
             {% endif %}
+
+
+
+
+
         </div>
         {% endfor %}
 
-        <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
+
+
+        {% if workflow.id == 1 %}
         {% for step in workflow.steps.all %}
             <div class="card mb-3">
                 <div class="card-header">{{ step.name }}</div>
@@ -53,6 +62,8 @@
                 </div>
             </div>
         {% endfor %}
+
+        {% endif %}
 
         <button type="submit" class="btn btn-primary">Submit Document</button>
     </form>
