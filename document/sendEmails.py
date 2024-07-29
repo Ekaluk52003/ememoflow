@@ -7,12 +7,14 @@ from django.template import Template, Context, TemplateSyntaxError
 
 logger = logging.getLogger(__name__)
 
+
 def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None):
     try:
         context = Context(context_dict)
 
         # Render the subject
-        subject = strip_tags(Template(subject_template).render(context)).strip()[:255]
+        subject = strip_tags(
+            Template(subject_template).render(context)).strip()[:255]
 
         # Render the body
         html_content = Template(body_template).render(context)
@@ -37,11 +39,13 @@ def send_templated_email(subject_template, body_template, context_dict, recipien
         logger.error(f"Error sending email: {str(e)}")
         return False
 
+
 def send_reject_email(document):
     print('send email reject')
     workflow = document.workflow
     if not workflow.send_reject_email:
-        logger.info(f"Reject email sending is disabled for workflow {workflow.id}")
+        logger.info(
+            f"Reject email sending is disabled for workflow {workflow.id}")
         return False
 
     rejector = document.get_rejector()
@@ -61,10 +65,12 @@ def send_reject_email(document):
         cc_list
     )
 
+
 def send_withdraw_email(document):
     workflow = document.workflow
     if not workflow.send_withdraw_email:
-        logger.info(f"Withdraw email sending is disabled for workflow {workflow.id}")
+        logger.info(
+            f"Withdraw email sending is disabled for workflow {workflow.id}")
         return False
 
     current_approver = document.get_current_approver()
@@ -91,8 +97,10 @@ def send_withdraw_email(document):
 
 
 def send_approval_email(approval):
+
     if not approval.step.send_email:
-        logger.info(f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}")
+        logger.info(
+            f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}")
         return
 
     try:
@@ -125,13 +133,18 @@ def send_approval_email(approval):
         msg.attach_alternative(html_content, "text/html")
 
         # Send the email
+
         msg.send()
 
-        logger.info(f"Approval email sent for document {approval.document.id} to {approval.approver.email}")
+        logger.info(
+            f"Approval email sent for document {approval.document.id} to {approval.approver.email}")
 
     except TemplateSyntaxError as e:
-        logger.error(f"Template syntax error in send_approval_email for document {approval.document.id}: {str(e)}")
+        logger.error(
+            f"Template syntax error in send_approval_email for document {approval.document.id}: {str(e)}")
     except AttributeError as e:
-        logger.error(f"Attribute error in send_approval_email for document {approval.document.id}: {str(e)}")
+        logger.error(
+            f"Attribute error in send_approval_email for document {approval.document.id}: {str(e)}")
     except Exception as e:
-        logger.error(f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}")
+        logger.error(
+            f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}")

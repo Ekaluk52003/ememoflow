@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib import messages
 import os
-
+from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email
 
 
 @login_required
@@ -25,62 +25,21 @@ def document_list(request):
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
     dynamic_field_values = document.dynamic_values.all()
-    user_approval = document.approvals.filter(
-        approver=request.user,
-        step=document.current_step,
-        is_approved__isnull=True
-    ).first()
+    user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
 
     if request.method == 'POST' and user_approval and document.status == 'in_review':
-        # Handle approval submission
-        is_approved = request.POST.get('is_approved') == 'true'
-        comment = request.POST.get('comment', '')
-        user_input = request.POST.get('user_input', '')
-        uploaded_file = request.FILES.get('user_input_file')
-
-
-
-
-        if user_approval.step.requires_input:
-            if user_approval.step.input_type == 'file':
-                if not uploaded_file:
-                        print('not uploaded_filee',  uploaded_file)
-                        messages.error(request, "File upload is required for this step.")
-                        return redirect('document_approval:document_detail', pk=document.pk)
-
-                # Validate file extension
-                # allowed_extensions = [ext.strip() for ext in  user_approval.step.allowed_file_extensions.split(',')]
-                # file_extension = os.path.splitext(uploaded_file.name)
-                # if file_extension[1:] not in allowed_extensions:
-                #     messages.error(request, f"Invalid file type. Allowed types are: {', '.join(allowed_extensions)}")
-                #     return redirect('document_approval:document_detail', pk=document.pk)
-                print('uploading the file')
-                user_approval.uploaded_file = uploaded_file
-
-            elif not user_input:
-                    messages.error(request, "User input is required for this step.")
-                    return redirect('document_detail', pk=document.pk)
-            else:
-                user_approval.user_input = user_input
-
-        user_approval.is_approved = is_approved
-        user_approval.comment = comment
-        user_approval.recorded_at = timezone.now()
-        user_approval.save()
-
-        if is_approved:
-            document.move_to_next_step()
-        else:
-            document.reject()
-
+        try:
+            document.handle_approval(
+                user=request.user,
+                is_approved=request.POST.get('is_approved') == 'true',
+                comment=request.POST.get('comment', ''),
+                user_input=request.POST.get('user_input', ''),
+                uploaded_file=request.FILES.get('user_input_file')
+            )
+            messages.success(request, "Approval decision recorded successfully.")
+        except ValidationError as e:
+            messages.error(request, str(e))
         return redirect('document_approval:document_detail', pk=document.pk)
-
-    can_withdraw = (
-        document.status == 'in_review' and
-        document.submitted_by == request.user and
-        not document.approvals.filter(is_approved__isnull=False, created_at__gt=document.last_submitted_at).exists()
-    # There do not exist any approvals for this document that have been decided (approved or rejected) and were created after the document was last submitted or resubmitted.
-    )
 
     context = {
         'document': document,
@@ -88,9 +47,16 @@ def document_detail(request, pk):
         'user_approval': user_approval,
         'can_approve': user_approval and document.status == 'in_review',
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
-        'can_draw' : can_withdraw
+        'can_draw' : document.can_withdraw(request.user)
     }
+
+    # for field in dynamic_field_values :
+    #     print(field.field.field_type )
+    #     # print(field.value )
+
     return render(request, 'document/document_detail.html', context)
+
+
 
 @login_required
 def resubmit_document(request, pk):
@@ -98,7 +64,6 @@ def resubmit_document(request, pk):
     workflow = document.workflow
     dynamic_fields = workflow.dynamic_fields.all()
 
-    # Pre-process choices for each field and get existing values
     for field in dynamic_fields:
         if field.field_type == 'choice':
             field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
@@ -106,66 +71,38 @@ def resubmit_document(request, pk):
         # Get existing value for this field
         existing_value = document.dynamic_values.filter(field=field).first()
         field.existing_value = existing_value.value if existing_value else ''
-    un_authorize = request.user != document.submitted_by or document.status not in ['pending', 'rejected']
-    if (un_authorize):
-        (print(document.status))
+
+    if request.user != document.submitted_by or document.status not in ['pending', 'rejected']:
         return HttpResponseForbidden("You don't have permission to resubmit this document.")
 
     if request.method == 'POST':
-        document.title = request.POST.get('title')
-        document.content = request.POST.get('content')
-        document.status = 'in_review'
-        document.current_step = workflow.steps.first()
-        document.last_submitted_at = timezone.now()
-        # Delete all pending approvals
-        document.approvals.filter(is_approved=None).delete()
-        document.save()
+        try:
+            document.resubmit(request.POST.get('title'), request.POST.get('content'))
+            DynamicFieldValue.update_or_create_values(document, document.workflow.dynamic_fields.all(), request.POST)
 
-        for field in dynamic_fields:
-            value = request.POST.get(f'dynamic_{field.id}')
-            if field.required and not value:
-                messages.error(request, f"{field.name} is required.")
-                return render(request, 'resubmit_document.html',
-                              {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
-
-            DynamicFieldValue.objects.update_or_create(
-                document=document,
-                field=field,
-                defaults={'value': value or ''}
-            )
-
-
-        for step in workflow.steps.all():
-            if step.evaluate_condition(document):
-                if not workflow.allow_custom_approvers:
-                    for approver in step.approvers.all():
-                        Approval.objects.create(
-                            document=document,
-                            step=step,
-                            approver=approver
-                        )
-
-                else :
+            custom_approvers = {}
+            if workflow.allow_custom_approvers:
+                for step in workflow.steps.all():
                     approver_id = request.POST.get(f'approver_{step.id}')
-                    if  approver_id:
-                        approver = CustomUser.objects.get(id=approver_id)
-                        Approval.objects.create(
-                        document=document,
-                        step=step,
-                        approver=approver,
-                        is_approved=None
-                )
+                    if approver_id:
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
+            document.create_approvals(custom_approvers)
+            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
-        return redirect('document_approval:document_detail', pk=document.pk)
+            return redirect('document_approval:document_detail', pk=document.pk)
+        except ValidationError as e:
+            messages.error(request, str(e))
 
     context = {
         'document': document,
-        'workflow': workflow,
+        'workflow': document.workflow,
         'dynamic_fields': dynamic_fields,
-        'potential_approvers': CustomUser.objects.all(),  # Or a more specific queryset
+        'potential_approvers': CustomUser.objects.all(),
     }
     return render(request, 'document/resubmit_document.html', context)
+
+
 
 @login_required
 def withdraw_document(request, document_id):
@@ -182,11 +119,11 @@ def withdraw_document(request, document_id):
 
 
 @login_required
+#done upadte
 def submit_document(request, workflow_id):
-    workflow = ApprovalWorkflow.objects.get(id=workflow_id)  # Hardcoded to workflow with ID 1
+    workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
     dynamic_fields = workflow.dynamic_fields.all()
 
-     # Process choices for each field
     for field in dynamic_fields:
         if field.field_type == 'choice':
             field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
@@ -194,67 +131,39 @@ def submit_document(request, workflow_id):
             field.choice_list = []
 
     if request.method == 'POST':
-        value = request.POST.get(f'dynamic_{field.id}')
-        title = request.POST.get('title')
-        content = request.POST.get('content')
-
-        document = Document.objects.create(
-            title=title,
-            content=content,
-            submitted_by=request.user,
-            workflow=workflow,
-            status='in_review'
-        )
-
-        # Save dynamic field values
-        for field in dynamic_fields:
-            value = request.POST.get(f'dynamic_{field.id}')
-            if field.required and not value:
-                messages.error(request, f"{field.name} is required.")
-                document.delete()
-                return render(request, 'submit_document.html', {'workflow': workflow, 'dynamic_fields': dynamic_fields})
-
-            # Each dynamic file should be added
-            DynamicFieldValue.objects.create(
-                document=document,
-                field=field,
-                value=value or ''
+        try:
+            document = Document.objects.create(
+                title=request.POST.get('title'),
+                content=request.POST.get('content'),
+                submitted_by=request.user,
+                workflow=workflow,
+                status='in_review',
+                current_step=workflow.steps.first()
             )
+            DynamicFieldValue.update_or_create_values(document, workflow.dynamic_fields.all(), request.POST)
 
-        for step in workflow.steps.all():
-            if step.evaluate_condition(document):
-                if not workflow.allow_custom_approvers:
-                    for approver in step.approvers.all():
-                        Approval.objects.create(
-                            document=document,
-                            step=step,
-                            approver=approver                        )
-
-                else :
+            custom_approvers = {}
+            if workflow.allow_custom_approvers:
+                for step in workflow.steps.all():
                     approver_id = request.POST.get(f'approver_{step.id}')
-                    if  approver_id:
-                        approver = CustomUser.objects.get(id=approver_id)
-                        Approval.objects.create(
-                        document=document,
-                        step=step,
-                        approver=approver,
-                        is_approved=None
-                )
+                    if approver_id:
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
-        # Set the current step to the first step of the workflow
-        document.current_step = workflow.steps.first()
-        document.save()
+            document.create_approvals(custom_approvers)
 
-        return redirect('document_approval:document_detail', pk=document.pk)
+            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
-    potential_approvers = CustomUser.objects.all()  # Or a more specific queryset
+            return redirect('document_approval:document_detail', pk=document.pk)
+        except ValidationError as e:
+            messages.error(request, str(e))
 
     context = {
         'workflow': workflow,
-        'potential_approvers': potential_approvers,
-        'dynamic_fields': dynamic_fields
+        'dynamic_fields': dynamic_fields,
+        'potential_approvers': CustomUser.objects.all(),
     }
     return render(request, 'document/submit_document.html', context)
+
 
 @login_required
 def documents_to_approve_to_resubmit(request):

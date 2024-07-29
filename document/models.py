@@ -3,8 +3,8 @@ from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email
-
-
+import os
+from django.utils import timezone
 
 class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
@@ -36,6 +36,7 @@ class DynamicField(models.Model):
         ('date', 'Date'),
         ('boolean', 'Yes/No'),
         ('choice', 'Multiple Choice'),
+        ('attachment', 'File Attachment'),
     )
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='dynamic_fields')
     name = models.CharField(max_length=100)
@@ -44,11 +45,30 @@ class DynamicField(models.Model):
     order = models.PositiveIntegerField(default=0)
     choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' field type")
 
+    # New fields for attachment type
+    allowed_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated list of allowed file extensions (e.g., .pdf,.doc,.jpg)")
+    max_file_size = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum file size in bytes")
+    multiple_files = models.BooleanField(default=False, help_text="Allow multiple file uploads for this field")
+
     class Meta:
         ordering = ['order']
 
     def __str__(self):
         return f"{self.workflow.name} - {self.name}"
+
+    def get_allowed_extensions(self):
+        if self.allowed_extensions:
+            return [ext.strip() for ext in self.allowed_extensions.split(',')]
+        return []
+
+    def validate_file(self, file):
+        if self.allowed_extensions:
+            ext = os.path.splitext(file.name)[1]
+            if ext.lower() not in self.get_allowed_extensions():
+                raise ValidationError(f"File type {ext} is not allowed. Allowed types are: {self.allowed_extensions}")
+
+        if self.max_file_size and file.size > self.max_file_size:
+            raise ValidationError(f"File size exceeds the maximum allowed size of {self.max_file_size} bytes")
 
 
 
@@ -169,8 +189,73 @@ class Document(models.Model):
     def __str__(self):
         return self.title
 
+    def resubmit(self, title, content):
+        self.title = title
+        self.content = content
+        self.status = 'in_review'
+        self.current_step = self.workflow.steps.first()
+        self.last_submitted_at = timezone.now()
+        self.approvals.filter(is_approved__isnull=True).delete()
+        self.save()
+
+    def create_approvals(self, custom_approvers=None):
+        approvals_created = []
+        for step in self.workflow.steps.all():
+            if step.evaluate_condition(self):
+                if not self.workflow.allow_custom_approvers:
+                            for approver in step.approvers.all():
+                                approval = Approval.objects.create(
+                                document=self,
+                                step=step,
+                                approver=approver
+                                )
+                                approvals_created.append(approval)
+
+
+                elif custom_approvers and step.id in custom_approvers:
+                    approval = Approval.objects.create(
+                        document=self,
+                        step=step,
+                        approver=custom_approvers[step.id],
+                        is_approved=None
+                    )
+                    approvals_created.append(approval)
+
+
+        if approvals_created:
+            send_approval_email(approvals_created[0])
+        return approvals_created
+
+    def handle_approval(self, user, is_approved, comment, user_input, uploaded_file):
+        approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
+
+        if approval.step.requires_input:
+            if approval.step.input_type == 'file' and not uploaded_file:
+                raise ValidationError("File upload is required for this step.")
+            elif approval.step.input_type != 'file' and not user_input:
+                raise ValidationError("User input is required for this step.")
+
+        approval.is_approved = is_approved
+        approval.comment = comment
+        approval.user_input = user_input
+        approval.uploaded_file = uploaded_file
+        approval.recorded_at = timezone.now()
+        approval.save()
+
+        if is_approved:
+            self.move_to_next_step()
+        else:
+            self.reject()
+
+    def can_withdraw(self, user):
+        return (
+            self.status == 'in_review' and
+            self.submitted_by == user and
+            not self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists()
+        )
+
+
     def move_to_next_step(self):
-        # self.approvals.filter(step=None).delete()
 
         current_step_order = self.current_step.order
         next_step = ApprovalStep.objects.filter(
@@ -248,13 +333,40 @@ class Approval(models.Model):
         return f"{self.document.title} - {self.step.name} - {self.approver.username}"
 
 
+def dynamic_field_file_path(instance, filename):
+    return f'documents/{instance.document.id}/dynamic_fields/{filename}'
+
 class DynamicFieldValue(models.Model):
     document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='dynamic_values')
     field = models.ForeignKey('DynamicField', on_delete=models.CASCADE)
     value = models.TextField()
+    file = models.FileField(upload_to=dynamic_field_file_path, blank=True, null=True)
+
+
+    @classmethod
+    def update_or_create_values(cls, document, dynamic_fields, post_data):
+        for field in dynamic_fields:
+            value = post_data.get(f'dynamic_{field.id}')
+            if field.required and not value:
+                raise ValidationError(f"{field.name} is required.")
+            cls.objects.update_or_create(
+                document=document,
+                field=field,
+                defaults={'value': value or ''}
+            )
 
     class Meta:
         unique_together = ('document', 'field')
 
     def __str__(self):
+        if self.field.field_type == 'attachment':
+            return f"{self.document.title} - {self.field.name}: {self.file.name if self.file else 'No file'}"
         return f"{self.document.title} - {self.field.name}: {self.value}"
+
+    # def clean(self):
+    #     if self.field.field_type == 'attachment' and self.file:
+    #         self.field.validate_file(self.file)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

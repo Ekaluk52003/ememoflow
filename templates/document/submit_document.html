@@ -5,7 +5,9 @@
 <div class="container mt-4">
     <h1 class="mb-4">Submit New Document</h1>
     <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
-    <form method="post">
+
+    
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="mb-3">
             <label for="title" class="form-label">Title:</label>
@@ -19,6 +21,8 @@
         {% for field in dynamic_fields %}
         <div>
             <label for="dynamic_{{ field.id }}" class="form-label" >{{ field.name }}:</label>
+
+
             {% if field.field_type == 'text' %}
                 <input type="text" class="form-control id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
             {% elif field.field_type == 'number' %}
@@ -36,6 +40,11 @@
                         <option value="{{ choice }}">{{ choice }}</option>
                     {% endfor %}
                 </select>
+
+            {% elif field.field_type == 'attachment' %}
+            Attachment
+                <input type="file" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}">
+
             {% endif %}
 
 
