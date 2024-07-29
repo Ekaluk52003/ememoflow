@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue,  DynamicField
+from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue,  DynamicField,  PDFTemplate, ReportConfiguration
+
+
+
+@admin.register(PDFTemplate)
+class PDFTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+@admin.register(ReportConfiguration)
+class ReportConfigurationAdmin(admin.ModelAdmin):
+    list_display = ('company_name',)
 
 class DynamicFieldValueInline(admin.TabularInline):
     model = DynamicFieldValue
@@ -21,7 +31,7 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_by', 'created_at')
     search_fields = ('name', 'created_by__username')
 
-    
+
 
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):

@@ -5,6 +5,30 @@ from django.core.exceptions import ValidationError
 from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email, send_approved_email
 import os
 from django.utils import timezone
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+
+class ReportConfiguration(models.Model):
+    company_name = models.CharField(max_length=200)
+    company_address = models.TextField()
+    company_logo = models.ImageField(upload_to='report_logos/', storage=FileSystemStorage(location=settings.MEDIA_ROOT))
+    footer_text = models.TextField()
+
+    @property
+    def logo_data_uri(self):
+        import base64
+        with open(self.company_logo.path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        return f"data:image/png;base64,{encoded_string}"
+
+class PDFTemplate(models.Model):
+    name = models.CharField(max_length=100)
+    html_content = models.TextField()
+    css_content = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
 
 class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
@@ -321,6 +345,15 @@ class Document(models.Model):
             is_approved=False
         ).order_by('-updated_at').first()
         return rejection.approver if rejection else None
+
+    def get_report_context(self):
+        return {
+            'document': self,
+            'dynamic_fields': self.dynamic_values.all().select_related('field'),
+            'approvals': self.approvals.all().select_related('step', 'approver').order_by('step__order'),
+            'current_step': self.current_step,
+            'workflow': self.workflow,
+        }
 
 
 def user_directory_path(instance, filename):

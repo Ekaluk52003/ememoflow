@@ -2,13 +2,47 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.db.models import Q
-from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue
+from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.contrib import messages
-import os
-from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email
+from django.http import HttpResponse
+from django.template import Context, Template
+from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
+import requests
+from .forms import DocumentSubmissionForm
+
+def generate_pdf_report(request, document_id, template_id):
+    document = get_object_or_404(Document, id=document_id)
+    template = get_object_or_404(PDFTemplate, id=template_id)
+    report_config = ReportConfiguration.objects.first()  # Assuming you have only one configuration
+
+    # Get the context data from the document
+    context_data = document.get_report_context()
+
+    # Add report configuration to context
+    context_data['report_config'] = report_config
+
+    # Render the template with the document data
+    html_template = Template(template.html_content)
+    context = Context(context_data)
+    html_content = html_template.render(context)
+
+    # Fetch Bootstrap 5 CSS
+    bootstrap_css = requests.get('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css').text
+
+    # Generate PDF
+    font_config = FontConfiguration()
+    html = HTML(string=html_content)
+    css = CSS(string=bootstrap_css + template.css_content, font_config=font_config)
+
+    pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
+
+    # Create HTTP response
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="document_{document_id}_report.pdf"'
+    return response
 
 
 @login_required
@@ -76,31 +110,37 @@ def resubmit_document(request, pk):
         return HttpResponseForbidden("You don't have permission to resubmit this document.")
 
     if request.method == 'POST':
-        try:
-            document.resubmit(request.POST.get('title'), request.POST.get('content'))
-            DynamicFieldValue.update_or_create_values(document, document.workflow.dynamic_fields.all(), request.POST)
+        form = DocumentSubmissionForm(request.POST, instance=document)
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            content = form.cleaned_data['content']
+            document.resubmit(title, content)
 
-            custom_approvers = {}
-            if workflow.allow_custom_approvers:
+        DynamicFieldValue.update_or_create_values(document, document.workflow.dynamic_fields.all(), request.POST)
+
+        custom_approvers = {}
+        if workflow.allow_custom_approvers:
                 for step in workflow.steps.all():
                     approver_id = request.POST.get(f'approver_{step.id}')
                     if approver_id:
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
-            document.create_approvals(custom_approvers)
-            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+        document.create_approvals(custom_approvers)
+        messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
-            return redirect('document_approval:document_detail', pk=document.pk)
-        except ValidationError as e:
-            messages.error(request, str(e))
+        return redirect('document_approval:document_detail', pk=document.pk)
 
-    context = {
-        'document': document,
-        'workflow': document.workflow,
-        'dynamic_fields': dynamic_fields,
-        'potential_approvers': CustomUser.objects.all(),
-    }
-    return render(request, 'document/resubmit_document.html', context)
+    else:
+        form = DocumentSubmissionForm(instance=document)
+
+        context = {
+            'form': form,
+            'document': document,
+            'workflow': document.workflow,
+            'dynamic_fields': dynamic_fields,
+            'potential_approvers': CustomUser.objects.all(),
+        }
+        return render(request, 'document/resubmit_document.html', context)
 
 
 
@@ -131,15 +171,15 @@ def submit_document(request, workflow_id):
             field.choice_list = []
 
     if request.method == 'POST':
-        try:
-            document = Document.objects.create(
-                title=request.POST.get('title'),
-                content=request.POST.get('content'),
-                submitted_by=request.user,
-                workflow=workflow,
-                status='in_review',
-                current_step=workflow.steps.first()
-            )
+        form = DocumentSubmissionForm(request.POST)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.submitted_by = request.user
+            document.workflow = workflow
+            document.status = 'in_review'
+            document.current_step = workflow.steps.first()
+            document.save()
+
             DynamicFieldValue.update_or_create_values(document, workflow.dynamic_fields.all(), request.POST)
 
             custom_approvers = {}
@@ -154,15 +194,16 @@ def submit_document(request, workflow_id):
             messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
             return redirect('document_approval:document_detail', pk=document.pk)
-        except ValidationError as e:
-            messages.error(request, str(e))
 
-    context = {
+    else:
+        form = DocumentSubmissionForm()
+        context = {
+        'form': form,
         'workflow': workflow,
         'dynamic_fields': dynamic_fields,
         'potential_approvers': CustomUser.objects.all(),
-    }
-    return render(request, 'document/submit_document.html', context)
+        }
+        return render(request, 'document/submit_document.html', context)
 
 
 @login_required

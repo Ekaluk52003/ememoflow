@@ -1,6 +1,5 @@
 {% extends "_base.html" %}
 
-
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Document Detail Page</h1>
@@ -22,7 +21,7 @@
                 </span>
             </h5>
             <h6 class="card-subtitle mb-2 text-muted">Current Step: {{ document.current_step.name }}</h6>
-            <p class="card-text">{{ document.content }}</p>
+            <p class="card-text">{{ document.content|safe}}</p>
             <p class="card-text"><small class="text-muted">Submitted by: {{ document.submitted_by.username }}</small></p>
             <h2>Dynamic Fields</h2>
 <ul>
@@ -62,6 +61,8 @@
 {% endif %}
         {% endfor %}
 </ul>
+
+<a href="{% url 'document_approval:generate_pdf_report' document.id 1 %}" class="btn btn-primary">Generate PDF Report</a>
 
     {% if document.approvals.all|length > 0  %}
     <h2 class="mb-3">Approval Process</h2>

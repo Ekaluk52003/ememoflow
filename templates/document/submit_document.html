@@ -1,23 +1,23 @@
 {% extends "_base.html" %}
-
+{% load crispy_forms_tags %}
 
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Submit New Document</h1>
     <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
 
-    
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="mb-3">
-            <label for="title" class="form-label">Title:</label>
-            <input type="text" class="form-control" id="title" name="title" required>
-        </div>
+
+        {{ form.title|as_crispy_field }}
 
         <div class="mb-3">
-            <label for="content" class="form-label">Content:</label>
-            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+            <label for="editor" class="form-label">Content:</label>
+            <div id="editor" style="height: 300px;"></div>
         </div>
+        {{ form.content }}
+
         {% for field in dynamic_fields %}
         <div>
             <label for="dynamic_{{ field.id }}" class="form-label" >{{ field.name }}:</label>
@@ -77,4 +77,49 @@
         <button type="submit" class="btn btn-primary">Submit Document</button>
     </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+
+<!-- Add this line to safely embed the document content -->
+{{ document.content|json_script:"document-content" }}
+
+<!-- Initialize Quill editor -->
+<script>
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            ['bold', 'italic', 'underline', 'strike'],
+            ['blockquote', 'code-block'],
+            [{ 'header': 1 }, { 'header': 2 }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'script': 'sub'}, { 'script': 'super' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'direction': 'rtl' }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'font': [] }],
+            [{ 'align': [] }],
+            ['clean'],
+            ['undo', 'redo']  // Add undo and redo buttons here
+          ],
+         
+        }
+      });
+
+  // Populate the editor with existing content when resubmitting
+
+  var documentContent = JSON.parse(document.getElementById('document-content').textContent);
+
+  quill.root.innerHTML = documentContent;
+
+
+  // When the form is submitted, update the hidden input with the editor contents
+  document.querySelector('form').onsubmit = function() {
+    document.querySelector('#id_content').value = quill.root.innerHTML;
+  };
+</script>
+
 {% endblock %}
