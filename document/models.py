@@ -2,7 +2,7 @@
 from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
-from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email
+from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email, send_approved_email
 import os
 from django.utils import timezone
 
@@ -20,6 +20,12 @@ class ApprovalWorkflow(models.Model):
     send_withdraw_email = models.BooleanField(default=True, help_text="Send email on document withdrawal")
     withdraw_email_subject = models.TextField(blank=True, help_text="Subject for withdrawal emails")
     withdraw_email_body = models.TextField(blank=True, help_text="Body template for withdrawal emails")
+
+    # Email notification for all approve
+    send_approved_email = models.BooleanField(default=False)
+    email_approved_subject = models.CharField(max_length=255, blank=True)
+    email_approved_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
+
 
     cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC")
 
@@ -111,7 +117,8 @@ class ApprovalStep(models.Model):
     send_email = models.BooleanField(default=False)
     email_subject = models.CharField(max_length=255, blank=True)
     email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
-    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC")
+    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC for")
+
 
     class Meta:
         ordering = ['workflow', 'order']
@@ -270,11 +277,14 @@ class Document(models.Model):
                 approval = self.approvals.get(step=next_step)
                 send_approval_email(approval)
             else:
-                print('no condition')
+                send_approved_email(self)
                 self.status = 'approved'
                 self.save()
         else:
+
+            send_approved_email(self)
             self.status = 'approved'
+
         self.save()
 
     def withdraw(self):

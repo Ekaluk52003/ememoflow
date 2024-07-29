@@ -96,6 +96,29 @@ def send_withdraw_email(document):
     )
 
 
+def send_approved_email(document):
+    workflow = document.workflow
+    if not workflow.send_approved_email:
+        logger.info(
+            f"Withdraw email sending is disabled for workflow {workflow.id}")
+        return False
+
+    context = {
+        'document': document,
+        'submitted_by': document.submitted_by,
+        'workflow': workflow,
+    }
+    recipient_list = [document.submitted_by.email]
+    cc_list = workflow.get_cc_list()
+
+    return send_templated_email(
+        workflow.email_approved_subject,
+        workflow.email_approved_body_template,
+        context,
+        recipient_list,
+        cc_list
+    )
+
 def send_approval_email(approval):
 
     if not approval.step.send_email:
@@ -148,3 +171,9 @@ def send_approval_email(approval):
     except Exception as e:
         logger.error(
             f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}")
+
+
+
+
+
+
