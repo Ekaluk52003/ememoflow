@@ -62,3 +62,7 @@ body {
 .ql-toolbar .ql-redo::before {
   content: '\f2f9'; /* Unicode for the redo icon */
 }
+
+table, th, td {
+  border: 1px solid;
+}
