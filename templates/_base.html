@@ -18,10 +18,11 @@
 
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
   {% endblock %}
 </head>
 
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <div class="container py-2">
 
 
@@ -115,6 +116,7 @@
 
   <!-- Project JS -->
   <script src="{% static 'js/base.js' %}"></script>
+
 
   {% endblock javascript %}
 </body>

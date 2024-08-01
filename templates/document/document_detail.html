@@ -25,15 +25,54 @@
             <p class="card-text"><small class="text-muted">Submitted by: {{ document.submitted_by.username }}</small></p>
             <h2>Dynamic Fields</h2>
 <ul>
-{% for field in dynamic_field_values %}
-<!--
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Additional Information</h2>
+        </div>
+        <div class="card-body">
+            {% for value in prepared_values %}
+                <div class="mb-4">
+                    <h3 class="h6">{{ value.name }}</h3>
+                    {% if value.field_type == 'product_list' %}
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in value.value %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.quantity }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+         
 
-<li><strong>{{ field.field.field_type }}:</strong> </li> -->
-<li><strong>{{ field.field.name }}:</strong>{{ field.value }} </li>
+                    {% elif value.field_type == 'attachment' %}
+                        {% if value.file %}
+                            <p><a href="{{ value.file.url }}" class="btn btn-sm btn-primary" target="_blank">Download {{ value.file.name }}</a></p>
+                        {% else %}
+                            <p>No file attached.</p>
+                        {% endif %}
+                    {% elif value.field_type == 'boolean' %}
+                        <p>{% if value.value %}Yes{% else %}No{% endif %}</p>
+                    {% else %}
+                        <p>{{ value.value }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+<!-- <li><strong>{{ field.field.field_type }}:</strong> </li> -->
+<!-- <li><strong>{{ field.field.name }}:</strong>{{ field.value }} </li> -->
 
 
 
-{% endfor %}
 </ul>
         </div>
     </div>

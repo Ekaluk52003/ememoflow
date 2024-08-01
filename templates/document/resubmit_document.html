@@ -6,7 +6,7 @@
 
 {% block content %}
 <h1 class="mb-4">Resubmit Document</h1>
-<form method="post">
+<form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
 
@@ -18,31 +18,88 @@
     {{ form.content }}
 
 
-    {% for field in dynamic_fields %}
-    <div>
-        <label for="dynamic_{{ field.id }}">{{ field.name }}:</label>
-        {% if field.field_type == 'text' %}
-            <input type="text" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
-                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
-        {% elif field.field_type == 'number' %}
-            <input type="number" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
-                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
-        {% elif field.field_type == 'date' %}
-            <input type="date" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
-                   {% if field.required %}required{% endif %} value="{{ field.existing_value }}">
-        {% elif field.field_type == 'boolean' %}
-            <input type="checkbox" id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}"
-                   {% if field.required %}required{% endif %} {% if field.existing_value %}checked{% endif %}>
-        {% elif field.field_type == 'choice' %}
-            <select id="dynamic_{{ field.id }}" name="dynamic_{{ field.id }}" {% if field.required %}required{% endif %}>
-                <option value="">Select an option</option>
-                {% for choice in field.choice_list %}
-                    <option value="{{ choice }}" {% if choice == field.existing_value %}selected{% endif %}>{{ choice }}</option>
-                {% endfor %}
-            </select>
-        {% endif %}
-    </div>
+    {% for field in prepared_fields %}
+    {% if field.name != 'Total Quantity' %}
+    <div class="mb-3">
+        <label for="dynamic_{{ field.id }}" class="form-label">{{ field.name }}:</label>
+        {% if field.field_type == 'product_list' %}
+            <div id="product-list-{{ field.id }}">
+                {% for product in field.products %}
+                <div class="product-row mb-2">
+                    <div class="row">
+                        <div class="col">
+                            <input type="text" class="form-control" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
+                        </div>
+                        <div class="col">
+                            <input type="number" class="form-control" name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-danger" onclick="removeProductRow(this)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+            <button type="button" class="btn btn-secondary mt-2"
+                    hx-get="{% url 'document_approval:add_product_field' field.id %}"
+                    hx-target="#product-list-{{ field.id }}"
+                    hx-swap="beforeend">
+                Add Product
+            </button>
+            <div class="mt-2">
+                Total QTY: <span id="total-quantity-{{ field.id }}">0</span>
+            </div>
+
+        {% elif field.field_type == 'number' and field.name == 'Total Quantity' %}
+            <input type="number" class="form-control" name="dynamic_{{ field.id }}" id="total-quantity-input" value="{{ field.value }}" readonly>
+
+        {% elif field.field_type == 'attachment' %}
+            <div id="attachment-field-{{ field.id }}">
+                 {% if field.file %}
+
+           <a href='{{ field.file.url }}'>{{ field.file.name }}</a>
+                <button type="button" class="btn btn-danger btn-sm"
+                hx-delete="{% url 'document_approval:delete_attachment' field.id document.id %}"
+                hx-target="#attachment-field-{{ field.id }}"
+                hx-swap="outerHTML">Delete File {{ field.value.id }}</button>
+                    {% else %}
+                    <input type="file" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                    {% if field.required and not field.file %}required{% endif %}>
+
+                    {% endif %}
+
+        </div>
+
+
+
+            {% elif field.field_type == 'text' %}
+                    <input type="text" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == 'number' %}
+                    <input type="number" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == 'date' %}
+                    <input type="date" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value|date:'Y-m-d' }}" {% if field.required %}required{% endif %}>
+                {% elif field.field_type == 'boolean' %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                               {% if field.value %}checked{% endif %} {% if field.required %}required{% endif %}>
+                        <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
+                    </div>
+                {% elif field.field_type == 'choice' %}
+                    <select class="form-select"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                            {% if field.required %}required{% endif %}>
+                        <option value="">Select an option</option>
+                        {% for choice in field.choices %}
+                            <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+            </div>
+    {% endif %}
     {% endfor %}
+
 
 
     {% if workflow.allow_custom_approvers %}
@@ -128,6 +185,48 @@
   document.querySelector('form').onsubmit = function() {
     document.querySelector('#id_content').value = quill.root.innerHTML;
   };
+
+  function removeProductRow(button) {
+    button.closest('.product-row').remove();
+    updateTotalQuantity();
+}
+
+function updateTotalQuantity() {
+    var productLists = document.querySelectorAll('[id^="product-list-"]');
+    productLists.forEach(function(productList) {
+        var fieldId = productList.id.split('-')[2];
+        var quantityInputs = productList.querySelectorAll('input[name^="product_quantity_"]');
+        var total = 0;
+        quantityInputs.forEach(function(input) {
+            total += parseInt(input.value) || 0;
+        });
+        document.getElementById('total-quantity-' + fieldId).textContent = total;
+    });
+}
+
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id.startsWith('product-list-')) {
+        updateTotalQuantity();
+    }
+});
+
+document.body.addEventListener('input', function(event) {
+    if (event.target.name && event.target.name.startsWith('product_quantity_')) {
+        updateTotalQuantity();
+    }
+});
+
+// Initial update
+updateTotalQuantity();
+</script>
+
+<script>
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        if (evt.detail.target.id === "attachment-field-{{ field.id }}") {
+            var errorDiv = document.getElementById("error-message-{{ field.id }}");
+            errorDiv.textContent = evt.detail.xhr.response;
+        }
+    });
 </script>
 
 {% endblock %}

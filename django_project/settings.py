@@ -55,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
+    "django_htmx.middleware.HtmxMiddleware",  # django-htmx
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf

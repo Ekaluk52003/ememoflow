@@ -12,6 +12,36 @@ from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
 import requests
 from .forms import DocumentSubmissionForm
+from django.views.decorators.http import require_http_methods
+
+from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_attachment(request, field_id, document_id):
+    field_value = get_object_or_404(DynamicFieldValue, field_id=field_id, document__submitted_by=request.user,  document_id=document_id)
+
+    print('file found',  field_value )
+
+
+    if field_value.file:
+        field_value.file.delete()  # Delete the actual file
+        field_value.file = None
+        field_value.save()
+
+        return render(request, 'partials/delete_file.html', {'field': field_value  })
+    else:
+        return HttpResponse("No file to delete", status=400)  # Bad Request
+
+@require_http_methods(["GET"])
+def add_product_field(request, field_id):
+    context = {
+        'field_id': field_id,
+        'product_index': request.GET.get('index', 0)
+    }
+    return render(request, 'partials/product_field.html', context)
 
 def generate_pdf_report(request, document_id, template_id):
     document = get_object_or_404(Document, id=document_id)
@@ -58,8 +88,25 @@ def document_list(request):
 @login_required
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
-    dynamic_field_values = document.dynamic_values.all()
+    dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
     user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
+
+
+    prepared_values = []
+    for value in dynamic_values:
+        prepared_value = {
+            'name': value.field.name,
+            'field_type': value.field.field_type,
+        }
+        if value.field.field_type == 'product_list':
+            prepared_value['value'] = value.json_value
+            prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
+
+        elif value.field.field_type == 'attachment':
+            prepared_value['file'] = value.file
+        else:
+            prepared_value['value'] = value.value
+        prepared_values.append(prepared_value)
 
     if request.method == 'POST' and user_approval and document.status == 'in_review':
         try:
@@ -77,7 +124,7 @@ def document_detail(request, pk):
 
     context = {
         'document': document,
-        'dynamic_field_values': dynamic_field_values,
+        'prepared_values': prepared_values,
         'user_approval': user_approval,
         'can_approve': user_approval and document.status == 'in_review',
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
@@ -98,14 +145,6 @@ def resubmit_document(request, pk):
     workflow = document.workflow
     dynamic_fields = workflow.dynamic_fields.all()
 
-    for field in dynamic_fields:
-        if field.field_type == 'choice':
-            field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
-
-        # Get existing value for this field
-        existing_value = document.dynamic_values.filter(field=field).first()
-        field.existing_value = existing_value.value if existing_value else ''
-
     if request.user != document.submitted_by or document.status not in ['pending', 'rejected']:
         return HttpResponseForbidden("You don't have permission to resubmit this document.")
 
@@ -116,7 +155,71 @@ def resubmit_document(request, pk):
             content = form.cleaned_data['content']
             document.resubmit(title, content)
 
-        DynamicFieldValue.update_or_create_values(document, document.workflow.dynamic_fields.all(), request.POST)
+        total_quantity = 0
+
+        for field in dynamic_fields:
+            if field.field_type == 'product_list':
+                product_names = request.POST.getlist(f'product_name_{field.id}[]')
+                product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                products = []
+                for name, quantity in zip(product_names, product_quantities):
+                    if name and quantity:
+                        try:
+                            qty = int(quantity)
+                            products.append({'name': name, 'quantity': qty})
+                            total_quantity += qty
+                        except ValueError:
+                            messages.error(request, f"Invalid quantity for product {name}")
+                            return render(request, 'resubmit_document.html', {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
+
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'json_value': products}
+                )
+            elif field.field_type == 'attachment':
+
+                file = request.FILES.get(f'dynamic_{field.id}')
+                print('atachment processing')
+                print('atachment processing', file)
+                if file:
+                    DynamicFieldValue.objects.update_or_create(
+                        document=document,
+                        field=field,
+                        defaults={'file': file}
+                    )
+
+            # elif field.field_type == 'attachment':
+
+            #             file = request.FILES.get(f'dynamic_{field.id}')
+            #             if file:
+            #                 DynamicFieldValue.objects.create(
+            #                 document=document,
+            #                 field=field,
+            #                 file=file
+            #         )
+
+            elif field.field_type == 'number' and field.name == 'Total Quantity':
+                # Update the Total Quantity field with the calculated total
+                print('total--------', total_quantity)
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'value': str(total_quantity)}
+                )
+            else:
+                value = request.POST.get(f'dynamic_{field.id}')
+                if field.required and not value:
+                    messages.error(request, f"{field.name} is required.")
+                    return render(request, 'resubmit_document.html', {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
+
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'value': value}
+                )
+
+
 
         custom_approvers = {}
         if workflow.allow_custom_approvers:
@@ -130,17 +233,38 @@ def resubmit_document(request, pk):
 
         return redirect('document_approval:document_detail', pk=document.pk)
 
-    else:
-        form = DocumentSubmissionForm(instance=document)
 
-        context = {
+    form = DocumentSubmissionForm(instance=document)
+
+    prepared_fields = []
+    for field in dynamic_fields:
+        field_data = {
+            'id': field.id,
+            'name': field.name,
+            'field_type': field.field_type,
+            'required': field.required,
+        }
+        field_value = document.dynamic_values.filter(field=field).first()
+        if field.field_type == 'product_list':
+            field_data['products'] = field_value.json_value if field_value else []
+        elif field.field_type == 'attachment':
+            field_data['file'] = field_value.file if field_value else None
+        elif field.field_type == 'choice':
+            field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
+            field_data['value'] = field_value.value if field_value else ''
+        else:
+            field_data['value'] = field_value.value if field_value else ''
+        prepared_fields.append(field_data)
+
+
+    context = {
             'form': form,
             'document': document,
             'workflow': document.workflow,
-            'dynamic_fields': dynamic_fields,
+            'prepared_fields': prepared_fields,
             'potential_approvers': CustomUser.objects.all(),
         }
-        return render(request, 'document/resubmit_document.html', context)
+    return render(request, 'document/resubmit_document.html', context)
 
 
 
@@ -164,11 +288,21 @@ def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
     dynamic_fields = workflow.dynamic_fields.all()
 
+
+    prepared_fields = []
     for field in dynamic_fields:
+        field_data = {
+            'id': field.id,
+            'name': field.name,
+            'field_type': field.field_type,
+            'required': field.required,
+        }
         if field.field_type == 'choice':
-            field.choice_list = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
-        else:
-            field.choice_list = []
+            field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
+        elif field.field_type == 'product_list':
+            field_data['default_products'] = [{'name': '', 'quantity': ''} for _ in range(2)]
+        prepared_fields.append(field_data)
+
 
     if request.method == 'POST':
         form = DocumentSubmissionForm(request.POST)
@@ -180,7 +314,62 @@ def submit_document(request, workflow_id):
             document.current_step = workflow.steps.first()
             document.save()
 
-            DynamicFieldValue.update_or_create_values(document, workflow.dynamic_fields.all(), request.POST)
+            total_quantity = 0
+
+            for field in dynamic_fields:
+                if field.field_type == 'product_list':
+                    product_names = request.POST.getlist(f'product_name_{field.id}[]')
+                    product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                    products = []
+                    for name, quantity in zip(product_names, product_quantities):
+                        if name and quantity:
+                            try:
+                                qty = int(quantity)
+                                products.append({'name': name, 'quantity': qty})
+                                total_quantity += qty  # Add to total quantity
+                            except ValueError:
+                                messages.error(request, f"Invalid quantity for product {name}")
+                                document.delete()
+                                return render(request, 'document_approval:submit_document.html', {'workflow': workflow, 'prepared_fields': prepared_fields})
+
+                    DynamicFieldValue.objects.create(
+                            document=document,
+                            field=field,
+                            json_value=products
+                        )
+
+                elif field.name == 'Total Quantity':  # Assuming you have a field named 'Total Quantity'
+                    DynamicFieldValue.objects.create(
+                    document=document,
+                    field=field,
+                    value=str(total_quantity)  # Store the calculated total quantity
+                )
+
+                elif field.field_type == 'attachment':
+                        file = request.FILES.get(f'dynamic_{field.id}')
+                        if file:
+                            DynamicFieldValue.objects.create(
+                            document=document,
+                            field=field,
+                            file=file
+                    )
+
+                else:
+                    value = request.POST.get(f'dynamic_{field.id}')
+                    if field.required and not value:
+                        document.delete()
+                        messages.error(request, f"{field.name} is required.")
+                        return render(request, 'submit_document.html', {'workflow': workflow, 'prepared_fields': prepared_fields})
+
+                    DynamicFieldValue.objects.create(
+                        document=document,
+                        field=field,
+                        value=value
+                    )
+
+
+
+
 
             custom_approvers = {}
             if workflow.allow_custom_approvers:
@@ -200,9 +389,11 @@ def submit_document(request, workflow_id):
         context = {
         'form': form,
         'workflow': workflow,
-        'dynamic_fields': dynamic_fields,
+        'prepared_fields': prepared_fields,
         'potential_approvers': CustomUser.objects.all(),
         }
+
+        print('prepare field', prepared_fields)
         return render(request, 'document/submit_document.html', context)
 
 

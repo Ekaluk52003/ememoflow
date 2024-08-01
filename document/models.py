@@ -7,6 +7,7 @@ import os
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
+from django.db.models import JSONField
 
 class ReportConfiguration(models.Model):
     company_name = models.CharField(max_length=200)
@@ -67,6 +68,7 @@ class DynamicField(models.Model):
         ('boolean', 'Yes/No'),
         ('choice', 'Multiple Choice'),
         ('attachment', 'File Attachment'),
+        ('product_list', 'Product List'),
     )
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='dynamic_fields')
     name = models.CharField(max_length=100)
@@ -356,6 +358,17 @@ class Document(models.Model):
         }
 
 
+    def get_dynamic_field_value(self, field_name):
+        try:
+            dynamic_field = self.workflow.dynamic_fields.get(name=field_name)
+            value = self.dynamic_values.get(field=dynamic_field)
+            if dynamic_field.field_type == 'product_list':
+                return value.json_value
+            return value.value
+        except (DynamicField.DoesNotExist, DynamicFieldValue.DoesNotExist):
+            return None
+
+
 def user_directory_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     return f'user_{instance.approver.id}/{filename}'
@@ -384,6 +397,7 @@ class DynamicFieldValue(models.Model):
     field = models.ForeignKey('DynamicField', on_delete=models.CASCADE)
     value = models.TextField()
     file = models.FileField(upload_to=dynamic_field_file_path, blank=True, null=True)
+    json_value = JSONField(default=list, blank=True)
 
 
     @classmethod
@@ -402,13 +416,22 @@ class DynamicFieldValue(models.Model):
         unique_together = ('document', 'field')
 
     def __str__(self):
+
         if self.field.field_type == 'attachment':
             return f"{self.document.title} - {self.field.name}: {self.file.name if self.file else 'No file'}"
+        if self.field.field_type == 'product_list':
+            return f"{self.document.title} - {self.field.name}: {len(self.json_value)} product"
+
         return f"{self.document.title} - {self.field.name}: {self.value}"
 
     # def clean(self):
     #     if self.field.field_type == 'attachment' and self.file:
     #         self.field.validate_file(self.file)
+
+    def get_value(self):
+        if self.field.field_type == 'product_list':
+            return self.json_value
+        return self.value
 
     def save(self, *args, **kwargs):
         self.clean()
