@@ -2,15 +2,16 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1 class="mb-4">Available Workflows</h1>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    <h1 class="mb-4 mt-2 fw-bold">Available Workflows</h1>
+    <div class="row align-items-md-stretch">
+
         {% for workflow in workflows %}
-        <div class="col">
-            <div class="card h-100">
+        <div class="col-md-6">
+            <div class="h-100 p-5 rounded-3 {% if forloop.counter0|divisibleby:2 %}text-bg-dark{% else %}bg-body-tertiary border{% endif %}">
                 <div class="card-body">
                     <h5 class="card-title">{{ workflow.name }}</h5>
                     <p class="card-text">Created on: {{ workflow.created_at|date:"F d, Y" }}</p>
-                    <a href="{% url 'document_approval:submit_document' workflow.id %}" class="btn btn-primary">Submit Document</a>
+                    <a href="{% url 'document_approval:submit_document' workflow.id %}" class="btn {% if forloop.counter0|divisibleby:2 %}btn-outline-light{% else %}btn-outline-secondary{% endif %}">Submit Document</a>
                 </div>
             </div>
         </div>
@@ -19,6 +20,8 @@
             <p class="text-center">No workflows available.</p>
         </div>
         {% endfor %}
+
     </div>
+
 </div>
 {% endblock %}

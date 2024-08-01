@@ -13,9 +13,9 @@ from weasyprint.text.fonts import FontConfiguration
 import requests
 from .forms import DocumentSubmissionForm
 from django.views.decorators.http import require_http_methods
-
+from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render
-from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 
 
 @login_required
@@ -80,10 +80,74 @@ def workflow_list(request):
     workflows = ApprovalWorkflow.objects.all()
     return render(request, 'document/workflow_list.html', {'workflows': workflows})
 
+
+
+def get_allowed_documents(user):
+    # Check if the user is in the "super user" group
+    is_superuser = user.groups.filter(name='super user').exists()
+
+    # Base queryset
+    documents = Document.objects.all()
+
+    if not is_superuser:
+        # If not a superuser, filter documents where the user is an approver or the submitter
+        approver_documents = Approval.objects.filter(
+            document=OuterRef('pk'),
+            approver=user
+        )
+        documents = documents.filter(
+            Q(Exists(approver_documents)) |  # User is an approver
+            Q(submitted_by=user)  # User is the submitter
+        )
+
+    # Order the documents by creation date, most recent first
+    return documents.order_by('-created_at')
+
 @login_required
 def document_list(request):
-    documents = Document.objects.all().order_by('-created_at')
-    return render(request, 'document/document_list.html', {'documents': documents})
+    user = request.user
+    search_query = request.GET.get('search', '')
+    workflow_id = request.GET.get('workflow', '')
+    status = request.GET.get('status', '')
+    page_number = request.GET.get('page', 1)
+
+    documents = get_allowed_documents(user)
+
+    if search_query:
+        dynamic_fields = DynamicField.objects.all()
+        q_objects = Q()
+        for field in dynamic_fields:
+            q_objects |= Q(dynamic_values__field=field, dynamic_values__value__icontains=search_query)
+
+        documents = documents.filter(
+            Q(title__icontains=search_query) |
+            Q(content__icontains=search_query) |
+            q_objects
+        ).distinct()
+
+    if workflow_id:
+        documents = documents.filter(workflow_id=workflow_id)
+
+    if status:
+        documents = documents.filter(status=status)
+
+    paginator = Paginator(documents, 10)  # Show 10 documents per page
+    page_obj = paginator.get_page(page_number)
+
+    workflows = ApprovalWorkflow.objects.all()
+
+    context = {
+        'documents': page_obj,
+        'search_query': search_query,
+        'selected_workflow': int(workflow_id) if workflow_id else None,
+        'selected_status': status,
+        'workflows': workflows,
+        'status_choices': Document.STATUS_CHOICES,  # Add this line
+    }
+
+    if request.htmx:
+        return render(request, 'partials/document_list_partial.html', context)
+    return render(request, 'document/document_list.html', context)
 
 @login_required
 def document_detail(request, pk):

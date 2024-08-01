@@ -1,0 +1,43 @@
+{% if documents %}
+    <div class="list-group">
+    {% for document in documents %}
+        <a href="{% url 'document_approval:document_detail' pk=document.pk %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ document.title }}</h5>
+                <small>Status: <span class="badge {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-danger{% else %}bg-primary{% endif %}">{{ document.get_status_display }}</span></small>
+            </div>
+            <p class="mb-1">{{ document.content|safe|truncatewords:20 }}</p>
+            <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
+            <div class="mt-2">
+                <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
+
+                <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
+                <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
+            </div>
+        </a>
+    {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination">
+            {% if documents.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.previous_page_number }}&search={{ search_query }}&workflow={{ selected_workflow }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Previous</a>Previous</a>
+                </li>
+            {% endif %}
+            {% for num in documents.paginator.page_range %}
+                <li class="page-item {% if num == documents.number %}active{% endif %}">
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ num }}&search={{ search_query }}&workflow={{ selected_workflow }}" hx-target="#document-list" hx-swap="innerHTML">{{ num }}</a>
+                </li>
+            {% endfor %}
+            {% if documents.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.next_page_number }}&search={{ search_query }}&workflow={{ selected_workflow }}" hx-target="#document-list" hx-swap="innerHTML">Next</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+{% else %}
+    <p class="alert alert-info">No documents available.</p>
+{% endif %}
