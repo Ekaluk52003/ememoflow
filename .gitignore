@@ -17,3 +17,5 @@ staticfiles/
 .env.dev
 .env.prod
 .env.prod.db
+
+mydatabase_dump.sql
