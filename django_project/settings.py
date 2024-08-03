@@ -212,3 +212,8 @@ ACCOUNT_UNIQUE_EMAIL = True
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
+CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
+SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
