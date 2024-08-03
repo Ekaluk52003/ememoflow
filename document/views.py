@@ -192,7 +192,8 @@ def document_detail(request, pk):
         'user_approval': user_approval,
         'can_approve': user_approval and document.status == 'in_review',
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
-        'can_draw' : document.can_withdraw(request.user)
+        'can_draw' : document.can_withdraw(request.user),
+        'can_cancel' : document.can_cancel(request.user),
     }
 
     # for field in dynamic_field_values :
@@ -339,6 +340,19 @@ def withdraw_document(request, document_id):
     if request.method == 'POST':
         try:
             document.withdraw()
+            messages.success(request, "Document has been successfully withdrawn.")
+        except ValidationError as e:
+            messages.error(request, str(e))
+
+    return redirect('document_approval:document_detail', pk=document.pk)
+
+@login_required
+def cancel_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id, submitted_by=request.user)
+
+    if request.method == 'POST':
+        try:
+            document.cancel()
             messages.success(request, "Document has been successfully withdrawn.")
         except ValidationError as e:
             messages.error(request, str(e))

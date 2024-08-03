@@ -202,6 +202,7 @@ class ApprovalStep(models.Model):
 
 class Document(models.Model):
     STATUS_CHOICES = [
+        ('cancel', 'Cancel'),
         ('pending', 'Pending'),
         ('in_review', 'In Review'),
         ('approved', 'Approved'),
@@ -287,6 +288,12 @@ class Document(models.Model):
             not self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists()
         )
 
+    def can_cancel(self, user):
+        return (
+            self.status == 'pending' and
+            self.submitted_by == user
+        )
+
 
     def move_to_next_step(self):
 
@@ -331,6 +338,11 @@ class Document(models.Model):
         self.status = 'rejected'
         self.save()
         send_reject_email(self)
+
+    def cancel(self):
+        self.status = 'cancel'
+        self.save()
+        
 
 
     def get_current_approver(self):
