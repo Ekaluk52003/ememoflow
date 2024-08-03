@@ -40,8 +40,6 @@ COPY . /code/
 # Expose port 8000
 EXPOSE 8000
 
+# Use gunicorn on port 8000
+CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "django_project.wsgi"]
 
-COPY entrypoint.prod.sh .
-RUN chmod +x /home/app/web/entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
