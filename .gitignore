@@ -14,3 +14,6 @@ staticfiles/
 
 # Virtual environment
 .venv
+.env.dev
+.env.prod
+.env.prod.db
