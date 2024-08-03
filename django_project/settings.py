@@ -218,4 +218,4 @@ CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
 CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw','smartflow.pw']
+CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw']
