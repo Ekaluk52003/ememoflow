@@ -6,8 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV DEBIAN_FRONTEND noninteractive
 
-# Create and set work directory called `app`
-RUN mkdir -p /code
+
 WORKDIR /code
 
 # Install system dependencies
@@ -27,19 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-COPY requirements.txt /tmp/requirements.txt
+COPY ./requirements.txt .
 
-RUN set -ex && \
-    pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt && \
-    rm -rf /root/.cache/
+COPY ./entrypoint.sh .
+RUN chmod +x /code/entrypoint.sh
 
-# Copy local project
-COPY . /code/
+COPY . .
 
-# Expose port 8000
-EXPOSE 8000
-
-# Use gunicorn on port 8000
-CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "django_project.wsgi"]
-
+ENTRYPOINT ["/code/entrypoint.sh"]
