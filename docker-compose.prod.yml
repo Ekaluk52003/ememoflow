@@ -75,3 +75,7 @@ volumes:
 networks:
   web_network:
   db_network:
+
+environment:
+  DOCKER_CLIENT_TIMEOUT: 300
+  COMPOSE_HTTP_TIMEOUT: 300
