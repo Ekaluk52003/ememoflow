@@ -19,3 +19,5 @@ staticfiles/
 .env.prod.db
 
 mydatabase_dump.sql
+DockerCmd.md
+db_dump.sql

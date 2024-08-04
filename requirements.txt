@@ -17,6 +17,7 @@ cssselect2==0.7.0
 defusedxml==0.7.1
 Django==5.0.3
 django-allauth==0.61.1
+django-celery-results==2.5.1
 django-crispy-forms==2.1
 django-debug-toolbar==4.2.0
 django-htmx==1.18.0
@@ -31,6 +32,7 @@ pillow==10.4.0
 prompt_toolkit==3.0.47
 psycopg==3.1.18
 psycopg-binary==3.1.18
+psycopg2==2.9.9
 pycparser==2.21
 pydyf==0.11.0
 PyJWT==2.6.0

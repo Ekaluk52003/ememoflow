@@ -42,11 +42,13 @@ INSTALLED_APPS = [
     "crispy_forms",
     "crispy_bootstrap5",
     "debug_toolbar",
+     'django_celery_results',
+      'django_htmx',
     # Local
     "accounts",
     "pages",
     "document",
-    'django_htmx',
+
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
@@ -219,3 +221,11 @@ CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
 CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw', 'https://smartflow.pw']
+
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'

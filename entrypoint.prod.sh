@@ -11,7 +11,10 @@ then
     echo "PostgreSQL started"
 fi
 
-# python manage.py flush --no-input  completely empty the entire database
+# Run database migrations
 python manage.py migrate
+
+# Collect static files
+python manage.py collectstatic --noinput
 
 exec "$@"

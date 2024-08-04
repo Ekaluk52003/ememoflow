@@ -16,7 +16,14 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render
 from django.core.paginator import Paginator
+from .tasks import upload_file_task
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.template.loader import render_to_string
+from django.urls import reverse
+import logging
 
+logger = logging.getLogger(__name__)
 
 @login_required
 @require_http_methods(["DELETE"])
@@ -361,7 +368,6 @@ def cancel_document(request, document_id):
 
 
 @login_required
-#done upadte
 def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
     dynamic_fields = workflow.dynamic_fields.all()
@@ -393,7 +399,7 @@ def submit_document(request, workflow_id):
             document.save()
 
             total_quantity = 0
-
+            errors = []
             for field in dynamic_fields:
                 if field.field_type == 'product_list':
                     product_names = request.POST.getlist(f'product_name_{field.id}[]')
@@ -408,7 +414,7 @@ def submit_document(request, workflow_id):
                             except ValueError:
                                 messages.error(request, f"Invalid quantity for product {name}")
                                 document.delete()
-                                return render(request, 'document_approval:submit_document.html', {'workflow': workflow, 'prepared_fields': prepared_fields})
+                                errors.append(f"Invalid quantity for product {name}")
 
                     DynamicFieldValue.objects.create(
                             document=document,
@@ -424,20 +430,26 @@ def submit_document(request, workflow_id):
                 )
 
                 elif field.field_type == 'attachment':
-                        file = request.FILES.get(f'dynamic_{field.id}')
-                        if file:
+                    file = request.FILES.get(f'dynamic_{field.id}')
+                    if file:
+                        try:
                             DynamicFieldValue.objects.create(
                             document=document,
                             field=field,
                             file=file
-                    )
+                             )
+                        except Exception as e:
+                            errors.append(f"Error uploading file for {field.name}: {str(e)}")
+                    elif field.required:
+                        errors.append(f"{field.name} is required.")
+
 
                 else:
                     value = request.POST.get(f'dynamic_{field.id}')
                     if field.required and not value:
                         document.delete()
                         messages.error(request, f"{field.name} is required.")
-                        return render(request, 'submit_document.html', {'workflow': workflow, 'prepared_fields': prepared_fields})
+                        errors.append(f"{field.name} is required.")
 
                     DynamicFieldValue.objects.create(
                         document=document,
@@ -445,7 +457,15 @@ def submit_document(request, workflow_id):
                         value=value
                     )
 
-
+            if errors:
+                context = {
+                    'workflow': workflow,
+                    'prepared_fields': prepared_fields,
+                    'errors': errors,
+                    'form_data': request.POST,
+                }
+                html = render_to_string('document/form_errors.html', context)
+                return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
 
 
@@ -455,12 +475,17 @@ def submit_document(request, workflow_id):
                     approver_id = request.POST.get(f'approver_{step.id}')
                     if approver_id:
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
-
-            document.create_approvals(custom_approvers)
+            try:
+                document.create_approvals(custom_approvers)
+                logger.info(f"Approvals created for document {document.id}")
+            except Exception as e:
+                logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
+                document.delete()  # Delete the document if approval creation fai
 
             messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
-            return redirect('document_approval:document_detail', pk=document.pk)
+            # return redirect('document_approval:document_detail', pk=document.pk)
+            return HttpResponse(headers={'HX-Redirect': reverse('document_approval:document_detail', kwargs={'pk': document.pk})})
 
     else:
         form = DocumentSubmissionForm()
@@ -471,7 +496,7 @@ def submit_document(request, workflow_id):
         'potential_approvers': CustomUser.objects.all(),
         }
 
-        print('prepare field', prepared_fields)
+
         return render(request, 'document/submit_document.html', context)
 
 

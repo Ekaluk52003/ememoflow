@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   caddy:
     image: caddy:2
@@ -14,7 +16,9 @@ services:
       - web_network
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     command: gunicorn django_project.wsgi:application --bind 0.0.0.0:8000
     expose:
       - 8000
@@ -22,6 +26,9 @@ services:
       - .env.prod
     depends_on:
       - db
+    volumes:
+      - static_volume:/code/static
+      - media_volume:/code/media
     networks:
       - web_network
       - db_network
@@ -35,10 +42,34 @@ services:
     networks:
       - db_network
 
+  redis:
+    image: redis:7.0.10-alpine
+    ports:
+      - 6379:6379
+    networks:
+      - db_network
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A django_project worker --loglevel=info
+    env_file:
+      - .env.prod
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+    networks:
+      - db_network
+
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  static_volume:
+  media_volume:
 
 networks:
   web_network:

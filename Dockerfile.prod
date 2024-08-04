@@ -1,85 +1,37 @@
-###########
-# BUILDER #
-###########
+# Dockerfile.prod
+# Pull base image
+FROM python:3.12.2-slim-bookworm
 
-# pull official base image
-FROM python:3.11.4-slim-buster as builder
-
-# set work directory
-WORKDIR /usr/src/app
-
-# set environment variables
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV DEBIAN_FRONTEND noninteractive
 
-# install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc \
+WORKDIR /code
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-dev \
-    python3-pip \
-    python3-setuptools \
-    python3-wheel \
-    python3-cffi \
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
     shared-mime-info \
+    netcat-traditional \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# lint
-RUN pip install --upgrade pip
-# RUN pip install flake8==6.0.0
-COPY . /usr/src/app/
-# COPY .flake8 /usr/src/app/
-# RUN flake8 .
-# install python dependencies
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+COPY ./requirements.txt .
 
+# Install Python packages
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-#########
-# FINAL #
-#########
+COPY ./entrypoint.prod.sh .
+RUN chmod +x /code/entrypoint.prod.sh
 
-# pull official base image
-FROM python:3.11.4-slim-buster
+COPY . .
 
-# create directory for the app user
-RUN mkdir -p /home/app
-
-# create the app user
-RUN addgroup --system app && adduser --system --group app
-
-# create the appropriate directories
-ENV HOME=/home/app
-ENV APP_HOME=/home/app/web
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
-
-# install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends netcat
-COPY --from=builder /usr/src/app/wheels /wheels
-COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache /wheels/*
-
-# copy entrypoint.prod.sh
-COPY entrypoint.prod.sh .
-RUN sed -i 's/\r$//g'  $APP_HOME/entrypoint.prod.sh
-RUN chmod +x  $APP_HOME/entrypoint.prod.sh
-
-# copy project
-COPY . $APP_HOME
-
-# chown all the files to the app user
-RUN chown -R app:app $APP_HOME
-
-
-# change to the app user
-USER app
-
-# run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
+ENTRYPOINT ["/code/entrypoint.prod.sh"]

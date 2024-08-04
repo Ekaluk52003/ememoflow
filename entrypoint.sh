@@ -1,17 +1,19 @@
 #!/bin/sh
 
-echo 'Waiting for postgres...'
+if [ "$SQL_ENGINE" = "django.db.backends.postgresql" ]; then
+    echo "Waiting for PostgreSQL..."
 
-while ! nc -z $DB_HOSTNAME $DB_PORT; do
-    sleep 0.1
-done
+    while ! nc -z $SQL_HOST $SQL_PORT; do
+        sleep 0.1
+    done
 
-echo 'PostgreSQL started'
+    echo "PostgreSQL started"
+fi
 
-echo 'Running migrations...'
+# Apply database migrations
 python manage.py migrate
 
-echo 'Collecting static files...'
-python manage.py collectstatic --no-input
+# Collect static files
+python manage.py collectstatic --noinput
 
 exec "$@"
