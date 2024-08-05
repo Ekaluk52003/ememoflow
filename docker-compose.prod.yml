@@ -50,4 +50,9 @@ services:
       - web
 
 volumes:
+
   postgres_data:
+  Caddyfile:
+  caddy_data:
+  caddy_config:
+
