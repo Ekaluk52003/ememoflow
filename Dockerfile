@@ -1,4 +1,4 @@
-# Dockerfile
+# Dockerfile.prod
 # Pull base image
 FROM python:3.12.2-slim-bookworm
 
@@ -29,9 +29,10 @@ COPY ./requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
+    
 COPY ./entrypoint.sh .
 RUN chmod +x /code/entrypoint.sh
 
 COPY . .
 
-ENTRYPOINT ["/code/entrypoint.sh"]
+ENTRYPOINT ["/code/entrypoint.prod.sh"]

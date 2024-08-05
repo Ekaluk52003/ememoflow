@@ -17,9 +17,9 @@ def sqlite_connect():
 
 def postgres_connect():
     return psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="postgres",
+        dbname="hello_django_dev",
+        user="hello_django",
+        password="hello_django",
         host="db",
         port="5432"
     )
