@@ -55,4 +55,6 @@ volumes:
   Caddyfile:
   caddy_data:
   caddy_config:
+  static_volume:
+  media_volume:
 
