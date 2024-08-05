@@ -14,8 +14,6 @@ services:
       - web
     networks:
       - web_network
-    dns:
-      - 8.8.8.8
 
   web:
     build:
@@ -34,8 +32,6 @@ services:
     networks:
       - web_network
       - db_network
-    dns:
-      - 8.8.8.8
 
   db:
     image: postgres:15
@@ -46,8 +42,6 @@ services:
       - .env.prod.db
     networks:
       - db_network
-    dns:
-      - 8.8.8.8
 
   redis:
     image: redis:7.0.10-alpine
@@ -55,8 +49,6 @@ services:
       - 6379:6379
     networks:
       - db_network
-    dns:
-      - 8.8.8.8
 
   celery:
     build:
@@ -72,8 +64,6 @@ services:
       - redis
     networks:
       - db_network
-    dns:
-      - 8.8.8.8
 
 volumes:
   postgres_data:
@@ -85,3 +75,4 @@ volumes:
 networks:
   web_network:
   db_network:
+    name: db_network
