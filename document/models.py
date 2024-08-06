@@ -200,6 +200,9 @@ class ApprovalStep(models.Model):
     def __str__(self):
         return f"{self.workflow.name} - {self.name}"
 
+
+
+
 class Document(models.Model):
     STATUS_CHOICES = [
         ('cancel', 'Cancel'),
@@ -222,6 +225,11 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+  
+
+    def is_favorited_by(self, user):
+        return self.favorites.filter(user=user).exists()
 
     def resubmit(self, title, content):
         self.title = title
@@ -384,6 +392,14 @@ class Document(models.Model):
 def user_directory_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     return f'user_{instance.approver.id}/{filename}'
+
+class Favorite(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favorites')
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='favorites')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'document')
 
 class Approval(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')

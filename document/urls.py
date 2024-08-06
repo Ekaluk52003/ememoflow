@@ -16,4 +16,6 @@ urlpatterns = [
     path('generate-pdf-report/<int:document_id>/<int:template_id>/', views.generate_pdf_report, name='generate_pdf_report'),
     path('add-product-field/<int:field_id>/', views.add_product_field, name='add_product_field'),
     path('delete-attachment/<int:field_id>/<int:document_id>', views.delete_attachment, name='delete_attachment'),
+    path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
+    path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
 ]

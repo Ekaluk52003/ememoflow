@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.db.models import Q
-from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration
+from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.contrib import messages
@@ -22,16 +22,40 @@ from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from django.urls import reverse
 import logging
+from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
+
+@login_required
+@require_POST
+def toggle_favorite(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    favorite, created = Favorite.objects.get_or_create(user=request.user, document=document)
+
+    if not created:
+        favorite.delete()
+        is_favorite = False
+    else:
+        is_favorite = True
+
+    return render(request, 'partials/favorite_button.html', {
+        'document': document,
+        'is_favorite': is_favorite
+    })
+
+
+@login_required
+def favorite_documents(request):
+    favorite_docs = Document.objects.filter(favorites__user=request.user)
+    favorite_docs_with_status = [(doc, True) for doc in favorite_docs]
+    return render(request, 'document/favorite_documents.html', {
+        'favorite_documents': favorite_docs_with_status
+    })
 
 @login_required
 @require_http_methods(["DELETE"])
 def delete_attachment(request, field_id, document_id):
     field_value = get_object_or_404(DynamicFieldValue, field_id=field_id, document__submitted_by=request.user,  document_id=document_id)
-
-    print('file found',  field_value )
-
 
     if field_value.file:
         field_value.file.delete()  # Delete the actual file
@@ -159,6 +183,7 @@ def document_list(request):
 @login_required
 def document_detail(request, pk):
     document = get_object_or_404(Document, pk=pk)
+    is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
     dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
     user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
 
@@ -201,6 +226,7 @@ def document_detail(request, pk):
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
         'can_draw' : document.can_withdraw(request.user),
         'can_cancel' : document.can_cancel(request.user),
+        'is_favorite': is_favorite
     }
 
     # for field in dynamic_field_values :

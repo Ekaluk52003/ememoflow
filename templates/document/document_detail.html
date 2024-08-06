@@ -12,7 +12,9 @@
 
     <div class="card mb-4">
         <div class="card-body">
-          <h1 class="mb-4">Title : {{ document.title }}</h1>
+          <h1 class="mb-4">Title : {{ document.title }} </h1>
+
+          {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
             <h5 class="card-title">Status:
                 <span class="badge {% if document.status == 'approved' %}bg-success
                                     {% elif document.status == 'rejected' %}bg-danger
@@ -23,6 +25,8 @@
             <h6 class="card-subtitle mb-2 text-muted">Current Step: {{ document.current_step.name }}</h6>
             <p class="card-text">{{ document.content|safe}}</p>
             <p class="card-text"><small class="text-muted">Submitted by: {{ document.submitted_by.username }}</small></p>
+
+
             <h2>Dynamic Fields</h2>
 <ul>
     <div class="card mb-4">
@@ -191,6 +195,8 @@
     <button type="submit" class="btn btn-danger mt-4">Cancel</button>
 </form>
 {% endif %}
+
+
 
 </div>
 {% endblock %}

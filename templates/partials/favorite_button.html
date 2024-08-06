@@ -1,0 +1,13 @@
+
+
+  <button hx-post="{% url 'document_approval:toggle_favorite' document.id %}"
+          hx-swap="outerHTML"
+           class="btn btn-sm {% if is_favorite %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+      {% if is_favorite %}
+          Unfavorite
+      {% else %}
+          Favorite
+      {% endif %}
+  </button>
+
+

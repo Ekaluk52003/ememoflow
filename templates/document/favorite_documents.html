@@ -1,0 +1,28 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<h1>My Favorite Documents</h1>
+
+    {% for doc, is_favorite in favorite_documents %}
+    <div class="list-group">
+
+            <a href="{% url 'document_approval:document_detail' doc.id %}" class="list-group-item list-group-item-action">
+
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ doc.title }}</h5>
+                    <small>Status: <span class="badge {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-danger{% else %}bg-primary{% endif %}">{{ doc.get_status_display }}</span></small>
+                </div>
+
+
+            <div class="mt-2">
+                <small class="badge text-bg-light">Workflow: {{ doc.workflow.name }}</small>
+                <small class="badge text-bg-light">Submitted by: {{ doc.submitted_by.get_full_name|default:doc.submitted_by.username }}</small>
+                <small class="badge text-bg-light">Last updated: {{ doc.updated_at|date:"F d, Y H:i" }}</small>
+            </div>
+        </a>
+   </div>
+    {% empty %}
+        <li>You haven't favorited any documents yet.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
