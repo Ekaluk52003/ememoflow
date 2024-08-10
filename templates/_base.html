@@ -48,7 +48,7 @@
             <li class="nav-item">
               <a class="nav-link"aria-current="page" href="" hx-get="{% url 'about' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" >About</a>
             </li>
-      
+
           </ul>
           {% if user.is_authenticated %}
           <div class="mr-auto">
@@ -63,7 +63,7 @@
                   <li>
                     <hr class="dropdown-divider">
                   </li>
-                  <li> <a class="dropdown-item" href="{% url 'document_approval:workflow_list' %}">New Doc</a></li>
+                  <li> <a class="dropdown-item" href=""  href="" hx-get="{% url 'document_approval:workflow_list' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" >New Doc</a></li>
 
                   <li>
                     <li>

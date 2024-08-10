@@ -8,6 +8,13 @@ from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django.db.models import JSONField
+from django.db.models import Q
+import logging
+logger = logging.getLogger(__name__)
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class ReportConfiguration(models.Model):
     company_name = models.CharField(max_length=200)
@@ -117,7 +124,8 @@ class ApprovalStep(models.Model):
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField()
-    approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+    # approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+    approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
 
     # Fields for conditional logic
     is_conditional = models.BooleanField(default=False)
@@ -220,13 +228,14 @@ class Document(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # important a lot mill
     last_submitted_at = models.DateTimeField(auto_now_add=True)
 
 
     def __str__(self):
         return self.title
 
-  
+
 
     def is_favorited_by(self, user):
         return self.favorites.filter(user=user).exists()
@@ -269,7 +278,12 @@ class Document(models.Model):
         return approvals_created
 
     def handle_approval(self, user, is_approved, comment, user_input, uploaded_file):
+        print(f"Attempting to fetch approval for user {user.id}, step {self.current_step.id}, document {self.id}")
+        approvals = self.approvals.filter(approver=user, step=self.current_step, is_approved__isnull=True)
+        print(f"Found {approvals.count()} matching approvals")
         approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
+        print('approval , this where error happen',  approval )
+
 
         if approval.step.requires_input:
             if approval.step.input_type == 'file' and not uploaded_file:
@@ -306,21 +320,25 @@ class Document(models.Model):
     def move_to_next_step(self):
 
         current_step_order = self.current_step.order
+
         next_step = ApprovalStep.objects.filter(
             workflow=self.workflow,
             order__gt=current_step_order
         ).order_by('order').first()
 
         if next_step:
+
             if next_step.evaluate_condition(self):
+                print('next step true ?', next_step)
                 self.current_step = next_step
                 self.status = 'in_review'
+                self.save()
                 approval = self.approvals.get(step=next_step)
                 send_approval_email(approval)
-            else:
-                send_approved_email(self)
-                self.status = 'approved'
-                self.save()
+            # else:
+            #     send_approved_email(self)
+            #     self.status = 'approved'
+            #     self.save()
         else:
 
             send_approved_email(self)
@@ -329,6 +347,7 @@ class Document(models.Model):
         self.save()
 
     def withdraw(self):
+         #allow to withdraw for all next cycle if is_approved is null in next cycle
         if self.status != 'in_review' or self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists():
             raise ValidationError("This document cannot be withdrawn.")
         #send email before change systus
@@ -415,6 +434,16 @@ class Approval(models.Model):
 
     def __str__(self):
         return f"{self.document.title} - {self.step.name} - {self.approver.username}"
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['document', 'step', 'approver'],
+                condition=Q(is_approved__isnull=True),
+                name='unique_pending_approval'
+            )
+        ]
 
 
 def dynamic_field_file_path(instance, filename):

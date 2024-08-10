@@ -18,4 +18,5 @@ urlpatterns = [
     path('delete-attachment/<int:field_id>/<int:document_id>', views.delete_attachment, name='delete_attachment'),
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
+    path('load-editor/<str:content>', views.load_editor, name='load_editor'),
 ]

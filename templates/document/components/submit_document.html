@@ -1,25 +1,27 @@
-{% extends "_base.html" %}
+
 {% load crispy_forms_tags %}
 
-{% block content %}
+
 <div class="container mt-4">
     <h1 class="mb-4">Submit New Document</h1>
     <h3 class="mb-3">Select Approvers for Workflow: {{ workflow.name }}</h3>
 
 
-    <form method="post" hx-post="{% url 'document_approval:submit_document' workflow.id %}"  enctype="multipart/form-data">
+    <form method="post" hx-post="{% url 'document_approval:submit_document' workflow.id %}"  enctype="multipart/form-data" hx-indicator=".progress">
         {% csrf_token %}
-
         <div id="form-errors">
             <!-- Errors will be displayed here -->
         </div>
         {{ form.title|as_crispy_field }}
-
-        <div class="mb-3">
-            <label for="editor" class="form-label">Content:</label>
-            <div id="editor" style="height: 300px;"></div>
-        </div>
-        {{ form.content }}
+        <div id="editor-container"
+         hx-get="{% url 'document_approval:load_editor' form.content  %}"
+         hx-trigger="load"
+         hx-target="#editor-container"
+         hx-swap="innerHTML">
+         <div id="quill-editor"></div>
+        Loading editor...
+    </div>
+    {{ form.content }}
 
 
 
@@ -126,43 +128,13 @@
 
 <!-- Initialize Quill editor -->
 <script>
-    var quill = new Quill('#editor', {
-        theme: 'snow',
-        modules: {
-          toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'code-block'],
-            [{ 'header': 1 }, { 'header': 2 }],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'script': 'sub'}, { 'script': 'super' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
-            [{ 'direction': 'rtl' }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'font': [] }],
-            [{ 'align': [] }],
-            ['clean'],
-            ['undo', 'redo']  // Add undo and redo buttons here
-          ],
-
-        }
-      });
-
-  // Populate the editor with existing content when resubmitting
-
-  var documentContent = JSON.parse(document.getElementById('document-content').textContent);
-
-  quill.root.innerHTML = documentContent;
+    document.querySelector('form').onsubmit = function() {
+        document.querySelector('#id_content').value = quill.root.innerHTML;
+      };
 
 
-  // When the form is submitted, update the hidden input with the editor contents
-  document.querySelector('form').onsubmit = function() {
-    document.querySelector('#id_content').value = quill.root.innerHTML;
-  };
 
-
-   function removeProductRow(button) {
+      function removeProductRow(button) {
         button.closest('.product-row').remove();
         updateTotalQuantity();
     }
@@ -196,23 +168,6 @@
     updateTotalQuantity();
 </script>
 
-<script>
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-      if (evt.detail.successful) {
-        var response = JSON.parse(evt.detail.xhr.responseText);
-        if (!response.success) {
-          // Display error modal
-          document.getElementById('error-modal-container').innerHTML = response.modal_html;
-          var errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-          errorModal.show();
-        } else if (response.redirect_url) {
-          // Redirect on success
-          window.location.href = response.redirect_url;
-        }
-      }
-    });
-  </script>
 
 
 
-{% endblock %}

@@ -1,6 +1,4 @@
-{% extends '_base.html' %}
 
-{% block content %}
 <div class="container mt-5">
     <h1 class="mb-4 mt-2 fw-bold">Available Workflows</h1>
     <div class="row align-items-md-stretch">
@@ -11,7 +9,10 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ workflow.name }}</h5>
                     <p class="card-text">Created on: {{ workflow.created_at|date:"F d, Y" }}</p>
-                    <a href="{% url 'document_approval:submit_document' workflow.id %}" class="btn {% if forloop.counter0|divisibleby:2 %}btn-outline-light{% else %}btn-outline-secondary{% endif %}">Submit Document</a>
+                    <a href="" class="btn {% if forloop.counter0|divisibleby:2 %}btn-outline-light{% else %}btn-outline-secondary{% endif %}"
+
+                    hx-get="{% url 'document_approval:submit_document' workflow.id %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress"
+                    >Submit Document</a>
                 </div>
             </div>
         </div>
@@ -24,4 +25,3 @@
     </div>
 
 </div>
-{% endblock %}

@@ -1,0 +1,11 @@
+<div class="px-4 py-5 my-5 text-center">
+
+  <h1 class="display-5 fw-bold">Success</h1>
+  <div class="col-lg-6 mx-auto">
+    <p class="lead mb-4">{{ document.title }}</p>
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+      <a href="{% url 'document_approval:document_detail' document.id %}"><button type="button" class="btn btn-primary btn-lg px-4 gap-3">Review submit Document</button></a>
+      <a href="{% url 'document_approval:workflow_list' %}"><button type="button" class="btn btn-outline-secondary btn-lg px-4">Submit Again</button></a>
+    </div>
+  </div>
+</div>

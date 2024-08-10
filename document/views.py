@@ -20,11 +20,19 @@ from .tasks import upload_file_task
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django_htmx.http import retarget
 import logging
 from django.views.decorators.http import require_POST
+import time
 
 logger = logging.getLogger(__name__)
+
+
+def load_editor(request, content):
+    context = {
+            content: content
+        }
+    return render(request, 'document/components/quill_editor.html',   context)
 
 @login_required
 @require_POST
@@ -109,7 +117,11 @@ def generate_pdf_report(request, document_id, template_id):
 @login_required
 def workflow_list(request):
     workflows = ApprovalWorkflow.objects.all()
-    return render(request, 'document/workflow_list.html', {'workflows': workflows})
+
+    if request.htmx:
+         return render(request, 'document/components/workflow_list.html', {'workflows': workflows})
+
+    return render(request, 'document/workflow_list_full.html', {'workflows': workflows})
 
 
 
@@ -186,8 +198,6 @@ def document_detail(request, pk):
     is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
     dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
     user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
-
-
     prepared_values = []
     for value in dynamic_values:
         prepared_value = {
@@ -197,7 +207,6 @@ def document_detail(request, pk):
         if value.field.field_type == 'product_list':
             prepared_value['value'] = value.json_value
             prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
-
         elif value.field.field_type == 'attachment':
             prepared_value['file'] = value.file
         else:
@@ -214,10 +223,20 @@ def document_detail(request, pk):
                 uploaded_file=request.FILES.get('user_input_file')
             )
             messages.success(request, "Approval decision recorded successfully.")
+        except Approval.MultipleObjectsReturned as e:
+            logger.error(f"MultipleObjectsReturned in handle_approval for document {document.id}, user {request.user.id}, step {document.current_step.id}")
+            # Log the conflicting approvals
+            conflicting_approvals = document.approvals.filter(
+                approver=request.user,
+                step=document.current_step,
+                is_approved__isnull=True
+            )
+            logger.error(f"Conflicting approvals: {list(conflicting_approvals.values('id', 'created_at'))}")
+            messages.error(request, "An error occurred due to multiple pending approvals. Please contact support.")
         except ValidationError as e:
             messages.error(request, str(e))
         return redirect('document_approval:document_detail', pk=document.pk)
-
+    ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
     context = {
         'document': document,
         'prepared_values': prepared_values,
@@ -226,15 +245,11 @@ def document_detail(request, pk):
         'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
         'can_draw' : document.can_withdraw(request.user),
         'can_cancel' : document.can_cancel(request.user),
-        'is_favorite': is_favorite
+        'is_favorite': is_favorite,
+        'ordered_approvals':ordered_approvals
     }
 
-    # for field in dynamic_field_values :
-    #     print(field.field.field_type )
-    #     # print(field.value )
-
     return render(request, 'document/document_detail.html', context)
-
 
 
 @login_required
@@ -416,6 +431,7 @@ def submit_document(request, workflow_id):
 
     if request.method == 'POST':
         form = DocumentSubmissionForm(request.POST)
+        print('posting')
         if form.is_valid():
             document = form.save(commit=False)
             document.submitted_by = request.user
@@ -493,8 +509,6 @@ def submit_document(request, workflow_id):
                 html = render_to_string('document/form_errors.html', context)
                 return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
-
-
             custom_approvers = {}
             if workflow.allow_custom_approvers:
                 for step in workflow.steps.all():
@@ -508,12 +522,21 @@ def submit_document(request, workflow_id):
                 logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
                 document.delete()  # Delete the document if approval creation fai
 
-            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+            # messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+
+            response = render(request, 'partials/submit_success.html', {'document':document})
+
+            return retarget(response, '#content-div')
 
             # return redirect('document_approval:document_detail', pk=document.pk)
-            return HttpResponse(headers={'HX-Redirect': reverse('document_approval:document_detail', kwargs={'pk': document.pk})})
+            # return HttpResponse(headers={'HX-Redirect': reverse('document_approval:document_detail', kwargs={'pk': document.pk})})
+
+        else:
+            print("Form errors:", form.errors)
+            return HttpResponse(form.errors.as_json(), status=400, content_type='application/json')
 
     else:
+
         form = DocumentSubmissionForm()
         context = {
         'form': form,
@@ -522,8 +545,12 @@ def submit_document(request, workflow_id):
         'potential_approvers': CustomUser.objects.all(),
         }
 
+        if request.htmx:
+            print('htmx request')
+            return render(request, 'document/components/submit_document.html', context)
 
-        return render(request, 'document/submit_document.html', context)
+
+        return render(request, 'document/submit_document_full.html', context)
 
 
 @login_required
