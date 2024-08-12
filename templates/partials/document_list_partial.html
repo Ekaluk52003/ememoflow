@@ -1,8 +1,9 @@
 {% if documents %}
     <div class="list-group">
     {% for document in documents %}
-        <a href="{% url 'document_approval:document_detail' pk=document.pk %}" class="list-group-item list-group-item-action">
+        <a hx-get="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress"   class="list-group-item list-group-item-action">
             <div class="d-flex w-100 justify-content-between">
+      
                 <h5 class="mb-1">{{ document.title }}</h5>
                 <small>Status: <span class="badge {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-danger{% else %}bg-primary{% endif %}">{{ document.get_status_display }}</span></small>
             </div>

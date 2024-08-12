@@ -6,7 +6,7 @@
 
 {% block content %}
 <h1 class="mb-4">Resubmit Document</h1>
-<form method="post" enctype="multipart/form-data">
+<form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
 

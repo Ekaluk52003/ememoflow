@@ -19,4 +19,6 @@ urlpatterns = [
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
     path('load-editor/<str:content>', views.load_editor, name='load_editor'),
+    path('clear-toast/', views.clear_toast, name='clear_toasts'),
+
 ]

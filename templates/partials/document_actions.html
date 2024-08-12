@@ -1,0 +1,22 @@
+<div id="document-actions">
+  {% if can_resubmit %}
+      <a href="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary">Resubmit Document</a>
+  {% endif %}
+
+  {% if can_draw %}
+      <form hx-post="{% url 'document_approval:withdraw_document' document_id=document.pk %}"
+            hx-target="#document-status"
+            hx-swap="outerHTML"
+            style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-warning">Withdraw Document</button>
+      </form>
+  {% endif %}
+
+  {% if can_cancel %}
+      <form method="post" hx-post="{% url 'document_approval:cancel_document' document.pk %}" style="display: inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Cancel Document</button>
+      </form>
+  {% endif %}
+</div>

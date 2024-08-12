@@ -1,0 +1,14 @@
+<div id="toasts" class="fixed-bottom p-3 mb-2 bg-dark text-white"  hx-get="{% url 'document_approval:clear_toasts' %}"
+hx-trigger="load delay:2s"
+ hx-swap="outerHTML swap:1s"
+>
+  {% for message in messages %}
+  <div class="toast-header">
+    <strong class="mr-auto">{{ message.tags }}</strong>
+  </div>
+  <div class="toast-body">
+    {{ message.message }}
+  </div>
+  {% endfor %}
+</div>
+

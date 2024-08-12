@@ -1,0 +1,180 @@
+
+
+<div class="container mt-4">
+    <h1 class="mb-4">Document Detail Page</h1>
+
+    {% if error_message %}
+        <div class="alert alert-danger" role="alert">
+            {{ error_message }}
+        </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-body">
+          <h1 class="mb-4">Title : {{ document.title }} </h1>
+
+            {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
+
+            {% include "partials/document_status.html" %}
+
+            <h6 class="card-subtitle mb-2 text-muted">Current Step: {{ document.current_step.name }}</h6>
+            <p class="card-text">{{ document.content|safe}}</p>
+            <p class="card-text"><small class="text-muted">Submitted by: {{ document.submitted_by.username }}</small></p>
+
+
+            <h2>Dynamic Fields</h2>
+<ul>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Additional Information</h2>
+        </div>
+        <div class="card-body">
+            {% for value in prepared_values %}
+                <div class="mb-4">
+                    <h3 class="h6">{{ value.name }}</h3>
+                    {% if value.field_type == 'product_list' %}
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in value.value %}
+                                    <tr>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.quantity }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+
+                    {% elif value.field_type == 'attachment' %}
+                        {% if value.file %}
+                            <p><a href="{{ value.file.url }}" class="btn btn-sm btn-primary" target="_blank">Download {{ value.file.name }}</a></p>
+                        {% else %}
+                            <p>No file attached.</p>
+                        {% endif %}
+                    {% elif value.field_type == 'boolean' %}
+                        <p>{% if value.value %}Yes{% else %}No{% endif %}</p>
+                    {% else %}
+                        <p>{{ value.value }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+<!-- <li><strong>{{ field.field.field_type }}:</strong> </li> -->
+<!-- <li><strong>{{ field.field.name }}:</strong>{{ field.value }} </li> -->
+
+
+
+</ul>
+        </div>
+    </div>
+
+    <h2 class="mb-3">User Input</h2>
+    <ul class="list-group">
+    {% for approval in document.approvals.all %}
+    {% if approval.step.requires_input %}
+    <li class="list-group-item">
+    <br>{{ approval.step.input_prompt }}:
+    <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
+    </li>
+    {% if approval.step.input_type == 'file' %}
+    <li class="list-group-item">
+        {% if approval.uploaded_file %}
+            <a href="{{ approval.uploaded_file.url }}">{{ approval.uploaded_file.name }}</a>
+            <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
+        {% else %}
+            No file uploaded
+        {% endif %}
+    </li>
+    {% else %}
+        {{ approval.user_input|default:"No input provided" }}
+    {% endif %}
+{% endif %}
+        {% endfor %}
+</ul>
+
+<a href="{% url 'document_approval:generate_pdf_report' document.id 1 %}" class="btn btn-primary">Generate PDF Report</a>
+
+    {% if document.approvals.all|length > 0  %}
+    <h2 class="mb-3">Approval Process</h2>
+    {% endif %}
+
+    <ul class="list-group mb-4">
+        {% for approval in ordered_approvals %}
+            <li class="list-group-item {% if approval.step == document.current_step and approval.is_approved is None  %}{% endif %} {% if approval.is_approved == False   %} list-group-item-secondary list-group-item-danger{% endif %} {% if approval.is_approved == True%}list-group-item-success {% endif %}">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ approval.step.name }} - {{ approval.approver.username }}</h5>
+
+                    <span></span>
+                    {% if approval.is_approved == True %}
+                        <span class="badge bg-success">Approved</span>
+                    {% elif approval.is_approved == False %}
+                        <span class="badge bg-danger">Rejected</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                </div>
+                {% if approval.comment %}
+                    <p class="mb-1"><small>Comment: {{ approval.comment }}</small></p>
+                {% endif %}
+                {% if approval.recorded_at %}
+                <p class="mb-1"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if can_approve %}
+        <h2 class="mb-3">Your Approval</h2>
+        <form method="post" hx-post="{% url 'document_approval:document_detail' document.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Decision:</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="is_approved" id="approve" value="true" required>
+                    <label class="form-check-label" for="approve">Approve</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="is_approved" id="reject" value="false" required>
+                    <label class="form-check-label" for="reject">Reject</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="comment" class="form-label">Comment:</label>
+                <textarea class="form-control" name="comment" id="comment" rows="3"></textarea>
+            </div>
+            {% if user_approval.step.requires_input %}
+            <div class="mb-3">
+                <label for="user_input" class="form-label">{{ user_approval.step.input_prompt }}</label>
+                {% if user_approval.step.input_type == 'text' %}
+                    <input type="text" class="form-control" id="user_input" name="user_input" required>
+                {% elif user_approval.step.input_type == 'number' %}
+                    <input type="number" class="form-control" id="user_input" name="user_input" required>
+                {% elif user_approval.step.input_type == 'date' %}
+                    <input type="date" class="form-control" id="user_input" name="user_input" required>
+
+                {% elif user_approval.step.input_type == 'file' %}
+
+                    <input type="file" class="form-control" id="user_input_file" name="user_input_file" required>
+                    <small class="form-text text-muted">Allowed file types: {{ user_approval.step.allowed_file_extensions }}</small>
+                {% endif %}
+            </div>
+        {% endif %}
+            <button type="submit" class="btn btn-primary">Submit Approval</button>
+        </form>
+    {% endif %}
+
+
+    {% include "partials/document_actions.html" %}
+
+
+
+
+</div>

@@ -235,7 +235,15 @@ def document_detail(request, pk):
             messages.error(request, "An error occurred due to multiple pending approvals. Please contact support.")
         except ValidationError as e:
             messages.error(request, str(e))
-        return redirect('document_approval:document_detail', pk=document.pk)
+        # return redirect('document_approval:document_detail', pk=document.pk)
+
+        messages.success(request, "you have approved")
+
+        response = render(request, 'partials/submit_success.html', {'document':document})
+
+        return retarget(response, '#content-div')
+
+
     ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
     context = {
         'document': document,
@@ -249,7 +257,11 @@ def document_detail(request, pk):
         'ordered_approvals':ordered_approvals
     }
 
+    if request.htmx:
+        return render(request, 'document/components/detail_document.html', context)
+
     return render(request, 'document/document_detail.html', context)
+
 
 
 @login_required
@@ -342,9 +354,13 @@ def resubmit_document(request, pk):
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
         document.create_approvals(custom_approvers)
-        messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+        messages.success(request, "Document re-submitted successfully")
 
-        return redirect('document_approval:document_detail', pk=document.pk)
+        response = render(request, 'partials/submit_success.html', {'document':document})
+
+        return retarget(response, '#content-div')
+
+        # return redirect('document_approval:document_detail', pk=document.pk)
 
 
     form = DocumentSubmissionForm(instance=document)
@@ -383,16 +399,49 @@ def resubmit_document(request, pk):
 
 @login_required
 def withdraw_document(request, document_id):
-    document = get_object_or_404(Document, id=document_id, submitted_by=request.user)
+    document = get_object_or_404(Document, pk=document_id)
 
     if request.method == 'POST':
-        try:
+        if document.can_withdraw(request.user):
             document.withdraw()
             messages.success(request, "Document has been successfully withdrawn.")
-        except ValidationError as e:
-            messages.error(request, str(e))
 
-    return redirect('document_approval:document_detail', pk=document.pk)
+            if request.htmx:
+
+                user_approval = document.approvals.filter(
+                    approver=request.user,
+                    step=document.current_step,
+                    is_approved__isnull=True
+                ).first()
+
+                context = {
+                    'document': document,
+                    'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
+                    'can_draw': document.can_withdraw(request.user),
+                    'can_cancel': document.can_cancel(request.user),
+                    'user_approval': user_approval,
+                    'can_approve': user_approval and document.status == 'in_review',
+                }
+                status_html = render_to_string('partials/document_status.html', context, request=request)
+                actions_html = render_to_string('partials/document_actions.html', context, request=request)
+                approval_form_html = render_to_string('partials/approval_form.html', context, request=request)
+                return HttpResponse(
+                    status_html +
+                    '<div id="document-actions" hx-swap-oob="true">' + actions_html + '</div>'
+                     '<div id="approval-form" hx-swap-oob="true">' + approval_form_html + '</div>'
+                )
+            else:
+                return redirect('document_approval:document_detail', document_id=document.pk)
+        else:
+            messages.error(request, "You don't have permission to withdraw this document.")
+
+            if request.htmx:
+                return HttpResponse("Permission denied", status=403)
+            else:
+                return redirect('document_approval:document_detail', document_id=document.pk)
+
+    # If it's not a POST request, redirect to document detail
+    return redirect('document_approval:document_detail', document_id=document.pk)
 
 @login_required
 def cancel_document(request, document_id):
@@ -401,11 +450,15 @@ def cancel_document(request, document_id):
     if request.method == 'POST':
         try:
             document.cancel()
-            messages.success(request, "Document has been successfully withdrawn.")
+            messages.success(request, "Document is Cancel")
         except ValidationError as e:
             messages.error(request, str(e))
 
-    return redirect('document_approval:document_detail', pk=document.pk)
+    # return redirect('document_approval:document_detail', pk=document.pk)
+
+    response = render(request, 'partials/submit_success.html', {'document':document})
+
+    return retarget(response, '#content-div')
 
 
 @login_required
@@ -493,11 +546,14 @@ def submit_document(request, workflow_id):
                         messages.error(request, f"{field.name} is required.")
                         errors.append(f"{field.name} is required.")
 
-                    DynamicFieldValue.objects.create(
+                    try:
+                        DynamicFieldValue.objects.create(
                         document=document,
                         field=field,
                         value=value
                     )
+                    except Exception as e:
+                        pass
 
             if errors:
                 context = {
@@ -522,7 +578,7 @@ def submit_document(request, workflow_id):
                 logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
                 document.delete()  # Delete the document if approval creation fai
 
-            # messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
 
             response = render(request, 'partials/submit_success.html', {'document':document})
 
@@ -597,3 +653,7 @@ def documents_to_approve_to_resubmit(request):
 
     }
     return render(request, 'document/documents_to_action.html', context)
+
+
+def clear_toast(request):
+    return HttpResponse("")

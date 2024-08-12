@@ -1,0 +1,15 @@
+<div id="document-status">
+  <h5 class="card-title">Status:
+    <span class="badge {% if document.status == 'approved' %}bg-success
+                        {% elif document.status == 'rejected' %}bg-danger
+                        {% else %}bg-primary{% endif %}">
+        {{ document.get_status_display }}
+    </span>
+  </h5>
+  <h6 class="card-subtitle mb-2 text-muted">Current Step: {{ document.current_step.name }}</h6>
+
+</div>
+
+
+
+

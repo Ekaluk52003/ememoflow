@@ -12,7 +12,9 @@
         <div id="form-errors">
             <!-- Errors will be displayed here -->
         </div>
+
         {{ form.title|as_crispy_field }}
+
         <div id="editor-container"
          hx-get="{% url 'document_approval:load_editor' form.content  %}"
          hx-trigger="load"
