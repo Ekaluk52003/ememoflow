@@ -133,9 +133,6 @@
     document.querySelector('form').onsubmit = function() {
         document.querySelector('#id_content').value = quill.root.innerHTML;
       };
-
-
-
       function removeProductRow(button) {
         button.closest('.product-row').remove();
         updateTotalQuantity();
