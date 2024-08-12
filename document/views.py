@@ -34,6 +34,10 @@ def load_editor(request, content):
         }
     return render(request, 'document/components/quill_editor.html',   context)
 
+def load_editor2(request, document_id):
+    document = Document.objects.get(id=document_id)
+    return render(request, 'document/components/quill_editor.html',  {'content': document.content})
+
 @login_required
 @require_POST
 def toggle_favorite(request, document_id):
@@ -393,7 +397,13 @@ def resubmit_document(request, pk):
             'prepared_fields': prepared_fields,
             'potential_approvers': CustomUser.objects.all(),
         }
-    return render(request, 'document/resubmit_document.html', context)
+
+
+    if request.htmx:
+            return render(request, 'document/components/resubmit_document.html', context)
+
+
+    return render(request, 'document/resubmit_document_full.html', context)
 
 
 

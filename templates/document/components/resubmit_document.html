@@ -1,24 +1,22 @@
-{% extends "_base.html" %}
+
 {% load crispy_forms_tags %}
 
 
-{% block title %}Resubmit Document{% endblock %}
 
-{% block content %}
 <h1 class="mb-4">Resubmit Document</h1>
 <form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
 
-
-    <div class="mb-3">
-        <label for="editor" class="form-label">Content:</label>
-        <div id="editor" style="height: 300px;"></div>
-    </div>
-
-
-    {{ form.content }}
-
+    <div id="editor-container"
+     hx-get="{% url 'document_approval:load_editor2' document_id=document.id   %}"
+     hx-trigger="load"
+     hx-target="#editor-container"
+     hx-swap="innerHTML">
+     <div id="quill-editor"></div>
+    Loading editor...
+</div>
+{{ form.content }}
 
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
@@ -121,72 +119,15 @@
     <button type="submit" class="btn btn-primary">Resubmit Document</button>
 </form>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 
 <!-- Add this line to safely embed the document content -->
 {{ document.content|json_script:"document-content" }}
 
 <!-- Initialize Quill editor -->
 <script>
-
-            var quill = new Quill('#editor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: {
-                        container: [
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'header': 1 }, { 'header': 2 }],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'script': 'sub'}, { 'script': 'super' }],
-                            [{ 'indent': '-1'}, { 'indent': '+1' }],
-                            [{ 'direction': 'rtl' }],
-                            [{ 'size': ['small', false, 'large', 'huge'] }],
-                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'font': [] }],
-                            [{ 'align': [] }],
-                            ['clean'],
-                            ['image'], // Add image button here
-                            ['undo', 'redo']  // Add undo and redo buttons here
-                        ],
-                        handlers: {
-                            'undo': function() {
-                                this.quill.history.undo();
-                            },
-                            'redo': function() {
-                                this.quill.history.redo();
-                            },
-                            'image': function() {
-                                var range = this.quill.getSelection();
-                                var value = prompt('Please enter the image URL:');
-                                if (value) {
-                                    this.quill.insertEmbed(range.index, 'image', value, Quill.sources.USER);
-                                }
-                            }
-                        }
-                    },
-                    history: {  // Enable the history module
-                        delay: 2000,
-                        maxStack: 500,
-                        userOnly: true
-                    },
-
-                }
-            });
-
-  // Populate the editor with existing content when resubmitting
-
-  var documentContent = JSON.parse(document.getElementById('document-content').textContent);
-
-  quill.root.innerHTML = documentContent;
-
-
-  // When the form is submitted, update the hidden input with the editor contents
-  document.querySelector('form').onsubmit = function() {
-    document.querySelector('#id_content').value = quill.root.innerHTML;
-  };
+    document.querySelector('form').onsubmit = function() {
+        document.querySelector('#id_content').value = quill.root.innerHTML;
+      };
 
   function removeProductRow(button) {
     button.closest('.product-row').remove();
@@ -231,4 +172,3 @@ updateTotalQuantity();
     });
 </script>
 
-{% endblock %}

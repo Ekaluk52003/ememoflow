@@ -1,6 +1,9 @@
 <div id="document-actions">
   {% if can_resubmit %}
-      <a href="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary">Resubmit Document</a>
+      <!-- <a href="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary">Resubmit Document</a> -->
+      <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Resubmit Document</a>
+
+
   {% endif %}
 
   {% if can_draw %}

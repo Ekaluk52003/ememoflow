@@ -122,8 +122,6 @@
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 
 <!-- Add this line to safely embed the document content -->
 {{ document.content|json_script:"document-content" }}
@@ -133,6 +131,8 @@
     document.querySelector('form').onsubmit = function() {
         document.querySelector('#id_content').value = quill.root.innerHTML;
       };
+
+
       function removeProductRow(button) {
         button.closest('.product-row').remove();
         updateTotalQuantity();
