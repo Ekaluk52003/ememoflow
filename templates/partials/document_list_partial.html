@@ -24,17 +24,31 @@
         <ul class="pagination">
             {% if documents.has_previous %}
                 <li class="page-item">
-                  <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.previous_page_number }}&search={{ search_query }}&workflow={{ selected_workflow }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Previous</a>Previous</a>
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page=1&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">&laquo; First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.previous_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Previous</a>
                 </li>
             {% endif %}
-            {% for num in documents.paginator.page_range %}
-                <li class="page-item {% if num == documents.number %}active{% endif %}">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ num }}&search={{ search_query }}&workflow={{ selected_workflow }}" hx-target="#document-list" hx-swap="innerHTML">{{ num }}</a>
-                </li>
+
+            {% for num in page_range %}
+                {% if num == documents.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num == '...' %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ num }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">{{ num }}</a>
+                    </li>
+                {% endif %}
             {% endfor %}
+
             {% if documents.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.next_page_number }}&search={{ search_query }}&workflow={{ selected_workflow }}" hx-target="#document-list" hx-swap="innerHTML">Next</a>
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.next_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.paginator.num_pages }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Last &raquo;</a>
                 </li>
             {% endif %}
         </ul>

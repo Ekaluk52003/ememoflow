@@ -15,7 +15,7 @@ from .forms import DocumentSubmissionForm
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from .tasks import upload_file_task
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -179,12 +179,35 @@ def document_list(request):
         documents = documents.filter(status=status)
 
     paginator = Paginator(documents, 10)  # Show 10 documents per page
-    page_obj = paginator.get_page(page_number)
+    page_number = request.GET.get('page', 1)
+
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    # Calculate the range of page numbers to display
+    # Number of page links to show
+    max_pages = 5  # Number of page links to show
+    current_page = page_obj.number
+    page_range = list(paginator.page_range)
+
+
+    if len(page_range) > max_pages:
+        start = max(0, current_page - max_pages // 2 - 1)
+        end = start + max_pages
+        if end > len(page_range):
+            end = len(page_range)
+            start = end - max_pages
+        page_range = page_range[start:end]
 
     workflows = ApprovalWorkflow.objects.all()
 
     context = {
         'documents': page_obj,
+        'page_range': page_range,
         'search_query': search_query,
         'selected_workflow': int(workflow_id) if workflow_id else None,
         'selected_status': status,
