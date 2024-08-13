@@ -1,7 +1,4 @@
 
-{
-    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
-}
 
 smartflow.pw {
     reverse_proxy web:8000
