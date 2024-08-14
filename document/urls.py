@@ -18,7 +18,7 @@ urlpatterns = [
     path('delete-attachment/<int:field_id>/<int:document_id>', views.delete_attachment, name='delete_attachment'),
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
-    path('load-editor/<str:content>', views.load_editor, name='load_editor'),
+    path('load-editor/', views.load_editor, name='load_editor'),
     path('load-editor2/<int:document_id>', views.load_editor2, name='load_editor2'),
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
 

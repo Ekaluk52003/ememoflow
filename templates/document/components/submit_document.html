@@ -15,14 +15,16 @@
 
         {{ form.title|as_crispy_field }}
 
-        <div id="editor-container"
-         hx-get="{% url 'document_approval:load_editor' form.content  %}"
-         hx-trigger="load"
-         hx-target="#editor-container"
-         hx-swap="innerHTML">
-         <div id="quill-editor"></div>
-        Loading editor...
-    </div>
+        <div class="mb-3">
+
+            <div id="editor-container"
+                 hx-get="{% url 'document_approval:load_editor' %}?content={{ form.content.value|default:''|urlencode }}"
+                 hx-trigger="load"
+                 hx-target="#editor-container"
+                 hx-swap="innerHTML">
+              Loading editor...
+            </div>
+          </div>
     {{ form.content }}
 
 
@@ -127,6 +129,10 @@
 {{ document.content|json_script:"document-content" }}
 
 <!-- Initialize Quill editor -->
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+
 <script>
     document.querySelector('form').onsubmit = function() {
         document.querySelector('#id_content').value = quill.root.innerHTML;

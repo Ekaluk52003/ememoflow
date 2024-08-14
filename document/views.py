@@ -28,11 +28,14 @@ import time
 logger = logging.getLogger(__name__)
 
 
-def load_editor(request, content):
+
+def load_editor(request):
+    content = request.GET.get('content', '')
     context = {
-            content: content
-        }
-    return render(request, 'document/components/quill_editor.html',   context)
+        'content': content
+    }
+    return render(request, 'document/components/quill_editor.html', context)
+
 
 def load_editor2(request, document_id):
     document = Document.objects.get(id=document_id)
