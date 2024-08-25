@@ -8,15 +8,20 @@
   {% block content %}
 
 
-  <main class="form-signin w-100 m-auto">
-    <h1 class="h3 mt-3 mb-3 fw-normal">Please sign in</h1>
+  <main class="form-signin mx-auto">
+    <div class="self-center mb-6 text-xl font-light text-gray-600 sm:text-2xl">
+      Login To Your Account
+  </div>
     <form method="post">
       {% csrf_token %}
       {{ form|crispy }}
-      <button class="btn btn-primary w-100 py-2" type="submit">Log in</button>
+
+      <button class="btn btn-active btn-neutral btn-block" type="submit">Log in</button>
     </form>
 
   </main>
+
+
 
 
   {% endblock content %}

@@ -47,3 +47,8 @@
 LICENSE
 README.md
 images/
+
+
+# Ignore Git files
+.git
+.gitignore

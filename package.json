@@ -1,0 +1,47 @@
+{
+  "scripts": {
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.2.4",
+    "@tiptap/extension-bold": "^2.6.6",
+    "@tiptap/extension-bullet-list": "^2.6.6",
+    "@tiptap/extension-color": "^2.2.6",
+    "@tiptap/extension-highlight": "^2.6.6",
+    "@tiptap/extension-image": "^2.3.0",
+    "@tiptap/extension-list-item": "^2.6.6",
+    "@tiptap/extension-paragraph": "^2.6.6",
+    "@tiptap/extension-table": "^2.2.6",
+    "@tiptap/extension-table-cell": "^2.2.6",
+    "@tiptap/extension-table-header": "^2.2.6",
+    "@tiptap/extension-table-row": "^2.2.6",
+    "@tiptap/extension-text-align": "^2.6.6",
+    "@tiptap/extension-text-style": "^2.2.6",
+    "@tiptap/pm": "^2.2.4",
+    "@tiptap/starter-kit": "^2.2.4",
+    "alpinejs": "^3.0.0",
+    "dompurify": "^3.1.5",
+    "htmx.org": "^1.5.0",
+    "marked": "^13.0.0",
+    "quill": "^2.0.0-beta.0",
+    "tailwindcss": "^3.0.0",
+    "tiptap": "^1.32.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "@tailwindcss/typography": "^0.5.14",
+    "autoprefixer": "^10.4.20",
+    "babel-loader": "^8.0.0",
+    "css-loader": "^6.0.0",
+    "daisyui": "^4.12.10",
+    "file-loader": "^6.2.0",
+    "mini-css-extract-plugin": "^2.9.0",
+    "postcss": "^8.0.0",
+    "postcss-loader": "^6.0.0",
+    "style-loader": "^3.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0"
+  }
+}

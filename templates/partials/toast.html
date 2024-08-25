@@ -1,14 +1,26 @@
-<div id="toasts" class="fixed-bottom p-3 mb-2 bg-dark text-white"  hx-get="{% url 'document_approval:clear_toasts' %}"
+
+<div class="toast toast-center toast-middle" id="toasts"
+hx-get="{% url 'document_approval:clear_toasts' %}"
 hx-trigger="load delay:2s"
  hx-swap="outerHTML swap:1s"
->
+ >
+  <div class="alert">
+    <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    class="stroke-info h-6 w-6 shrink-0">
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
   {% for message in messages %}
-  <div class="toast-header">
-    <strong class="mr-auto">{{ message.tags }}</strong>
-  </div>
-  <div class="toast-body">
-    {{ message.message }}
+  <div>
+    <h3 class="font-bold">{{ message.tags }}</h3>
+    <div class="text-xs">   {{ message.message }}</div>
   </div>
   {% endfor %}
+  </div>
 </div>
-

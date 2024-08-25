@@ -3,41 +3,50 @@
 {% block title %}My Documents{% endblock %}
 
 {% block content %}
-<h1 class="mb-4 mt-2 fw-bold">Documents List</h1>
+
+
+
+
+<h3 class="text-lg font-medium leading-6 text-gray-900">All Documents</h3>
+<p class="max-w-2xl mt-1 text-sm text-gray-500">Review All Documentd</p>
 
 <!-- Search and Filter Form -->
 <form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter" hx-target="#document-list" hx-swap="innerHTML">
-    <div class="row">
-        <div class="col-md-4 mb-2">
-            <div class="input-group">
-                <input type="text" name="search" class="form-control" placeholder="Search documents..." value="{{ search_query }}">
-                <button class="btn btn-outline-secondary" type="submit">Search</button>
+            <div class="flex">
+                <input type="text" name="search" class="input input-bordered w-full" placeholder="Search documents..." value="{{ search_query }}">
+                <button class="btn btn-primary" type="submit">Search</button>
             </div>
-        </div>
-        <div class="col-md-4 mb-2">
-            <select id="workflow-filter" name="workflow" class="form-select">
-                <option value="">All Workflows</option>
-                {% for workflow in workflows %}
-                    <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-4 mb-2">
-            <select id="status-filter" name="status" class="form-select">
-                <option value="">All Statuses</option>
-                {% for status, display in status_choices %}
-                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
+
+            <div class="flex justify-between mt-2">
+                <div>
+                    <select id="workflow-filter" name="workflow" class="select select-bordered w-full">
+                        <option value="">All Workflows</option>
+                        {% for workflow in workflows %}
+                            <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <select id="status-filter" name="status" class="select select-bordered w-full">
+                        <option value="">All Statuses</option>
+                        {% for status, display in status_choices %}
+                            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+
+            </div>
+
 </form>
+
+
 
 <!-- Document List -->
 <div id="document-list">
     {% include "partials/document_list_partial.html" %}
 </div>
 
-<a href="{% url 'document_approval:workflow_list' %}" class="btn btn-primary mt-3">Submit New Document</a>
 
 {% endblock %}
+

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="winter" class="bg-gray-100">
 
 <head>
   <meta charset="utf-8">
@@ -12,133 +12,171 @@
   <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
 
   {% block css %}
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+
+  <!-- <script src="{% static 'js/htmx.min.js' %}" defer></script> -->
+
+  <link href="{% static 'dist/main.css' %}" rel="stylesheet">
   {% endblock %}
 </head>
 
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <!-- Progress Bar -->
-  <div class="progress" style="height: 3px; background-color: white;">
-    <div class="indeterminate" style="background-color: #0d6efd;"></div>
-  </div>
-  <!-- Progress Bar -->
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="bg-gray-100">
 
+    <!-- Progress Bar -->
+    <div class="progress" style="height: 3px; background-color: white;">
+      <div class="indeterminate" style="background-color: #0d6efd;"></div>
+    </div>
 
-  <div class="container py-2">
-
-
-    <nav class="navbar navbar-expand-lg border-bottom">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">SmartFlow</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link"aria-current="page" href="" hx-get="{% url 'about' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" >About</a>
-            </li>
-
-          </ul>
-          {% if user.is_authenticated %}
-          <div class="mr-auto">
-            <ul class="navbar-nav">
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  Document List
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="{% url 'document_approval:document_list' %}" >Document List</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li> <a class="dropdown-item" href=""  href="" hx-get="{% url 'document_approval:workflow_list' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" >New Doc</a></li>
-
-                  <li>
-                    <li>
-                      <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item" href="{% url 'document_approval:documents_to_approve' %}" >To Approve</a></li>
-                    <li>
-                      <li>
-                        <hr class="dropdown-divider">
-                      </li>
-                      <li><a class="dropdown-item" href="{% url 'document_approval:favorite_documents' %}" >My Favorite</a></li>
-                      <li>
-
-                </ul>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  Settings
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="#">{{ user.email }}</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li><a class="dropdown-item" href="{% url 'account_change_password' %}">Change password</a></li>
-                  <li><a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
-          {% else %}
-          <div class="mr-auto">
-            <form class="form d-flex">
-              <a href="{% url 'account_login' %}" class="btn btn-outline-secondary">Log in</a>
-              <a href="{% url 'account_signup' %}" class="btn btn-primary ms-2">Sign up</a>
-            </form>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </nav>
-
-    <div  id="content-div" class="py-2">
-
-
-      {% block content %}
-
-      <p>Default content...</p>
-
-      {% endblock content %}
-
-      </div>
-
-
-  <!-- Toast -->
+      <!-- Toast -->
   <div id="toasts"></div>
-  <!-- Progress Bar -->
-<footer class="pt-2 mt-2 border-top">
-  <small class="text-body-secondary">Doc App</small>
-</footer>
+
+<div class="">
+  <div class="navbar max-w-[1250px] mx-auto">
+    <div class="navbar-start mt-4">
+      <div class="dropdown">
+        <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h8m-8 6h16" />
+          </svg>
+        </div>
+        <ul
+          tabindex="0"
+          class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+          <li><a>Item 1</a></li>
+          <li>
+            <a>Parent</a>
+            <ul class="p-2">
+              <li><a>Submenu 1</a></li>
+              <li><a>Submenu 2</a></li>
+            </ul>
+          </li>
+          <li><a>Item 3</a></li>
+        </ul>
+      </div>
+      <a class="btn-ghost text-xl font-bold"  href="{% url 'home' %}">Smart<span class="text-primary">Flow</span></a>
+    </div>
+
+    <div class="navbar-center bg-white shadow-md font-bold rounded-full hidden mt-4 md:flex">
+      <ul class="menu menu-horizontal px-1">
+        <li class="border-r"><a href="" hx-get="{% url 'about' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" >About</a></li>
+        {% if user.is_authenticated %}
+
+        <li li class="border-r"><a href="{% url 'document_approval:favorite_documents' %}" >My Favorite</a></li>
+
+        <li class="border-r">
+          <details class="dropdown">
+            <summary>Documents</summary>
+            <ul class="bg-base-100 rounded-t-none p-2">
+              <li><a href="{% url 'document_approval:document_list' %}" >All Doc</a></li>
+              <li><a hx-get="{% url 'document_approval:workflow_list' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">New Doc</a></li>
+              <li><a href="{% url 'document_approval:documents_to_approve' %}" >My Tasks</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <details class="dropdown">
+            <summary> Account</summary>
+            <ul class="p-2 bg-base-100">
+              <li><a  href="{% url 'account_change_password' %}" >Change Password</a></li>
+              <li><a  href="{% url 'account_logout' %}" >Logout</a></li>
+            </ul>
+          </details>
+      </li>
+        {% else %}
+
+        <li><a href="{% url 'account_login' %}">Log in</a></li>
+        <li><a href="{% url 'account_signup' %}">Sign up</a></li>
+
+
+        {% endif %}
+
+
+      </ul>
+    </div>
+
+    <div class="navbar-end">
+      {% if user.is_authenticated %}
+      <div class="rounded-full font-bold mt-4 text-lg"> {{ user.email }}</div>
+      {% endif %}
+    </div>
+
+  </div>
 </div>
+
+
+
+  <div  id="content-div" class="flex flex-col max-w-[1170px] mx-auto px-6 sm:px-8 pb-16 pt-8">
+    {% block content %}
+
+    <p>Default content...</p>
+
+    {% endblock content %}
+
+  </div>
+
+
+
+
+
+
+
+
+  <footer class="fixed bottom-0 left-0 z-20 w-full bg-gray-100 text-gray-600 shadow md:p-6">
+
+
+    <div class="max-w-[1200px] mx-auto">
+
+      <div class="md:flex justify-between">
+        <div class="mt-3 md:mt-0">
+          <span class="text-sm sm:text-center">© 2023 <a href="https://flowbite.com/" class="hover:underline">SmartFlow™</a>. All Rights Reserved.
+          </span>
+         </div>
+
+         <ul class="flex text-sm font-medium mt-3 md:mt-0">
+          <li>
+              <a href="#" class="hover:underline me-4 md:me-6">About</a>
+          </li>
+          <li>
+              <a href="#" class="hover:underline me-4 md:me-6">Privacy Policy</a>
+          </li>
+          <li>
+              <a href="#" class="hover:underline me-4 md:me-6">Licensing</a>
+          </li>
+          <li>
+              <a href="#" class="hover:underline">Contact</a>
+          </li>
+      </ul>
+      </div>
+
+
+    </div>
+
+
+</footer>
+
 
 
 
   {% block javascript %}
   <!-- Bootstrap JavaScript -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-    crossorigin="anonymous"></script>
+
 
   <!-- Project JS -->
-  <script src="{% static 'js/base.js' %}"></script>
+  <!-- <script src="{% static 'js/base.js' %}"></script> -->
+  <script src="{% static 'dist/bundle.js' %}"></script>
 
-  <script src="{% static 'js/quill.min.js' %}"></script>
+ 
+
+
 
   {% endblock javascript %}
 </body>

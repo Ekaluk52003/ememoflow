@@ -12,7 +12,7 @@ class AboutPageView(TemplateView):
 
 def about(request):
     # Some processing
-    time.sleep(5)
+  
     # Processing End
     if request.htmx:
         return render(request, 'pages/components/about.html')

@@ -1,12 +1,25 @@
 {% extends '_base.html' %}
+
 {% load static %}
 
 {% block title %}Home page{% endblock title %}
 
 {% block content %}
-<div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-  <h1 class="text-body">SmartFlow</h1>
-  <h2 class="text-secondary">Create your flow without hassles</h2>
-  <p>Smartflow allow you to create the flow with your bussiness logic. You can create any complex flow</p>
-</div>
+<section class="mx-auto flex flex-col items-start gap-2 px-4 py-8 md:py-12 md:pb-8 lg:py-12 lg:pb-10"
+>
+
+  <h1 class="text-3xl font-bold leading-tight tracking-tighter md:text-4xl lg:leading-[1.1] hidden md:block" >
+    Check out some examples
+  </h1>
+  <h1
+    class="text-3xl font-bold leading-tight tracking-tighter md:text-4xl lg:leading-[1.1] md:hidden"
+  >
+    Examples
+  </h1>
+  <p class="max-w-2xl text-lg font-light text-foreground">
+    Dashboard, cards, authentication. Some examples built using the components.
+    Use this as a guide to build your own.
+  </p>
+
+</section>
 {% endblock content %}

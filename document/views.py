@@ -23,23 +23,15 @@ from django.template.loader import render_to_string
 from django_htmx.http import retarget
 import logging
 from django.views.decorators.http import require_POST
+from django.conf import settings
+from pathlib import Path
 import time
+import json
 
 logger = logging.getLogger(__name__)
 
 
 
-def load_editor(request):
-    content = request.GET.get('content', '')
-    context = {
-        'content': content
-    }
-    return render(request, 'document/components/quill_editor.html', context)
-
-
-def load_editor2(request, document_id):
-    document = Document.objects.get(id=document_id)
-    return render(request, 'document/components/quill_editor.html',  {'content': document.content})
 
 @login_required
 @require_POST
@@ -89,30 +81,57 @@ def add_product_field(request, field_id):
     }
     return render(request, 'partials/product_field.html', context)
 
+def prepare_dynamic_fields(document):
+    prepared_values = []
+
+    for dynamic_value in document.dynamic_values.all().select_related('field'):
+        prepared_value = {
+            'name': dynamic_value.field.name,
+            'field_type': dynamic_value.field.field_type,
+            'value': dynamic_value.get_value()  # Using the get_value method
+        }
+
+        if dynamic_value.field.field_type == 'product_list':
+            prepared_value['value'] = dynamic_value.json_value
+        elif dynamic_value.field.field_type == 'attachment':
+            prepared_value['value'] = dynamic_value.file.url if dynamic_value.file else 'No file'
+
+        prepared_values.append(prepared_value)
+
+    return prepared_values
+
+
+
 def generate_pdf_report(request, document_id, template_id):
     document = get_object_or_404(Document, id=document_id)
     template = get_object_or_404(PDFTemplate, id=template_id)
     report_config = ReportConfiguration.objects.first()  # Assuming you have only one configuration
-
     # Get the context data from the document
     context_data = document.get_report_context()
-
     # Add report configuration to context
     context_data['report_config'] = report_config
-
+    # Add prepared dynamic fields to context
+    context_data['prepared_values'] = prepare_dynamic_fields(document)
     # Render the template with the document data
     html_template = Template(template.html_content)
     context = Context(context_data)
     html_content = html_template.render(context)
-
-    # Fetch Bootstrap 5 CSS
-    bootstrap_css = requests.get('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css').text
-
     # Generate PDF
     font_config = FontConfiguration()
-    html = HTML(string=html_content)
-    css = CSS(string=bootstrap_css + template.css_content, font_config=font_config)
+    font_path = Path(settings.STATIC_ROOT) / 'fonts' / 'NotoSansThai-Regular.ttf'
 
+    css = CSS(string='''
+    @font-face {
+        font-family: 'Sarabun';
+        src: url('https://fonts.gstatic.com/s/sarabun/v9/D0K3Fj8nQ29QBlzMF8Le49v6J1VtJmg.woff2') format('woff2');
+    }
+    body {
+        font-family: 'Sarabun', Arial, sans-serif;
+        line-height: 1.5;
+    }
+''', font_config=font_config)
+
+    html = HTML(string=html_content)
     pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
 
     # Create HTTP response
@@ -224,78 +243,85 @@ def document_list(request):
 
 @login_required
 def document_detail(request, pk):
-    document = get_object_or_404(Document, pk=pk)
-    is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
-    dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
-    user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
-    prepared_values = []
-    for value in dynamic_values:
-        prepared_value = {
-            'name': value.field.name,
-            'field_type': value.field.field_type,
+
+    try:
+        document = get_object_or_404(Document, pk=pk)
+        is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
+        dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
+        user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
+        prepared_values = []
+        for value in dynamic_values:
+            prepared_value = {
+                'name': value.field.name,
+                'field_type': value.field.field_type,
+            }
+            if value.field.field_type == 'product_list':
+                prepared_value['value'] = value.json_value
+                prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
+            elif value.field.field_type == 'attachment':
+                prepared_value['file'] = value.file
+            else:
+                prepared_value['value'] = value.value
+            prepared_values.append(prepared_value)
+
+        if request.method == 'POST' and user_approval and document.status == 'in_review':
+            try:
+                document.handle_approval(
+                    user=request.user,
+                    is_approved=request.POST.get('is_approved') == 'true',
+                    comment=request.POST.get('comment', ''),
+                    user_input=request.POST.get('user_input', ''),
+                    uploaded_file=request.FILES.get('user_input_file')
+                )
+                # messages.success(request, "Approval decision recorded successfully.")
+            except Approval.MultipleObjectsReturned as e:
+                logger.error(f"MultipleObjectsReturned in handle_approval for document {document.id}, user {request.user.id}, step {document.current_step.id}")
+                # Log the conflicting approvals
+                conflicting_approvals = document.approvals.filter(
+                    approver=request.user,
+                    step=document.current_step,
+                    is_approved__isnull=True
+                )
+                logger.error(f"Conflicting approvals: {list(conflicting_approvals.values('id', 'created_at'))}")
+                # messages.error(request, "An error occurred due to multiple pending approvals. Please contact support.")
+            except ValidationError as e:
+                messages.error(request, str(e))
+            # return redirect('document_approval:document_detail', pk=document.pk)
+
+            messages.success(request, "Thanks you for review the document")
+
+            response = render(request, 'partials/submit_success.html', {'document':document})
+
+            return retarget(response, '#content-div')
+
+
+        ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
+        context = {
+            'document': document,
+            'prepared_values': prepared_values,
+            'user_approval': user_approval,
+            'can_approve': user_approval and document.status == 'in_review',
+            'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
+            'can_draw' : document.can_withdraw(request.user),
+            'can_cancel' : document.can_cancel(request.user),
+            'is_favorite': is_favorite,
+            'ordered_approvals':ordered_approvals
         }
-        if value.field.field_type == 'product_list':
-            prepared_value['value'] = value.json_value
-            prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
-        elif value.field.field_type == 'attachment':
-            prepared_value['file'] = value.file
-        else:
-            prepared_value['value'] = value.value
-        prepared_values.append(prepared_value)
 
-    if request.method == 'POST' and user_approval and document.status == 'in_review':
-        try:
-            document.handle_approval(
-                user=request.user,
-                is_approved=request.POST.get('is_approved') == 'true',
-                comment=request.POST.get('comment', ''),
-                user_input=request.POST.get('user_input', ''),
-                uploaded_file=request.FILES.get('user_input_file')
-            )
-            messages.success(request, "Approval decision recorded successfully.")
-        except Approval.MultipleObjectsReturned as e:
-            logger.error(f"MultipleObjectsReturned in handle_approval for document {document.id}, user {request.user.id}, step {document.current_step.id}")
-            # Log the conflicting approvals
-            conflicting_approvals = document.approvals.filter(
-                approver=request.user,
-                step=document.current_step,
-                is_approved__isnull=True
-            )
-            logger.error(f"Conflicting approvals: {list(conflicting_approvals.values('id', 'created_at'))}")
-            messages.error(request, "An error occurred due to multiple pending approvals. Please contact support.")
-        except ValidationError as e:
-            messages.error(request, str(e))
-        # return redirect('document_approval:document_detail', pk=document.pk)
+        if request.htmx:
+            return render(request, 'document/components/detail_document.html', context)
 
-        messages.success(request, "you have approved")
-
-        response = render(request, 'partials/submit_success.html', {'document':document})
-
-        return retarget(response, '#content-div')
-
-
-    ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
-    context = {
-        'document': document,
-        'prepared_values': prepared_values,
-        'user_approval': user_approval,
-        'can_approve': user_approval and document.status == 'in_review',
-        'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
-        'can_draw' : document.can_withdraw(request.user),
-        'can_cancel' : document.can_cancel(request.user),
-        'is_favorite': is_favorite,
-        'ordered_approvals':ordered_approvals
-    }
-
-    if request.htmx:
-        return render(request, 'document/components/detail_document.html', context)
-
-    return render(request, 'document/document_detail.html', context)
-
+        return render(request, 'document/document_detail.html', context)
+    except Exception as e:
+        logger.error(f"Error in document_detail view: {str(e)}")
+        if request.htmx:
+            return HttpResponse("An error occurred while loading the document.", status=500)
+        return render(request, 'error.html', {'message': "An error occurred while loading the document."})
 
 
 @login_required
 def resubmit_document(request, pk):
+
     document = get_object_or_404(Document, pk=pk)
     workflow = document.workflow
     dynamic_fields = workflow.dynamic_fields.all()
@@ -455,8 +481,8 @@ def withdraw_document(request, document_id):
                     'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
                     'can_draw': document.can_withdraw(request.user),
                     'can_cancel': document.can_cancel(request.user),
-                    'user_approval': user_approval,
-                    'can_approve': user_approval and document.status == 'in_review',
+                    'user_approval': None,  # Set to None as document is withdrawn
+                    'can_approve': False,
                 }
                 status_html = render_to_string('partials/document_status.html', context, request=request)
                 actions_html = render_to_string('partials/document_actions.html', context, request=request)
@@ -614,7 +640,7 @@ def submit_document(request, workflow_id):
                 logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
                 document.delete()  # Delete the document if approval creation fai
 
-            messages.success(request, "Document submitted successfully, but no approver was found for the first step.")
+            messages.success(request, "Document submitted successfully")
 
             response = render(request, 'partials/submit_success.html', {'document':document})
 

@@ -1,58 +1,84 @@
 {% if documents %}
-    <div class="list-group">
+
     {% for document in documents %}
-        <a hx-get="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress"   class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
 
-                <h5 class="mb-1">{{ document.title }}</h5>
-                <small>Status: <span class="badge {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-danger{% else %}bg-primary{% endif %}">{{ document.get_status_display }}</span></small>
-            </div>
-            <!-- <p class="mb-1">{{ document.content|safe|truncatewords:20 }}</p> -->
-            <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
-            <div class="mt-2">
-                <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
+        <ul class="divide-y divide-gray-200">
+            <li>
+                <a hx-get="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
+                    <div class="bg-white rounded-2xl px-4 py-4 sm:px-6 mb-2">
+                        <div class="flex items-center justify-between">
+                            <p class="text-gray-700 text-md dark:text-white md:truncate font-semibold">
+                                {{ document.title }}
+                            </p>
+                            <div class="flex flex-shrink-0 ml-2">
+                                <p class="inline-flex px-2 text-xs font-semibold leading-5
 
-                <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
-                <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
-            </div>
-        </a>
+                                 {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-error text-white{% elif document.status == 'in_review' %}bg-primary text-white{% elif document.status == 'cancel' %}bg-base-300{% else %}bg-secondary text-white{% endif %} rounded-md">
+                                 {{ document.get_status_display }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+
+                                <p class="flex items-center font-light text-gray-500 text-md dark:text-gray-300">
+                                    <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
+                                </p>
+                                <div class="mt-2">
+                                    <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
+
+                                    <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
+                                    <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
+                                </div>
+
+
+                        </div>
+                    </div>
+                </a>
+            </li>
+
+
+
+
+
+        </ul>
+
     {% endfor %}
-    </div>
+
 
     <!-- Pagination -->
     <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination">
+        <ul class="flex items-center -space-x-px h-8 text-sm">
             {% if documents.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page=1&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">&laquo; First</a>
+                    <a class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100" href="#" hx-get="{% url 'document_approval:document_list' %}?page=1&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">&laquo; First</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.previous_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Previous</a>
+                    <a class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300"  href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.previous_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Previous</a>
                 </li>
             {% endif %}
 
             {% for num in page_range %}
                 {% if num == documents.number %}
-                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    <li  class="z-10 flex items-center justify-center px-3 h-8 leading-tight text-blue-600 border border-blue-300 bg-blue-50"><span class="page-link">{{ num }}</span></li>
                 {% elif num == '...' %}
                     <li class="page-item disabled"><span class="page-link">...</span></li>
                 {% else %}
                     <li class="page-item">
-                        <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ num }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">{{ num }}</a>
+                        <a class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ num }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
 
             {% if documents.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.next_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Next</a>
+                    <a class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300"  href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.next_page_number }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Next</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.paginator.num_pages }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Last &raquo;</a>
+                    <a class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg" href="#" hx-get="{% url 'document_approval:document_list' %}?page={{ documents.paginator.num_pages }}&search={{ search_query }}&workflow={{ selected_workflow|default_if_none:'' }}&status={{ selected_status }}" hx-target="#document-list" hx-swap="innerHTML">Last &raquo;</a>
                 </li>
             {% endif %}
         </ul>
     </nav>
 {% else %}
-    <p class="alert alert-info">No documents available.</p>
+    <p class="alert alert-info mt-6">No documents available.</p>
 {% endif %}

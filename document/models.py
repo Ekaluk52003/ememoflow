@@ -12,6 +12,7 @@ from django.db.models import Q
 import logging
 logger = logging.getLogger(__name__)
 
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -335,10 +336,10 @@ class Document(models.Model):
                 self.save()
                 approval = self.approvals.get(step=next_step)
                 send_approval_email(approval)
-            # else:
-            #     send_approved_email(self)
-            #     self.status = 'approved'
-            #     self.save()
+            else:
+                send_approved_email(self)
+                self.status = 'approved'
+                self.save()
         else:
 
             send_approved_email(self)

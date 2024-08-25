@@ -4,19 +4,11 @@
 
 
 <h1 class="mb-4">Resubmit Document</h1>
-<form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" enctype="multipart/form-data">
+<form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
 
-    <div id="editor-container"
-     hx-get="{% url 'document_approval:load_editor2' document_id=document.id   %}"
-     hx-trigger="load"
-     hx-target="#editor-container"
-     hx-swap="innerHTML">
-     <div id="quill-editor"></div>
-    Loading editor...
-</div>
-{{ form.content }}
+    {% include "document/components/editor.html" %}
 
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
@@ -26,18 +18,12 @@
             <div id="product-list-{{ field.id }}">
                 {% for product in field.products %}
                 <div class="product-row mb-2">
-                    <div class="row">
-                        <div class="col">
-                            <input type="text" class="form-control" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
-                        </div>
-                        <div class="col">
-                            <input type="number" class="form-control" name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
-                        </div>
-                        <div class="col-auto">
-                            <button type="button" class="btn btn-danger" onclick="removeProductRow(this)">Remove</button>
-                        </div>
-                    </div>
-                </div>
+
+                    <input type="text" class="input input-bordered w-full max-w-xs" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
+                    <input type="number" class="input input-bordered w-full max-w-xs"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                    <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
+
+            </div>
             {% endfor %}
             </div>
             <button type="button" class="btn btn-secondary mt-2"
@@ -105,29 +91,28 @@
     {% if workflow.allow_custom_approvers %}
 
     {% for step in workflow.steps.all %}
-    <div class="mb-3">
-        <label for="approver_{{ step.id }}" class="form-label">Approver for {{ step.name }}</label>
-        <select class="form-select" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
-            <option value="">Select an approver</option>
-            {% for approver in potential_approvers %}
-            <option value="{{ approver.id }}">{{ approver.username }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    {% endfor %}
+            <div class="mt-6 mb-6">
+                <div>{{ step.name }}</div>
+                <div>
+                    <!-- <label for="approver_{{ step.id }}" class="form-label">Select Approver:</label> -->
+                    <select class="select select-bordered w-full max-w-xs" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
+                        <option value="">Choose an approver</option>
+                        {% for approver in potential_approvers %}
+                            <option value="{{ approver.id }}">{{ approver.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        {% endfor %}
     {% endif %}
     <button type="submit" class="btn btn-primary">Resubmit Document</button>
 </form>
 
 
-<!-- Add this line to safely embed the document content -->
-{{ document.content|json_script:"document-content" }}
 
 <!-- Initialize Quill editor -->
 <script>
-    document.querySelector('form').onsubmit = function() {
-        document.querySelector('#id_content').value = quill.root.innerHTML;
-      };
+
 
   function removeProductRow(button) {
     button.closest('.product-row').remove();
@@ -171,4 +156,3 @@ updateTotalQuantity();
         }
     });
 </script>
-

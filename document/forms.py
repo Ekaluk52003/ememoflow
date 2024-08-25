@@ -7,9 +7,7 @@ class DocumentSubmissionForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['title', 'content']
-        widgets = {
-            'content': forms.HiddenInput(),  # We'll use this to store Quill.js content
-        }
+      
 
 
     def __init__(self, *args, **kwargs):

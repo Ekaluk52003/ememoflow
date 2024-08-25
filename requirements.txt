@@ -12,6 +12,7 @@ click-plugins==1.1.1
 click-repl==0.3.0
 colorama==0.4.6
 crispy-bootstrap5==2023.10
+crispy-tailwind==1.0.3
 cryptography==39.0.1
 cssselect2==0.7.0
 defusedxml==0.7.1
