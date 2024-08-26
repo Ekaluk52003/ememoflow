@@ -160,7 +160,7 @@ def get_allowed_documents(user):
     is_super_user = user.groups.filter(name='super user').exists()
 
     # Base queryset
-    ddocuments = Document.objects.all()
+    documents = Document.objects.all()
 
     if not is_super_user:
         # If not a superuser, filter documents where the user is an approver or the submitter
