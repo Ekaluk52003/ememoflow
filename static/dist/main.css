@@ -1,3 +1,6 @@
+/*!*********************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./static/css/tailwind.css ***!
+  \*********************************************************************************************************************/
 /*
 ! tailwindcss v3.4.10 | MIT License | https://tailwindcss.com
 *//*
@@ -4469,10 +4472,6 @@ input.tab:checked + .tab-content,
     display: flex;
   }
 
-  .md\:hidden {
-    display: none;
-  }
-
   .md\:truncate {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4529,6 +4528,9 @@ input.tab:checked + .tab-content,
   }
 }
 
+/*!*****************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/postcss-loader/dist/cjs.js!./static/css/base.css ***!
+  \*****************************************************************************************************************/
 /* Sticky footer styles
 -------------------------------------------------- */
 

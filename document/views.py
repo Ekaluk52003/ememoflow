@@ -153,12 +153,16 @@ def workflow_list(request):
 
 def get_allowed_documents(user):
     # Check if the user is in the "super user" group
-    is_superuser = user.groups.filter(name='super user').exists()
+    if user.is_superuser:
+        return Document.objects.all().order_by('-created_at')
+
+
+    is_super_user = user.groups.filter(name='super user').exists()
 
     # Base queryset
-    documents = Document.objects.all()
+    ddocuments = Document.objects.all()
 
-    if not is_superuser:
+    if not is_super_user:
         # If not a superuser, filter documents where the user is an approver or the submitter
         approver_documents = Approval.objects.filter(
             document=OuterRef('pk'),
