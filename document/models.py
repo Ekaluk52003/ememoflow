@@ -482,10 +482,10 @@ class DynamicFieldValue(models.Model):
 
         return f"{self.document.title} - {self.field.name}: {self.value}"
 
-    # def clean(self):
-    #     super().clean()
-    #     if self.field.field_type == 'attachment' and self.file:
-    #         self.field.validate_file(self.file)
+    def clean(self):
+        super().clean()
+        if self.field.field_type == 'attachment' and self.file:
+            self.field.validate_file(self.file)
 
     def get_value(self):
         if self.field.field_type == 'product_list':

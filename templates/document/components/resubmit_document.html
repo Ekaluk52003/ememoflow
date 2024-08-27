@@ -1,7 +1,7 @@
 
 {% load crispy_forms_tags %}
 
-
+<div id="form-errors"></div>
 
 <h1 class="mb-4">Resubmit Document</h1>
 <form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
@@ -12,21 +12,25 @@
 
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
-    <div class="mb-3">
-        <label for="dynamic_{{ field.id }}" class="form-label">{{ field.name }}:</label>
+    <div class="mt-4 mb-4">
+        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs form-control">
+            <div class="label">
+                <span class="label-text">{{ field.name }}</span>
+                 </div>
+        </label>
         {% if field.field_type == 'product_list' %}
             <div id="product-list-{{ field.id }}">
                 {% for product in field.products %}
-                <div class="product-row mb-2">
+                <div class="mb-2 product-row">
 
-                    <input type="text" class="input input-bordered w-full max-w-xs" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
-                    <input type="number" class="input input-bordered w-full max-w-xs"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                    <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
+                    <input type="number" class="w-full max-w-xs input input-bordered"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
                     <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
 
             </div>
             {% endfor %}
             </div>
-            <button type="button" class="btn btn-secondary mt-2"
+            <button type="button" class="mt-2 btn btn-secondary"
                     hx-get="{% url 'document_approval:add_product_field' field.id %}"
                     hx-target="#product-list-{{ field.id }}"
                     hx-swap="beforeend">
@@ -49,8 +53,8 @@
                 hx-target="#attachment-field-{{ field.id }}"
                 hx-swap="outerHTML">Delete File {{ field.value.id }}</button>
                     {% else %}
-                    <input type="file" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                    {% if field.required and not field.file %}required{% endif %}>
+                    <input type="file" class="w-full max-w-xs file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                  >
 
                     {% endif %}
 
@@ -95,7 +99,7 @@
                 <div>{{ step.name }}</div>
                 <div>
                     <!-- <label for="approver_{{ step.id }}" class="form-label">Select Approver:</label> -->
-                    <select class="select select-bordered w-full max-w-xs" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
+                    <select class="w-full max-w-xs select select-bordered" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
                         <option value="">Choose an approver</option>
                         {% for approver in potential_approvers %}
                             <option value="{{ approver.id }}">{{ approver.username }}</option>

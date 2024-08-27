@@ -2,12 +2,14 @@
 {% load crispy_forms_tags %}
 
 
-    <h5 class="text-lg font-medium leading-6 text-base-content mt-4">Submit New Document</h5>
+    <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
     <h3 class="mb-3">Workflow: {{ workflow.name }}</h3>
 
 
     <form method="post" hx-post="{% url 'document_approval:submit_document' workflow.id %}" hx-target="#content-div"   enctype="multipart/form-data" hx-indicator=".progress">
         {% csrf_token %}
+
+
         <div id="form-errors">
             <!-- Errors will be displayed here -->
         </div>
@@ -24,15 +26,19 @@
 
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
-    <div class="mb-3">
-        <label for="dynamic_{{ field.id }}" class="form-label">{{ field.name }}:</label>
+    <div class="mt-4 mb-4">
+        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs form-control">
+            <div class="label">
+                <span class="label-text">{{ field.name }}</span>
+                 </div>
+        </label>
             {% if field.field_type == 'product_list' %}
                 <div id="product-list-{{ field.id }}">
                     {% for product in field.default_products %}
-                    <div class="product-row mb-2">
+                    <div class="mb-2 product-row">
 
-                            <input type="text" class="input input-bordered w-full max-w-xs" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
-                            <input type="number" class="input input-bordered w-full max-w-xs"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                            <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
+                            <input type="number" class="w-full max-w-xs input input-bordered"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
                             <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
 
                     </div>
@@ -52,18 +58,18 @@
                 {% elif field.field_type == 'attachment' %}
                 {% if field.file %}
                     <p>Current file: {{ field.file.name }}</p>
-                    <button type="button" class="btn btn-danger btn-sm mb-2"
+                    <button type="button" class="mb-2 btn btn-danger btn-sm"
                             hx-delete="{% url 'delete_attachment' field.id  %}"
                             hx-target="#dynamic_{{ field.id }}-container"
                             hx-swap="outerHTML">
                         Delete File
                     </button>
                 {% endif %}
-                <input type="file" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="file" class="w-full max-w-xs file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        {% if field.required and not field.file %}{% endif %}>
 
             {% elif field.field_type == 'number' %}
-                <input type="number" class="input input-bordered w-full max-w-xs my-4" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="number" class="w-full max-w-xs my-4 input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        value="{{ field.value }}" {% if field.required %}required{% endif %}>
             {% elif field.field_type == 'text' %}
                 <input type="text" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
@@ -95,7 +101,7 @@
                 <div>{{ step.name }}</div>
                 <div>
                     <!-- <label for="approver_{{ step.id }}" class="form-label">Select Approver:</label> -->
-                    <select class="select select-bordered w-full max-w-xs" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
+                    <select class="w-full max-w-xs select select-bordered" id="approver_{{ step.id }}" name="approver_{{ step.id }}" required>
                         <option value="">Choose an approver</option>
                         {% for approver in potential_approvers %}
                             <option value="{{ approver.id }}">{{ approver.username }}</option>

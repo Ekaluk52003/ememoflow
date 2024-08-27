@@ -330,100 +330,6 @@ def resubmit_document(request, pk):
     workflow = document.workflow
     dynamic_fields = workflow.dynamic_fields.all()
 
-    if request.user != document.submitted_by or document.status not in ['pending', 'rejected']:
-        return HttpResponseForbidden("You don't have permission to resubmit this document.")
-
-    if request.method == 'POST':
-        form = DocumentSubmissionForm(request.POST, instance=document)
-        if form.is_valid():
-            title = form.cleaned_data['title']
-            content = form.cleaned_data['content']
-            document.resubmit(title, content)
-
-        total_quantity = 0
-
-        for field in dynamic_fields:
-            if field.field_type == 'product_list':
-                product_names = request.POST.getlist(f'product_name_{field.id}[]')
-                product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
-                products = []
-                for name, quantity in zip(product_names, product_quantities):
-                    if name and quantity:
-                        try:
-                            qty = int(quantity)
-                            products.append({'name': name, 'quantity': qty})
-                            total_quantity += qty
-                        except ValueError:
-                            messages.error(request, f"Invalid quantity for product {name}")
-                            return render(request, 'resubmit_document.html', {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
-
-                DynamicFieldValue.objects.update_or_create(
-                    document=document,
-                    field=field,
-                    defaults={'json_value': products}
-                )
-            elif field.field_type == 'attachment':
-
-                file = request.FILES.get(f'dynamic_{field.id}')
-                print('atachment processing')
-                print('atachment processing', file)
-                if file:
-                    DynamicFieldValue.objects.update_or_create(
-                        document=document,
-                        field=field,
-                        defaults={'file': file}
-                    )
-
-            # elif field.field_type == 'attachment':
-
-            #             file = request.FILES.get(f'dynamic_{field.id}')
-            #             if file:
-            #                 DynamicFieldValue.objects.create(
-            #                 document=document,
-            #                 field=field,
-            #                 file=file
-            #         )
-
-            elif field.field_type == 'number' and field.name == 'Total Quantity':
-                # Update the Total Quantity field with the calculated total
-                print('total--------', total_quantity)
-                DynamicFieldValue.objects.update_or_create(
-                    document=document,
-                    field=field,
-                    defaults={'value': str(total_quantity)}
-                )
-            else:
-                value = request.POST.get(f'dynamic_{field.id}')
-                if field.required and not value:
-                    messages.error(request, f"{field.name} is required.")
-                    return render(request, 'resubmit_document.html', {'document': document, 'workflow': workflow, 'dynamic_fields': dynamic_fields})
-
-                DynamicFieldValue.objects.update_or_create(
-                    document=document,
-                    field=field,
-                    defaults={'value': value}
-                )
-
-
-
-        custom_approvers = {}
-        if workflow.allow_custom_approvers:
-                for step in workflow.steps.all():
-                    approver_id = request.POST.get(f'approver_{step.id}')
-                    if approver_id:
-                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
-
-        document.create_approvals(custom_approvers)
-        messages.success(request, "Document re-submitted successfully")
-
-        response = render(request, 'partials/submit_success.html', {'document':document})
-
-        return retarget(response, '#content-div')
-
-        # return redirect('document_approval:document_detail', pk=document.pk)
-
-
-    form = DocumentSubmissionForm(instance=document)
 
     prepared_fields = []
     for field in dynamic_fields:
@@ -444,6 +350,101 @@ def resubmit_document(request, pk):
         else:
             field_data['value'] = field_value.value if field_value else ''
         prepared_fields.append(field_data)
+
+    if request.user != document.submitted_by or document.status not in ['pending', 'rejected']:
+        return HttpResponseForbidden("You don't have permission to resubmit this document.")
+
+    if request.method == 'POST':
+        form = DocumentSubmissionForm(request.POST, instance=document)
+
+        errors = []
+        total_quantity = 0
+
+        for field in dynamic_fields:
+            if field.field_type == 'product_list':
+                product_names = request.POST.getlist(f'product_name_{field.id}[]')
+                product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                products = []
+                for name, quantity in zip(product_names, product_quantities):
+                    if name and quantity:
+                        try:
+                            qty = int(quantity)
+                            products.append({'name': name, 'quantity': qty})
+                            total_quantity += qty
+                        except ValueError:
+                            errors.append(request, f"Invalid quantity for product {name}")
+
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'json_value': products}
+                )
+
+            elif field.field_type == 'attachment':
+                 file = request.FILES.get(f'dynamic_{field.id}')
+                 existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
+                 if field.required and not file and not (existing_value and existing_value.file):
+                    errors.append(f"Attachment for {field.name} is required.")
+                 elif file:
+                        try:
+                            # Only update or create if a new file is provided
+                            DynamicFieldValue.objects.update_or_create(
+                                document=document,
+                                field=field,
+                                defaults={'file': file}
+                            )
+                        except Exception as e:
+                            errors.append(f"Error uploading file for {field.name}: {str(e)}")
+
+
+            elif field.field_type == 'number' and field.name == 'Total Quantity':
+                # Update the Total Quantity field with the calculated total
+                print('total--------', total_quantity)
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'value': str(total_quantity)}
+                )
+            else:
+                value = request.POST.get(f'dynamic_{field.id}')
+                if field.required and not value:
+                     errors.append(request, f"{field.name} is required.")
+
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'value': value}
+                )
+
+        if not form.is_valid():
+            errors.extend([error for sublist in form.errors.values() for error in sublist])
+
+        if not errors:
+            # Only resubmit and process if there are no errors
+            document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
+            custom_approvers = {}
+            if workflow.allow_custom_approvers:
+                for step in workflow.steps.all():
+                    approver_id = request.POST.get(f'approver_{step.id}')
+                    if approver_id:
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
+            document.create_approvals(custom_approvers)
+            messages.success(request, "Document re-submitted successfully")
+
+            response = render(request, 'partials/submit_success.html', {'document':document})
+            return retarget(response, '#content-div')
+
+        context = {
+            'workflow': workflow,
+            'prepared_fields': prepared_fields,
+            'errors': errors,
+            'form_data': request.POST,
+        }
+        html = render_to_string('document/form_errors.html', context)
+        return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
+
+
+    form = DocumentSubmissionForm(instance=document)
 
 
     context = {
