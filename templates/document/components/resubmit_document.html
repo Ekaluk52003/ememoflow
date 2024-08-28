@@ -48,7 +48,7 @@
                  {% if field.file %}
 
            <a href='{{ field.file.url }}'>{{ field.file.name }}</a>
-                <button type="button" class="btn btn-danger btn-sm"
+                <button type="button" class="btn btn-warning"
                 hx-delete="{% url 'document_approval:delete_attachment' field.id document.id %}"
                 hx-target="#attachment-field-{{ field.id }}"
                 hx-swap="outerHTML">Delete File {{ field.value.id }}</button>
@@ -63,18 +63,18 @@
 
 
             {% elif field.field_type == 'text' %}
-                    <input type="text" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                           value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                    <input type="text" class="w-full max-w-xs input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value }}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'number' %}
-                    <input type="number" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                           value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                    <input type="number" class="w-full max-w-xs input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value }}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'date' %}
-                    <input type="date" class="form-control" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                           value="{{ field.value|date:'Y-m-d' }}" {% if field.required %}required{% endif %}>
+                    <input type="date" class="w-full max-w-xs input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value}}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'boolean' %}
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                               {% if field.value %}checked{% endif %} {% if field.required %}required{% endif %}>
+                        <input type="checkbox" class="checkbox checkbox-md" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                               {% if field.value %}checked{% endif %} {% if field.required %}{% endif %}>
                         <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
                     </div>
                 {% elif field.field_type == 'choice' %}

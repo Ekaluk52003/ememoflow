@@ -11,7 +11,7 @@ from django.db.models import JSONField
 from django.db.models import Q
 import logging
 logger = logging.getLogger(__name__)
-
+from django.core.validators import MinValueValidator
 
 from django.contrib.auth import get_user_model
 
@@ -87,7 +87,12 @@ class DynamicField(models.Model):
 
     # New fields for attachment type
     allowed_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated list of allowed file extensions (e.g., .pdf,.doc,.jpg)")
-    max_file_size = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum file size in bytes")
+    max_file_size = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Maximum file size in MB",
+        validators=[MinValueValidator(1)]
+    )
     multiple_files = models.BooleanField(default=False, help_text="Allow multiple file uploads for this field")
 
     class Meta:
@@ -107,8 +112,12 @@ class DynamicField(models.Model):
             if ext.lower() not in self.get_allowed_extensions():
                 raise ValidationError(f"File type {ext} is not allowed. Allowed types are: {self.allowed_extensions}")
 
-        if self.max_file_size and file.size > self.max_file_size:
-            raise ValidationError(f"File size exceeds the maximum allowed size of {self.max_file_size} bytes")
+        # if self.max_file_size and file.size > self.max_file_size:
+        #     raise ValidationError(f"File size exceeds the maximum allowed size of {self.max_file_size} bytes")
+        if self.max_file_size:
+            max_size_bytes = self.max_file_size * 1024 * 1024  # Convert MB to bytes
+            if file.size > max_size_bytes:
+                raise ValidationError(f"File size exceeds the maximum allowed size of {self.max_file_size} MB")
 
 
 

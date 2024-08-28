@@ -70,19 +70,22 @@
 
             {% elif field.field_type == 'number' %}
                 <input type="number" class="w-full max-w-xs my-4 input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                       value="{{ field.value }}" {% if field.required %}{% endif %}>
             {% elif field.field_type == 'text' %}
-                <input type="text" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       {% if field.required %}required{% endif %}>
+                <input type="text" class="w-full max-w-xs input input-bordered"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                       {% if field.required %}{% endif %}>
             {% elif field.field_type == 'date' %}
+
                 <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       {% if field.required %}required{% endif %}>
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 max-w-xs" placeholder="Select date"
+                       {% if field.required %}{% endif %}>
+
             {% elif field.field_type == 'boolean' %}
                 <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       {% if field.required %}required{% endif %}>
+                       {% if field.required %}{% endif %}>
             {% elif field.field_type == 'choice' %}
                 <select name="dynamic_{{ field.id }}" class="form-select" id="dynamic_{{ field.id }}"
-                        {% if field.required %}required{% endif %}>
+                        {% if field.required %}{% endif %}>
                     <option value="">Select an option</option>
                     {% for choice in field.choices %}
                         <option value="{{ choice }}">{{ choice }}</option>
