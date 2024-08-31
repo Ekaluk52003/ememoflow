@@ -69,7 +69,7 @@
                         {% endif %}
                 {% endfor %}
 
-      
+
 
             {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
 
@@ -177,9 +177,9 @@
                 {% elif editable_field.field_type == 'text' %}
                     <input type="text" name="dynamic_{{ editable_field.id }}" class="w-full input input-bordered"  >
                 {% elif editable_field.field_type == 'number' %}
-                    <input type="number" name="dynamic_{{ editable_field.id }}" class="block w-full mt-1" >
+                    <input type="number" name="dynamic_{{ editable_field.id }}"class="w-full input input-bordered">
                 {% elif editable_field.field_type == 'date' %}
-                    <input type="date" name="dynamic_{{ editable_field.id }}" class="block w-full mt-1" >
+                    <input type="date" name="dynamic_{{ editable_field.id }}"class="w-full input input-bordered" >
                 {% elif editable_field.field_type == 'boolean' %}
                     <input type="checkbox" name="dynamic_{{ editable_field.id }}" class="mt-1">
                 {% endif %}
