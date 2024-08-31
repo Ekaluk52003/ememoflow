@@ -209,9 +209,9 @@ class ApprovalStep(models.Model):
         return f"{self.workflow.name} - Step {self.order}: {self.name}"
 
     def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.requires_edit and not self.editable_fields.exists():
-            raise ValidationError("At least one editable field must be selected if edit is required.")
+        # from django.core.exceptions import ValidationError
+        # if self.requires_edit and not self.editable_fields.exists():
+        #     raise ValidationError("At least one editable field must be selected if edit is required.")
         if self.editable_fields.exclude(workflow=self.workflow).exists():
             raise ValidationError("All editable fields must belong to the same workflow.")
 
@@ -327,13 +327,12 @@ class Document(models.Model):
 
     def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):
 
-        # approvals = self.approvals.filter(approver=user, step=self.current_step, is_approved__isnull=True)
         approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
+
 
         approval.is_approved = is_approved
         approval.comment = comment
         approval.recorded_at = timezone.now()
-
 
 
         if approval.step.requires_edit:
@@ -359,9 +358,10 @@ class Document(models.Model):
 
 
         if is_approved:
-            self.move_to_next_step()
+            self.move_to_next_step(approval)
         else:
             self.reject()
+        return approval
 
     def can_withdraw(self, user):
         return (
@@ -377,30 +377,29 @@ class Document(models.Model):
         )
 
 
-    def move_to_next_step(self):
-
-        current_step_order = self.current_step.order
-
+    def move_to_next_step(self, approval):
+    # Determine the next step based on the current approval's step
         next_step = ApprovalStep.objects.filter(
             workflow=self.workflow,
-            order__gt=current_step_order
+            order__gt=approval.step.order  # Use the order from the current approval's step
         ).order_by('order').first()
 
         if next_step:
-
             if next_step.evaluate_condition(self):
                 print('next step true ?', next_step)
                 self.current_step = next_step
                 self.status = 'in_review'
                 self.save()
-                approval = self.approvals.get(step=next_step)
-                send_approval_email(approval)
+
+                # Send approval emails for the next step
+                approvals = self.approvals.filter(step=next_step)
+                for appr in approvals:
+                    send_approval_email(appr)
             else:
                 send_approved_email(self)
                 self.status = 'approved'
                 self.save()
         else:
-
             send_approved_email(self)
             self.status = 'approved'
 
@@ -496,14 +495,9 @@ class Approval(models.Model):
         return f"{self.document.title} - {self.step.name} - {self.approver.username}"
 
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['document', 'step', 'approver'],
-                condition=Q(is_approved__isnull=True),
-                name='unique_pending_approval'
-            )
-        ]
+    # class Meta:
+    #     # This constraint ensures uniqueness, but it might not be enforced if it was added after data was inserted
+    #     unique_together = ['document', 'step', 'approver', 'is_approved']
 
 
 def dynamic_field_file_path(instance, filename):

@@ -24,7 +24,7 @@ import logging
 from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
-
+import traceback
 
 
 logger = logging.getLogger(__name__)
@@ -246,6 +246,7 @@ def document_list(request):
 
 @login_required
 def document_detail(request, pk):
+
     try:
         document = get_object_or_404(Document, pk=pk)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
@@ -316,23 +317,20 @@ def document_detail(request, pk):
                     comment=comment,
                     edited_values=edited_values,
                     uploaded_files=uploaded_files
+
                 )
-                messages.success(request, "Thank you for reviewing the document")
-                if request.htmx:
+                messages.success(request, "Thanks you for reviewing document")
+            except Exception as e:
+               logger.error(f"Error processing approval: {str(e)}")
+               logger.error(traceback.format_exc())  # This will log the full traceback
+               errors.append(f"Error processing approval: {str(e)}")
+
+            if request.htmx:
                     response = render(request, 'partials/submit_success.html', {'document': document})
                     return retarget(response, '#content-div')
-                return redirect('document_approval:document_detail', pk=document.pk)
-            except Exception as e:
-                logger.error(f"Error processing approval: {str(e)}")
-                errors.append(f"Error processing approval: {str(e)}")
-            context = {
-                'document': document,
-                'user_approval': user_approval,
-                'errors': errors,
-                'form_data': request.POST,
-            }
-            html = render_to_string('document/form_errors.html', context)
-            return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
+            return redirect('document_approval:document_detail', pk=document.pk)
+
+
 
 
 
@@ -357,7 +355,7 @@ def document_detail(request, pk):
 
         return render(request, 'document/document_detail.html', context)
     except Exception as e:
-        logger.error(f"Error in document_detail view: {str(e)}")
+        logger.exception(f"Unexpected error in resubmit_document view for document {pk}")
         if request.htmx:
             return HttpResponse("An error occurred while loading the document.", status=500)
         return render(request, 'error.html', {'message': "An error occurred while loading the document."})

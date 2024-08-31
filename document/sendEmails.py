@@ -120,10 +120,10 @@ def send_approved_email(document):
     )
 
 def send_approval_email(approval):
-
     if not approval.step.send_email:
         logger.info(
-            f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}")
+            f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}"
+        )
         return
 
     try:
@@ -156,21 +156,25 @@ def send_approval_email(approval):
         msg.attach_alternative(html_content, "text/html")
 
         # Send the email
-
         msg.send()
 
         logger.info(
-            f"Approval email sent for document {approval.document.id} to {approval.approver.email}")
+            f"Approval email sent for document {approval.document.id} to {approval.approver.email}"
+        )
 
     except TemplateSyntaxError as e:
         logger.error(
-            f"Template syntax error in send_approval_email for document {approval.document.id}: {str(e)}")
+            f"Template syntax error in send_approval_email for document {approval.document.id}: {str(e)}"
+        )
     except AttributeError as e:
         logger.error(
-            f"Attribute error in send_approval_email for document {approval.document.id}: {str(e)}")
+            f"Attribute error in send_approval_email for document {approval.document.id}: {str(e)}"
+        )
     except Exception as e:
         logger.error(
-            f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}")
+            f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}"
+        )
+
 
 
 
