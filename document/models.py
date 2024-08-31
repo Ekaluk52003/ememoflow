@@ -11,7 +11,7 @@ from django.db.models import JSONField
 from django.db.models import Q
 import logging
 logger = logging.getLogger(__name__)
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from django.contrib.auth import get_user_model
 
@@ -71,12 +71,18 @@ class ApprovalWorkflow(models.Model):
 class DynamicField(models.Model):
     FIELD_TYPES = (
         ('text', 'Text'),
+        ('textarea', 'Text Area'),
         ('number', 'Number'),
         ('date', 'Date'),
         ('boolean', 'Yes/No'),
         ('choice', 'Multiple Choice'),
         ('attachment', 'File Attachment'),
         ('product_list', 'Product List'),
+    )
+
+    WIDTH_CHOICES = (
+        ('half', 'Half Width'),
+        ('full', 'Full Width'),
     )
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='dynamic_fields')
     name = models.CharField(max_length=100)
@@ -94,9 +100,25 @@ class DynamicField(models.Model):
         validators=[MinValueValidator(1)]
     )
     multiple_files = models.BooleanField(default=False, help_text="Allow multiple file uploads for this field")
+    textarea_rows = models.PositiveIntegerField(
+        default=4,
+        help_text="Number of rows for textarea fields",
+        validators=[MinValueValidator(1), MaxValueValidator(20)]
+    )
+    input_width = models.CharField(max_length=4, choices=WIDTH_CHOICES, default='full', help_text="Width of the input field")
 
     class Meta:
         ordering = ['order']
+
+    def clean(self):
+        super().clean()
+        if self.field_type == 'textarea' and self.textarea_rows < 1:
+            raise ValidationError({'textarea_rows': 'Number of rows must be at least 1.'})
+
+    def get_choices(self):
+        if self.field_type == 'choice' and self.choices:
+            return [choice.strip() for choice in self.choices.split(',')]
+        return []
 
     def __str__(self):
         return f"{self.workflow.name} - {self.name}"
@@ -119,6 +141,16 @@ class DynamicField(models.Model):
             if file.size > max_size_bytes:
                 raise ValidationError(f"File size exceeds the maximum allowed size of {self.max_file_size} MB")
 
+
+class WorkflowSpecificManyToManyField(models.ManyToManyField):
+    def formfield(self, **kwargs):
+        from django.forms import ModelMultipleChoiceField
+        defaults = {
+            'form_class': ModelMultipleChoiceField,
+            'queryset': self.remote_field.model.objects.none(),
+        }
+        defaults.update(kwargs)
+        return super().formfield(**defaults)
 
 
 class ApprovalStep(models.Model):
@@ -150,18 +182,21 @@ class ApprovalStep(models.Model):
     ], null=True, blank=True)
     condition_value = models.CharField(max_length=255, null=True, blank=True)
 
-    # Fields for user input
-    requires_input = models.BooleanField(default=False)
+
     input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
-    input_prompt = models.CharField(max_length=255, blank=True)
     input_choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' input type")
     allowed_file_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated file extensions for 'file' input type")
+    requires_edit = models.BooleanField(default=False)
+    editable_fields = models.ManyToManyField(DynamicField, blank=True, related_name='approval_steps')
 
     # Email notification fields
     send_email = models.BooleanField(default=False)
     email_subject = models.CharField(max_length=255, blank=True)
     email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
     cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC for")
+
+
+
 
 
     class Meta:
@@ -174,8 +209,11 @@ class ApprovalStep(models.Model):
         return f"{self.workflow.name} - Step {self.order}: {self.name}"
 
     def clean(self):
-        if self.is_conditional and (not self.condition_field or not self.condition_operator or self.condition_value is None):
-            raise ValidationError("Conditional steps must have a condition field, operator, and value.")
+        from django.core.exceptions import ValidationError
+        if self.requires_edit and not self.editable_fields.exists():
+            raise ValidationError("At least one editable field must be selected if edit is required.")
+        if self.editable_fields.exclude(workflow=self.workflow).exists():
+            raise ValidationError("All editable fields must belong to the same workflow.")
 
     def evaluate_condition(self, document):
         if not self.is_conditional:
@@ -212,7 +250,7 @@ class ApprovalStep(models.Model):
 
 
     class Meta:
-        ordering = ['order']
+        ordering = ['workflow', 'order']
         unique_together = ['workflow', 'order']
 
     def __str__(self):
@@ -287,26 +325,38 @@ class Document(models.Model):
             send_approval_email(approvals_created[0])
         return approvals_created
 
-    def handle_approval(self, user, is_approved, comment, user_input, uploaded_file):
-        print(f"Attempting to fetch approval for user {user.id}, step {self.current_step.id}, document {self.id}")
-        approvals = self.approvals.filter(approver=user, step=self.current_step, is_approved__isnull=True)
-        print(f"Found {approvals.count()} matching approvals")
+    def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):
+
+        # approvals = self.approvals.filter(approver=user, step=self.current_step, is_approved__isnull=True)
         approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
-        print('approval , this where error happen',  approval )
-
-
-        if approval.step.requires_input:
-            if approval.step.input_type == 'file' and not uploaded_file:
-                raise ValidationError("File upload is required for this step.")
-            elif approval.step.input_type != 'file' and not user_input:
-                raise ValidationError("User input is required for this step.")
 
         approval.is_approved = is_approved
         approval.comment = comment
-        approval.user_input = user_input
-        approval.uploaded_file = uploaded_file
         approval.recorded_at = timezone.now()
+
+
+
+        if approval.step.requires_edit:
+            for field in approval.step.editable_fields.all():
+                field_name = f'dynamic_{field.id}'
+                if field.field_type == 'attachment':
+                    if field_name in uploaded_files:
+                        print('file', uploaded_files[field_name])
+                        DynamicFieldValue.objects.update_or_create(
+                            document=self,
+                            field=field,
+                            defaults={'file': uploaded_files[field_name]}
+                        )
+                else:
+                    if field_name in edited_values:
+                        DynamicFieldValue.objects.update_or_create(
+                            document=self,
+                            field=field,
+                            defaults={'value': edited_values[field_name]}
+                        )
+
         approval.save()
+
 
         if is_approved:
             self.move_to_next_step()

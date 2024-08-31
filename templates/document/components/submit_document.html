@@ -19,24 +19,24 @@
 
         {% include "document/components/editor.html" %}
 
-
-
-
-
-
+        <div class="flex flex-wrap -mx-2">
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
-    <div class="mt-4 mb-4">
-        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs form-control">
+
+    <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
+        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs">
             <div class="label">
-                <span class="label-text">{{ field.name }}</span>
+                <span class="label-text">{{ field.name }} {% if field.required %}
+                    <span class="text-error">*</span>
+                {% endif %}</span>
                  </div>
         </label>
+
             {% if field.field_type == 'product_list' %}
+
                 <div id="product-list-{{ field.id }}">
                     {% for product in field.default_products %}
                     <div class="mb-2 product-row">
-
                             <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
                             <input type="number" class="w-full max-w-xs input input-bordered"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
                             <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
@@ -65,26 +65,31 @@
                         Delete File
                     </button>
                 {% endif %}
-                <input type="file" class="w-full max-w-xs file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="file" class="w-full file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        {% if field.required and not field.file %}{% endif %}>
 
+            {% elif field.field_type  == 'textarea' %}
+            <textarea name="dynamic_{{ field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
+
             {% elif field.field_type == 'number' %}
-                <input type="number" class="w-full max-w-xs my-4 input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        value="{{ field.value }}" {% if field.required %}{% endif %}>
             {% elif field.field_type == 'text' %}
-                <input type="text" class="w-full max-w-xs input input-bordered"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="text" class="w-full input input-bordered"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+
+
                        {% if field.required %}{% endif %}>
             {% elif field.field_type == 'date' %}
 
                 <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 max-w-xs" placeholder="Select date"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Select date"
                        {% if field.required %}{% endif %}>
 
             {% elif field.field_type == 'boolean' %}
                 <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        {% if field.required %}{% endif %}>
             {% elif field.field_type == 'choice' %}
-                <select name="dynamic_{{ field.id }}" class="form-select" id="dynamic_{{ field.id }}"
+                <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" id="dynamic_{{ field.id }}"
                         {% if field.required %}{% endif %}>
                     <option value="">Select an option</option>
                     {% for choice in field.choices %}
@@ -95,7 +100,7 @@
         </div>
         {% endif %}
     {% endfor %}
-
+</div>
 
 
         {% if workflow.allow_custom_approvers %}

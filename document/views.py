@@ -10,7 +10,6 @@ from django.http import HttpResponse
 from django.template import Context, Template
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
-import requests
 from .forms import DocumentSubmissionForm
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Exists, OuterRef
@@ -25,9 +24,8 @@ import logging
 from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
-import time
-import json
-import datetime
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +246,6 @@ def document_list(request):
 
 @login_required
 def document_detail(request, pk):
-
     try:
         document = get_object_or_404(Document, pk=pk)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
@@ -269,36 +266,77 @@ def document_detail(request, pk):
                 prepared_value['value'] = value.value
             prepared_values.append(prepared_value)
 
+
         if request.method == 'POST' and user_approval and document.status == 'in_review':
+            errors = []
+            is_approved = request.POST.get('is_approved') == 'true'
+            comment = request.POST.get('comment', '')
+
+            edited_values = {}
+            uploaded_files = {}
+
+            if user_approval.step.requires_edit:
+                for field in user_approval.step.editable_fields.all():
+                    field_name = f'dynamic_{field.id}'
+                    if field.field_type == 'attachment':
+                        if field_name in request.FILES:
+                            uploaded_files[field_name] = request.FILES[field_name]
+                        elif field.required and field_name not in request.FILES:
+                            errors.append(f"{field.name} is required.")
+                    elif field.field_type == 'choice':
+                        value = request.POST.get(field_name)
+                        if value:
+                            if value not in field.get_choices():
+                                errors.append(f"Invalid choice for {field.name}")
+                            else:
+                                edited_values[field_name] = value
+                        elif field.required:
+                            errors.append(f"{field.name} is required.")
+                    else:
+                        value = request.POST.get(field_name)
+                        if value:
+                            edited_values[field_name] = value
+                        elif field.required:
+                            errors.append(f"{field.name} is required.")
+
+            if errors:
+                context = {
+                    'document': document,
+                    'user_approval': user_approval,
+                    'errors': errors,
+                    'form_data': request.POST,
+                }
+                html = render_to_string('document/form_errors.html', context)
+                return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
+
             try:
                 document.handle_approval(
                     user=request.user,
-                    is_approved=request.POST.get('is_approved') == 'true',
-                    comment=request.POST.get('comment', ''),
-                    user_input=request.POST.get('user_input', ''),
-                    uploaded_file=request.FILES.get('user_input_file')
+                    is_approved=is_approved,
+                    comment=comment,
+                    edited_values=edited_values,
+                    uploaded_files=uploaded_files
                 )
-                # messages.success(request, "Approval decision recorded successfully.")
-            except Approval.MultipleObjectsReturned as e:
-                logger.error(f"MultipleObjectsReturned in handle_approval for document {document.id}, user {request.user.id}, step {document.current_step.id}")
-                # Log the conflicting approvals
-                conflicting_approvals = document.approvals.filter(
-                    approver=request.user,
-                    step=document.current_step,
-                    is_approved__isnull=True
-                )
-                logger.error(f"Conflicting approvals: {list(conflicting_approvals.values('id', 'created_at'))}")
-                # messages.error(request, "An error occurred due to multiple pending approvals. Please contact support.")
-            except ValidationError as e:
-                messages.error(request, str(e))
-            # return redirect('document_approval:document_detail', pk=document.pk)
+                messages.success(request, "Thank you for reviewing the document")
+                if request.htmx:
+                    response = render(request, 'partials/submit_success.html', {'document': document})
+                    return retarget(response, '#content-div')
+                return redirect('document_approval:document_detail', pk=document.pk)
+            except Exception as e:
+                logger.error(f"Error processing approval: {str(e)}")
+                errors.append(f"Error processing approval: {str(e)}")
+            context = {
+                'document': document,
+                'user_approval': user_approval,
+                'errors': errors,
+                'form_data': request.POST,
+            }
+            html = render_to_string('document/form_errors.html', context)
+            return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
-            messages.success(request, "Thanks you for review the document")
 
-            response = render(request, 'partials/submit_success.html', {'document':document})
 
-            return retarget(response, '#content-div')
-
+        editable_fields = user_approval.step.editable_fields.all() if user_approval and user_approval.step.requires_edit else []
 
         ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
         context = {
@@ -310,7 +348,8 @@ def document_detail(request, pk):
             'can_draw' : document.can_withdraw(request.user),
             'can_cancel' : document.can_cancel(request.user),
             'is_favorite': is_favorite,
-            'ordered_approvals':ordered_approvals
+            'ordered_approvals':ordered_approvals,
+            'editable_fields': editable_fields,
         }
 
         if request.htmx:
@@ -329,16 +368,25 @@ def resubmit_document(request, pk):
 
     document = get_object_or_404(Document, pk=pk)
     workflow = document.workflow
-    dynamic_fields = workflow.dynamic_fields.all()
+    all_dynamic_fields = workflow.dynamic_fields.all()
+
+     # Identify fields that are editable in any step
+    editable_fields = DynamicField.objects.filter(
+        approval_steps__workflow=workflow
+    ).distinct()
+
+    non_editable_fields = all_dynamic_fields.exclude(id__in=editable_fields)
 
 
     prepared_fields = []
-    for field in dynamic_fields:
+    for field in non_editable_fields:
         field_data = {
             'id': field.id,
             'name': field.name,
             'field_type': field.field_type,
             'required': field.required,
+            'input_width': field.input_width,
+            'textarea_rows': field.textarea_rows,
         }
         field_value = document.dynamic_values.filter(field=field).first()
         if field.field_type == 'product_list':
@@ -361,7 +409,7 @@ def resubmit_document(request, pk):
         errors = []
         total_quantity = 0
 
-        for field in dynamic_fields:
+        for field in non_editable_fields:
             if field.field_type == 'product_list':
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
@@ -538,15 +586,25 @@ def cancel_document(request, document_id):
 @login_required
 def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
-    dynamic_fields = workflow.dynamic_fields.all()
+    all_dynamic_fields = workflow.dynamic_fields.all()
+
+     # Identify fields that are editable in any step
+    editable_fields = DynamicField.objects.filter(
+        approval_steps__workflow=workflow
+    ).distinct()
+
+    non_editable_fields = all_dynamic_fields.exclude(id__in=editable_fields)
 
     prepared_fields = []
-    for field in dynamic_fields:
+    for field in non_editable_fields:
         field_data = {
             'id': field.id,
             'name': field.name,
             'field_type': field.field_type,
             'required': field.required,
+            'editable_in_steps': field in editable_fields,
+            'input_width': field.input_width,
+            'textarea_rows': field.textarea_rows,
         }
         if field.field_type == 'choice':
             field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
@@ -568,7 +626,12 @@ def submit_document(request, workflow_id):
             document.status = 'in_review'
             document.current_step = workflow.steps.first()
 
-            for field in dynamic_fields:
+            for field in non_editable_fields:
+                field_key = f'dynamic_{field.id}'
+
+                # Check if the field is required for submission
+                is_required_for_submission = field.required and field not in editable_fields
+
                 if field.field_type == 'product_list':
                     product_names = request.POST.getlist(f'product_name_{field.id}[]')
                     product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
@@ -588,7 +651,7 @@ def submit_document(request, workflow_id):
                             field=field,
                             json_value=products
                         ))
-                    elif field.required:
+                    elif is_required_for_submission:
                         errors.append(f"{field.name} is required.")
 
                 elif field.name == 'Total Quantity':
@@ -606,12 +669,12 @@ def submit_document(request, workflow_id):
                             field=field,
                             file=file
                         ))
-                    elif field.required:
+                    elif is_required_for_submission:
                         errors.append(f"{field.name} is required.")
 
                 else:
                     value = request.POST.get(f'dynamic_{field.id}')
-                    if field.required and not value:
+                    if is_required_for_submission and not value:
                         errors.append(f"{field.name} is required.")
                     elif value:  # Only create a DynamicFieldValue if there's a value
                         dynamic_field_values.append(DynamicFieldValue(

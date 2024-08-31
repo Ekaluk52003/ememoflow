@@ -2,13 +2,13 @@ from django import forms
 from .models import Document
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Field
+from django import forms
+
 
 class DocumentSubmissionForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['title', 'content']
-      
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

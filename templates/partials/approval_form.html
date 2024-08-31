@@ -15,23 +15,7 @@
               <textarea name="comment" id="comment" class="form-control"></textarea>
           </div>
 
-          {% if user_approval.step.requires_input %}
-            <div class="mb-3">
-                <label for="user_input" class="form-label">{{ user_approval.step.input_prompt }}</label>
-                {% if user_approval.step.input_type == 'text' %}
-                    <input type="text" class="form-control" id="user_input" name="user_input" required>
-                {% elif user_approval.step.input_type == 'number' %}
-                    <input type="number" class="form-control" id="user_input" name="user_input" required>
-                {% elif user_approval.step.input_type == 'date' %}
-                    <input type="date" class="form-control" id="user_input" name="user_input" required>
-
-                {% elif user_approval.step.input_type == 'file' %}
-
-                    <input type="file" class="form-control" id="user_input_file" name="user_input_file" required>
-                    <small class="form-text text-muted">Allowed file types: {{ user_approval.step.allowed_file_extensions }}</small>
-                {% endif %}
-            </div>
-        {% endif %}
+   
 
           <button type="submit" class="btn btn-primary">Submit Decision</button>
       </form>

@@ -2,7 +2,9 @@
 
 <div class="mt-4">
 
-    <div class="flex justify-between items-center">
+
+
+    <div class="flex items-center justify-between">
         <div><h3 class="text-lg font-medium leading-6 text-base-content">Document Detail Page</h3>
             <p class="max-w-2xl mt-1 text-sm text-gray-500">Please Review Document</p></div>
         <div>
@@ -12,25 +14,25 @@
     </div>
 
 
-    <div class="p-6 mt-6 mb-6 rounded-2xl bg-white border shadow-sm">
+    <div class="p-6 mt-6 mb-6 bg-white border shadow-sm rounded-2xl">
         {% if error_message %}
             <div class="alert alert-danger" role="alert">
                 {{ error_message }}
             </div>
         {% endif %}
-        <h5 class="text-lg font-medium leading-6 text-base-content mt-4">Title :
+        <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Title :
             <span class="text-xl text-gray-600">{{ document.title }} </span>
-            <article class="prose prose-sm max-w-none">{{ document.content|safe}}</article>
+            <article class="prose-sm prose max-w-none">{{ document.content|safe}}</article>
     </div>
 
 
-    <div class="p-6 mt-6 mb-6 rounded-2xl bg-white border shadow-sm">
+    <div class="p-6 mt-6 mb-6 bg-white border shadow-sm rounded-2xl">
                 {% include "partials/document_status.html" %}
-  <h5 class="text-lg font-medium leading-6 text-base-content mt-3">Submitted by:
-    <span class="text-primary font-bold text-md">{{ document.submitted_by.username }}</span>
+  <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">Submitted by:
+    <span class="font-bold text-primary text-md">{{ document.submitted_by.username }}</span>
 
-  <h5 class="text-lg font-medium leading-6 text-base-content mt-3">Submitted at:
-    <span class="text-primary font-bold text-md">{{ document.created_at }}</span>
+  <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">Submitted at:
+    <span class="font-bold text-primary text-md">{{ document.created_at }}</span>
 
                 {% for value in prepared_values %}
 
@@ -67,28 +69,7 @@
                         {% endif %}
                 {% endfor %}
 
-                <h2 class="mb-3">User Input</h2>
-
-        {% for approval in document.approvals.all %}
-        {% if approval.step.requires_input %}
-        <li class="list-group-item">
-        <br>{{ approval.step.input_prompt }}:
-        <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
-        </li>
-        {% if approval.step.input_type == 'file' %}
-        <li class="list-group-item">
-            {% if approval.uploaded_file %}
-                <a href="{{ approval.uploaded_file.url }}">{{ approval.uploaded_file.name }}</a>
-                <h5 class="mb-1">In put by {{ approval.approver.username }}</h5>
-            {% else %}
-                No file uploaded
-            {% endif %}
-        </li>
-        {% else %}
-            {{ approval.user_input|default:"No input provided" }}
-        {% endif %}
-    {% endif %}
-            {% endfor %}
+      
 
             {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
 
@@ -100,7 +81,7 @@
 
         {% if document.approvals.all|length > 0  %}
 
-        <div class="p-6 mt-6 mb-6 rounded-2xl bg-white border shadow-sm">
+        <div class="p-6 mt-6 mb-6 bg-white border shadow-sm rounded-2xl">
 
 
             <h3 class="text-lg font-medium leading-6 text-gray-900">Approval Steps</h3>
@@ -116,10 +97,10 @@
                                 <span class="font-medium">{{ approval.step.name }} - {{ approval.approver.username }}</span>
 
                                 {% if approval.comment %}
-                                <p class="text-sm text-gray-600 mt-2"><small>Comment: {{ approval.comment }}</small></p>
+                                <p class="mt-2 text-sm text-gray-600"><small>Comment: {{ approval.comment }}</small></p>
                             {% endif %}
                             {% if approval.recorded_at %}
-                            <p class="text-sm text-gray-600 mt-2"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
+                            <p class="mt-2 text-sm text-gray-600"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
                             {% endif %}
 
 
@@ -127,11 +108,11 @@
 
                             <div>
                               {% if approval.is_approved == True %}
-                                <span class="px-2 py-1 bg-green-500 text-white text-sm rounded flex items-center">Approved</span>
+                                <span class="flex items-center px-2 py-1 text-sm text-white bg-green-500 rounded">Approved</span>
                             {% elif approval.is_approved == False %}
-                                <span class="px-2 py-1 bg-red-500 text-white text-sm rounded flex items-center">Rejected</span>
+                                <span class="flex items-center px-2 py-1 text-sm text-white bg-red-500 rounded">Rejected</span>
                             {% else %}
-                                <span class="px-2 py-1 bg-blue-500 text-white text-sm rounded flex items-center">Pending</span>
+                                <span class="flex items-center px-2 py-1 text-sm text-white bg-blue-500 rounded">Pending</span>
                             {% endif %}
                             </div>
                         </div>
@@ -146,44 +127,71 @@
 
 
         {% if can_approve %}
-        <div id="approval-form" class="bg-white rounded-xl p-6 mt-6">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-6">Approve Review</h3>
-            <form hx-post="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div">
-                {% csrf_token %}
-                <div class="mb-3 text-xl">
-                    <div class="flex items-center mb-4">
-                        <input class="w-8 h-8 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" type="radio" name="is_approved" id="approve" value="true" required>
-                        <label class="font-medium text-gray-900 pl-4" for="approve">Approve</label>
-                    </div>
-                    <div class="flex items-center mb-4">
-                        <input class="w-8 h-8 text-red-500 bg-gray-100 border-gray-300 rounded focus:ring-red-500"  type="radio" name="is_approved" id="reject" value="false" required>
-                        <label class="font-medium text-red-500 pl-4" for="reject">Reject</label>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="comment" class="form-label">Comment:</label>
-                    <textarea  class="textarea textarea-bordered w-full" name="comment" id="comment" rows="3"></textarea>
-                </div>
-                {% if user_approval.step.requires_input %}
-                <div class="mb-3">
-                    <label>{{ user_approval.step.input_prompt }}</label>
-                    {% if user_approval.step.input_type == 'text' %}
-                        <input type="text" name="user_input">
-                    {% elif user_approval.step.input_type == 'number' %}
-                        <input type="number" name="user_input">
-                    {% elif user_approval.step.input_type == 'date' %}
-                        <input type="date" name="user_input">
-                    {% elif user_approval.step.input_type == 'file' %}
-                        <input type="file" name="user_input_file">
-                        <small>Allowed file types: {{ user_approval.step.allowed_file_extensions }}</small>
-                    {% endif %}
-                </div>
-                {% endif %}
-                <button type="submit" class="btn btn-primary">Submit</button>
-            </form>
+<div id="approval-form" class="p-6 mt-6 bg-white rounded-xl">
+    <h3 class="mb-6 text-lg font-medium leading-6 text-gray-900">Approve Review</h3>
+    <form hx-post="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div id="form-errors">
+            <!-- Errors will be displayed here -->
         </div>
+        <div class="mb-3 text-xl">
+            <div class="flex items-center mb-4">
+                <input class="w-8 h-8 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" type="radio" name="is_approved" id="approve" value="true" >
+                <label class="pl-4 font-medium text-gray-900" for="approve">Approve</label>
+            </div>
+            <div class="flex items-center mb-4">
+                <input class="w-8 h-8 text-red-500 bg-gray-100 border-gray-300 rounded focus:ring-red-500"  type="radio" name="is_approved" id="reject" value="false" >
+                <label class="pl-4 font-medium text-red-500" for="reject">Reject</label>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="comment" class="form-label">Comment:</label>
+            <textarea  class="w-full textarea textarea-bordered" name="comment" id="comment" rows="3"></textarea>
+        </div>
+
+        {% if user_approval.step.requires_edit %}
+        <h3 class="mt-3 mb-3 text-lg font-medium leading-6 text-gray-900">User Input</h3>
+        <div class="flex flex-wrap -mx-2">
+        {% for editable_field in editable_fields %}
+        <div class="mb-3 px-2 {% if editable_field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
+                <label class="w-full max-w-xs">
+                    <div class="label">
+                        <span class="label-text">{{ editable_field.name }}{% if editable_field.required %}
+                            <span class="text-error">*</span>
+                        {% endif %}</span>
+                         </div>
+                </label>
+                {% if editable_field.field_type == 'attachment' %}
+                    <input type="file" name="dynamic_{{ editable_field.id }}" id="dynamic_{{ editable_field.id }}" class="w-full file-input file-input-bordered" >
+
+                    {% elif editable_field.field_type == 'choice' %}
+                    <select name="dynamic_{{ editable_field.id }}" class="w-full select select-bordered" {% if editable_field.required %}required{% endif %}>
+                        <option value="">Select an option</option>
+                        {% for choice in editable_field.get_choices %}
+                            <option value="{{ choice }}">{{ choice }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif editable_field.field_type == 'textarea' %}
+                <textarea name="dynamic_{{ editable_field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ editable_field.textarea_rows }}"></textarea>
+
+                {% elif editable_field.field_type == 'text' %}
+                    <input type="text" name="dynamic_{{ editable_field.id }}" class="w-full input input-bordered"  >
+                {% elif editable_field.field_type == 'number' %}
+                    <input type="number" name="dynamic_{{ editable_field.id }}" class="block w-full mt-1" >
+                {% elif editable_field.field_type == 'date' %}
+                    <input type="date" name="dynamic_{{ editable_field.id }}" class="block w-full mt-1" >
+                {% elif editable_field.field_type == 'boolean' %}
+                    <input type="checkbox" name="dynamic_{{ editable_field.id }}" class="mt-1">
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
         {% endif %}
 
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endif %}
 
 
 

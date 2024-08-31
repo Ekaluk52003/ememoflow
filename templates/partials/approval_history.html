@@ -4,7 +4,7 @@
 <h2 class="mb-3">Approval Process</h2>
 {% endif %}
 
-<ul class="list-group mb-4">
+<ul class="mb-4 list-group">
     {% for approval in ordered_approvals %}
         <li class="list-group-item {% if approval.step == document.current_step and approval.is_approved is None  %}{% endif %} {% if approval.is_approved == False   %} list-group-item-secondary list-group-item-danger{% endif %} {% if approval.is_approved == True%}list-group-item-success {% endif %}">
             <div class="d-flex w-100 justify-content-between">
@@ -16,7 +16,7 @@
                 {% elif approval.is_approved == False %}
                     <span class="badge bg-danger">Rejected</span>
                 {% else %}
-                    <span class="badge bg-blue-200">Pending</span>
+                    <span class="bg-blue-200 badge">Pending</span>
                 {% endif %}
             </div>
             {% if approval.comment %}
@@ -30,7 +30,7 @@
 </ul>
 
 {% if can_approve %}
-<h2 class="mb-3">Your Approval</h2>
+<h2 class="mb-3">Your Approval!!</h2>
 <form method="post"   hx-post="{% url 'document_approval:document_detail' document.pk %}" target="#document-status" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="mb-3">
@@ -48,23 +48,7 @@
         <label for="comment" class="form-label">Comment:</label>
         <textarea class="form-control" name="comment" id="comment" rows="3"></textarea>
     </div>
-    {% if user_approval.step.requires_input %}
-    <div class="mb-3">
-        <label for="user_input" class="form-label">{{ user_approval.step.input_prompt }}</label>
-        {% if user_approval.step.input_type == 'text' %}
-            <input type="text" class="form-control" id="user_input" name="user_input" required>
-        {% elif user_approval.step.input_type == 'number' %}
-            <input type="number" class="form-control" id="user_input" name="user_input" required>
-        {% elif user_approval.step.input_type == 'date' %}
-            <input type="date" class="form-control" id="user_input" name="user_input" required>
-
-        {% elif user_approval.step.input_type == 'file' %}
-
-            <input type="file" class="form-control" id="user_input_file" name="user_input_file" required>
-            <small class="form-text text-muted">Allowed file types: {{ user_approval.step.allowed_file_extensions }}</small>
-        {% endif %}
-    </div>
-{% endif %}
+ 
     <button type="submit" class="btn btn-primary">Submit Approval</button>
 </form>
 {% endif %}
