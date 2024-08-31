@@ -67,12 +67,10 @@
 
             {% elif field.field_type == 'text' %}
                     <input type="text" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
-
                     {% elif field.field_type  == 'textarea' %}
-                    <textarea name="dynamic_{{ field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
+                    <textarea name="dynamic_{{ field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
                 {% elif field.field_type == 'number' %}
-                    <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                           value="{{ field.value }}" {% if field.required %}{% endif %}>
+                    <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'date' %}
                     <input type="date" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                            value="{{ field.value}}" {% if field.required %}{% endif %}>
