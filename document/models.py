@@ -335,19 +335,21 @@ class Document(models.Model):
         approval.recorded_at = timezone.now()
 
 
-        if approval.step.requires_edit:
-            for field in approval.step.editable_fields.all():
-                field_name = f'dynamic_{field.id}'
-                if field.field_type == 'attachment':
-                    if field_name in uploaded_files:
-                        print('file', uploaded_files[field_name])
-                        DynamicFieldValue.objects.update_or_create(
-                            document=self,
-                            field=field,
-                            defaults={'file': uploaded_files[field_name]}
-                        )
-                else:
-                    if field_name in edited_values:
+        if self.current_step.requires_edit:
+                for field in self.current_step.editable_fields.all():
+                    field_name = f'dynamic_{field.id}'
+                    if field.field_type == 'attachment' and field_name in uploaded_files:
+                        file = uploaded_files[field_name]
+                        try:
+                            field.validate_file(file)
+                            DynamicFieldValue.objects.update_or_create(
+                                document=self,
+                                field=field,
+                                defaults={'file': file}
+                            )
+                        except ValidationError as ve:
+                            raise ValidationError(f"Error with {field.name}: {ve}")
+                    elif field_name in edited_values:
                         DynamicFieldValue.objects.update_or_create(
                             document=self,
                             field=field,

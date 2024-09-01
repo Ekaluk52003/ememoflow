@@ -244,6 +244,16 @@ def document_list(request):
         return render(request, 'partials/document_list_partial.html', context)
     return render(request, 'document/document_list.html', context)
 
+def render_error_response(request, document, user_approval, errors):
+    context = {
+        'document': document,
+        'user_approval': user_approval,
+        'errors': errors,
+        'form_data': request.POST,
+    }
+    html = render_to_string('document/form_errors.html', context)
+    return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
+
 @login_required
 def document_detail(request, pk):
 
@@ -320,10 +330,17 @@ def document_detail(request, pk):
 
                 )
                 messages.success(request, "Thanks you for reviewing document")
+
+            except ValidationError as ve:
+                errors.extend(ve.messages if hasattr(ve, 'messages') else [str(ve)])
+                return render_error_response(request, document, user_approval, errors)
+
             except Exception as e:
                logger.error(f"Error processing approval: {str(e)}")
                logger.error(traceback.format_exc())  # This will log the full traceback
                errors.append(f"Error processing approval: {str(e)}")
+               errors.append(f"An unexpected error occurred while processing your approval.")
+               return render_error_response(request, document, user_approval, errors)
 
             if request.htmx:
                     response = render(request, 'partials/submit_success.html', {'document': document})
