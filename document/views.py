@@ -633,6 +633,10 @@ def submit_document(request, workflow_id):
         total_quantity = 0
         errors = []
         dynamic_field_values = []
+        
+        if not form.is_valid():
+            errors.extend([error for sublist in form.errors.values() for error in sublist])
+
 
         if form.is_valid():
             document = form.save(commit=False)
