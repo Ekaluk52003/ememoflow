@@ -679,11 +679,15 @@ def submit_document(request, workflow_id):
                 elif field.field_type == 'attachment':
                     file = request.FILES.get(f'dynamic_{field.id}')
                     if file:
-                        dynamic_field_values.append(DynamicFieldValue(
-                            document=document,
-                            field=field,
-                            file=file
-                        ))
+                        try:
+                            field.validate_file(file)
+                            dynamic_field_values.append(DynamicFieldValue(
+                                document=document,
+                                field=field,
+                                file=file
+                            ))
+                        except ValidationError as e:
+                            errors.append(f"Error uploading file for {field.name}: {str(e)}")
                     elif is_required_for_submission:
                         errors.append(f"{field.name} is required.")
 
