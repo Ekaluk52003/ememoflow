@@ -9,7 +9,13 @@
             <p class="max-w-2xl mt-1 text-sm text-gray-500">Please Review Document</p></div>
         <div>
 
-            <a href="{% url 'document_approval:generate_pdf_report' document.id 1 %}" class="btn btn-primary" target="_blank">PDF Report</a></div>
+            <div>
+            {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
+            <div>
+                <a href="{% url 'document_approval:generate_pdf_report' document.id 1 %}" class="btn btn-primary" target="_blank">PDF Report</a></div>
+            </div>
+</div>
+
 
     </div>
 
@@ -71,12 +77,9 @@
 
 
 
-            {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
 
 
         </div>
-
-
 
 
         {% if document.approvals.all|length > 0  %}
@@ -195,7 +198,9 @@
 
 
 
-        {% include "partials/document_actions.html" %}
+    {% include "partials/document_actions.html" %}
+
+
 
     </div>
 
