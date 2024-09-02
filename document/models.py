@@ -166,8 +166,8 @@ class ApprovalStep(models.Model):
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField()
-    # approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
-    approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
+    approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+    # approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
 
     # Fields for conditional logic
     is_conditional = models.BooleanField(default=False)
