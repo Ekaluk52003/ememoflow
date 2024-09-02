@@ -166,7 +166,8 @@ class ApprovalStep(models.Model):
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='steps')
     name = models.CharField(max_length=100)
     order = models.PositiveIntegerField()
-    approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+    # approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
+    approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
     # approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
 
     # Fields for conditional logic
@@ -201,6 +202,10 @@ class ApprovalStep(models.Model):
 
     class Meta:
         ordering = ['workflow', 'order']
+
+    def save(self, *args, **kwargs):
+        # Save the object first
+        super().save(*args, **kwargs)
 
     def get_cc_list(self):
         return [email.strip() for email in self.cc_emails.split(',') if email.strip()]
