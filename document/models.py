@@ -203,9 +203,6 @@ class ApprovalStep(models.Model):
     class Meta:
         ordering = ['workflow', 'order']
 
-    def save(self, *args, **kwargs):
-        # Save the object first
-        super().save(*args, **kwargs)
 
     def get_cc_list(self):
         return [email.strip() for email in self.cc_emails.split(',') if email.strip()]
@@ -213,12 +210,6 @@ class ApprovalStep(models.Model):
     def __str__(self):
         return f"{self.workflow.name} - Step {self.order}: {self.name}"
 
-    def clean(self):
-        # from django.core.exceptions import ValidationError
-        # if self.requires_edit and not self.editable_fields.exists():
-        #     raise ValidationError("At least one editable field must be selected if edit is required.")
-        if self.editable_fields.exclude(workflow=self.workflow).exists():
-            raise ValidationError("All editable fields must belong to the same workflow.")
 
     def evaluate_condition(self, document):
         if not self.is_conditional:
