@@ -2,7 +2,11 @@
 
 <div x-data="{ show: true }">
     <div class="my-4 alert alert-info" role="alert" x-show="show">
-        <div class="flex items-start justify-between">
+    <div class="error-messages">
+
+
+        <div class="flex items-start">
+
             <svg
                 @click="show = false"
                 xmlns="http://www.w3.org/2000/svg"
@@ -17,13 +21,31 @@
                     d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
             </svg>
-            <div class="flex-grow">
-                {% for error in errors %}
-                    <div class="mb-1 ml-2">{{ error }}</div>
-                {% endfor %}
+            <div>
+            {% for field, field_errors in errors.items %}
+            <div class="ml-4 field-error">
+                <div class="flex">
+                    <strong>{{ field }}:</strong>
+                    <ul>
+                        {% for error in field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endfor %}
             </div>
 
+
+
         </div>
+
+
+
+
+
+
     </div>
+</div>
 </div>
 {% endif %}

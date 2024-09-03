@@ -15,17 +15,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { Extension } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold';
-import { marked } from 'marked';
-// import BulletList from '@tiptap/extension-bullet-list'
-// import ListItem from '@tiptap/extension-list-item'
-// import Paragraph from '@tiptap/extension-paragraph'
-
-// window.marked = marked;
-
-// Alpine.data('app', () => ({
-//   open: false,
-
-// }));
 
 const CustomBold = Bold.extend({
   addAttributes() {
@@ -246,7 +235,7 @@ document.addEventListener("alpine:init", () => {
           button.removeEventListener('focus', this.preventScrollOnFocus);
         });
       };
-  
+
 
         }
 

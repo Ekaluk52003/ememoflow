@@ -380,18 +380,15 @@ def document_detail(request, pk):
 
 @login_required
 def resubmit_document(request, pk):
-
     document = get_object_or_404(Document, pk=pk)
     workflow = document.workflow
     all_dynamic_fields = workflow.dynamic_fields.all()
 
-     # Identify fields that are editable in any step
     editable_fields = DynamicField.objects.filter(
         approval_steps__workflow=workflow
     ).distinct()
 
     non_editable_fields = all_dynamic_fields.exclude(id__in=editable_fields)
-
 
     prepared_fields = []
     for field in non_editable_fields:
@@ -419,51 +416,64 @@ def resubmit_document(request, pk):
         return HttpResponseForbidden("You don't have permission to resubmit this document.")
 
     if request.method == 'POST':
-        form = DocumentSubmissionForm(request.POST, instance=document)
 
-        errors = []
+        form = DocumentSubmissionForm(request.POST, instance=document)
+        errors = {}
         total_quantity = 0
 
+        # Validate form fields
+        if not form.is_valid():
+            errors.update(form.errors)
+
+        # Validate dynamic fields
         for field in non_editable_fields:
+            field_key = f'dynamic_{field.id}'
+
             if field.field_type == 'product_list':
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
                 products = []
-                for name, quantity in zip(product_names, product_quantities):
-                    if name and quantity:
-                        try:
-                            qty = int(quantity)
-                            products.append({'name': name, 'quantity': qty})
-                            total_quantity += qty
-                        except ValueError:
-                            errors.append(request, f"Invalid quantity for product {name}")
+                field_errors = []
 
-                DynamicFieldValue.objects.update_or_create(
-                    document=document,
-                    field=field,
-                    defaults={'json_value': products}
-                )
+                for name, quantity in zip(product_names, product_quantities):
+                    if name or quantity:
+                        if not name:
+                            field_errors.append("Product name is required")
+                        if not quantity:
+                            field_errors.append("Product quantity is required")
+                        else:
+                            try:
+                                qty = int(quantity)
+                                products.append({'name': name, 'quantity': qty})
+                                total_quantity += qty
+                            except ValueError:
+                                field_errors.append(f"Invalid quantity for product {name}")
+
+                if field_errors:
+                    errors[field.name] = field_errors
+                else:
+                    DynamicFieldValue.objects.update_or_create(
+                        document=document,
+                        field=field,
+                        defaults={'json_value': products}
+                    )
 
             elif field.field_type == 'attachment':
-                 file = request.FILES.get(f'dynamic_{field.id}')
-                 existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
-                 if field.required and not file and not (existing_value and existing_value.file):
-                    errors.append(f"Attachment for {field.name} is required.")
-                 elif file:
-                        try:
-                            # Only update or create if a new file is provided
-                            DynamicFieldValue.objects.update_or_create(
-                                document=document,
-                                field=field,
-                                defaults={'file': file}
-                            )
-                        except Exception as e:
-                            errors.append(f"Error uploading file for {field.name}: {str(e)}")
-
+                file = request.FILES.get(f'dynamic_{field.id}')
+                existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
+                if field.required and not file and not (existing_value and existing_value.file):
+                    errors[field.name] = ["Attachment is required."]
+                elif file:
+                    try:
+                        DynamicFieldValue.objects.update_or_create(
+                            document=document,
+                            field=field,
+                            defaults={'file': file}
+                        )
+                    except Exception as e:
+                        errors[field.name] = [f"Error uploading file: {str(e)}"]
 
             elif field.field_type == 'number' and field.name == 'Total Quantity':
-                # Update the Total Quantity field with the calculated total
-                print('total--------', total_quantity)
                 DynamicFieldValue.objects.update_or_create(
                     document=document,
                     field=field,
@@ -472,26 +482,18 @@ def resubmit_document(request, pk):
             else:
                 value = request.POST.get(f'dynamic_{field.id}')
                 if field.required and not value:
-                    #  errors.append(request, f"{field.name} is required.")
-                     errors.append(f"{field.name} is required.")
-
-                try:
-                    DynamicFieldValue.objects.update_or_create(
-                        document=document,
-                        field=field,
-                        defaults={'value': value if value is not None else ''}
-                    )
-                except Exception as e:
-                    errors.append(f"Error saving {field.name}: {str(e)}")
-                    print(f"Error saving field {field.name}: {str(e)}")
-
-
-
-        if not form.is_valid():
-            errors.extend([error for sublist in form.errors.values() for error in sublist])
+                    errors[field.name] = ["This field is required."]
+                else:
+                    try:
+                        DynamicFieldValue.objects.update_or_create(
+                            document=document,
+                            field=field,
+                            defaults={'value': value if value is not None else ''}
+                        )
+                    except Exception as e:
+                        errors[field.name] = [f"Error saving field: {str(e)}"]
 
         if not errors:
-            # Only resubmit and process if there are no errors
             document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
             custom_approvers = {}
             if workflow.allow_custom_approvers:
@@ -502,7 +504,7 @@ def resubmit_document(request, pk):
             document.create_approvals(custom_approvers)
             messages.success(request, "Document re-submitted successfully")
 
-            response = render(request, 'partials/submit_success.html', {'document':document})
+            response = render(request, 'partials/submit_success.html', {'document': document})
             return retarget(response, '#content-div')
 
         context = {
@@ -514,25 +516,20 @@ def resubmit_document(request, pk):
         html = render_to_string('document/form_errors.html', context)
         return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
-
     form = DocumentSubmissionForm(instance=document)
 
-
     context = {
-            'form': form,
-            'document': document,
-            'workflow': document.workflow,
-            'prepared_fields': prepared_fields,
-            'potential_approvers': CustomUser.objects.all(),
-        }
-
+        'form': form,
+        'document': document,
+        'workflow': document.workflow,
+        'prepared_fields': prepared_fields,
+        'potential_approvers': CustomUser.objects.all(),
+    }
 
     if request.htmx:
-            return render(request, 'document/components/resubmit_document.html', context)
-
+        return render(request, 'document/components/resubmit_document.html', context)
 
     return render(request, 'document/resubmit_document_full.html', context)
-
 
 
 @login_required
@@ -598,12 +595,12 @@ def cancel_document(request, document_id):
 
     return retarget(response, '#content-div')
 
+
 @login_required
 def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
     all_dynamic_fields = workflow.dynamic_fields.all()
 
-     # Identify fields that are editable in any step
     editable_fields = DynamicField.objects.filter(
         approval_steps__workflow=workflow
     ).distinct()
@@ -629,127 +626,81 @@ def submit_document(request, workflow_id):
 
     if request.method == 'POST':
         form = DocumentSubmissionForm(request.POST)
-
         total_quantity = 0
-        errors = []
+        errors = {}
         dynamic_field_values = []
-        
+
+        # Validate form fields
         if not form.is_valid():
-            errors.extend([error for sublist in form.errors.values() for error in sublist])
+            errors.update(form.errors)
 
+        # Validate dynamic fields
+        for field in non_editable_fields:
+            field_key = f'dynamic_{field.id}'
+            is_required_for_submission = field.required and field not in editable_fields
 
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.submitted_by = request.user
-            document.workflow = workflow
-            document.status = 'in_review'
-            document.current_step = workflow.steps.first()
+            if field.field_type == 'product_list':
+                product_names = request.POST.getlist(f'product_name_{field.id}[]')
+                product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                products = []
+                field_errors = []
 
-            for field in non_editable_fields:
-                field_key = f'dynamic_{field.id}'
-
-                # Check if the field is required for submission
-                is_required_for_submission = field.required and field not in editable_fields
-
-                if field.field_type == 'product_list':
-                    product_names = request.POST.getlist(f'product_name_{field.id}[]')
-                    product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
-                    products = []
-                    for name, quantity in zip(product_names, product_quantities):
-                        if name and quantity:
+                for name, quantity in zip(product_names, product_quantities):
+                    if name or quantity:
+                        if not name:
+                            field_errors.append("Product name is required")
+                        if not quantity:
+                            field_errors.append("Product quantity is required")
+                        else:
                             try:
                                 qty = int(quantity)
                                 products.append({'name': name, 'quantity': qty})
                                 total_quantity += qty
                             except ValueError:
-                                errors.append(f"Invalid quantity for product {name}")
+                                field_errors.append(f"Invalid quantity for product {name}")
 
-                    if products:
-                        dynamic_field_values.append(DynamicFieldValue(
-                            document=document,
-                            field=field,
-                            json_value=products
-                        ))
-                    elif is_required_for_submission:
-                        errors.append(f"{field.name} is required.")
-
-                elif field.name == 'Total Quantity':
+                if products:
                     dynamic_field_values.append(DynamicFieldValue(
-                        document=document,
                         field=field,
-                        value=str(total_quantity)
+                        json_value=products
+                    ))
+                elif is_required_for_submission:
+                    field_errors.append("At least one product is required")
+
+                if field_errors:
+                    errors[field.name] = field_errors
+
+            elif field.name == 'Total Quantity':
+                dynamic_field_values.append(DynamicFieldValue(
+                    field=field,
+                    value=str(total_quantity)
+                ))
+
+            elif field.field_type == 'attachment':
+                file = request.FILES.get(f'dynamic_{field.id}')
+                if file:
+                    try:
+                        field.validate_file(file)
+                        dynamic_field_values.append(DynamicFieldValue(
+                            field=field,
+                            file=file
+                        ))
+                    except ValidationError as e:
+                        errors[field.name] = [str(e)]
+                elif is_required_for_submission:
+                    errors[field.name] = ["This field is required"]
+
+            else:
+                value = request.POST.get(f'dynamic_{field.id}')
+                if is_required_for_submission and not value:
+                    errors[field.name] = ["This field is required"]
+                elif value:
+                    dynamic_field_values.append(DynamicFieldValue(
+                        field=field,
+                        value=value
                     ))
 
-                elif field.field_type == 'attachment':
-                    file = request.FILES.get(f'dynamic_{field.id}')
-                    if file:
-                        try:
-                            field.validate_file(file)
-                            dynamic_field_values.append(DynamicFieldValue(
-                                document=document,
-                                field=field,
-                                file=file
-                            ))
-                        except ValidationError as e:
-                            errors.append(f"Error uploading file for {field.name}: {str(e)}")
-                    elif is_required_for_submission:
-                        errors.append(f"{field.name} is required.")
-
-                else:
-                    value = request.POST.get(f'dynamic_{field.id}')
-                    if is_required_for_submission and not value:
-                        errors.append(f"{field.name} is required.")
-                    elif value:  # Only create a DynamicFieldValue if there's a value
-                        dynamic_field_values.append(DynamicFieldValue(
-                            document=document,
-                            field=field,
-                            value=value
-                        ))
-
-            if errors:
-                context = {
-                    'workflow': workflow,
-                    'prepared_fields': prepared_fields,
-                    'errors': errors,
-                    'form_data': request.POST,
-                }
-                html = render_to_string('document/form_errors.html', context)
-                return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
-
-            document.save()
-
-            # Now save all the DynamicFieldValue objects
-            for dynamic_field_value in dynamic_field_values:
-                dynamic_field_value.save()
-
-            custom_approvers = {}
-            if workflow.allow_custom_approvers:
-                for step in workflow.steps.all():
-                    approver_id = request.POST.get(f'approver_{step.id}')
-                    if approver_id:
-                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
-
-            try:
-                document.create_approvals(custom_approvers)
-                logger.info(f"Approvals created for document {document.id}")
-                messages.success(request, "Document submitted successfully")
-                response = render(request, 'partials/submit_success.html', {'document': document})
-                return retarget(response, '#content-div')
-            except Exception as e:
-                logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
-                document.delete()
-                messages.error(request, "Error creating approvals. Please try again.")
-                context = {
-                    'workflow': workflow,
-                    'prepared_fields': prepared_fields,
-                    'form_data': request.POST,
-                }
-                return render(request, 'document/components/submit_document.html', context)
-        else:
-            for field, field_errors in form.errors.items():
-                for error in field_errors:
-                    errors.append(f"{field}: {error}")
-
+        if errors:
             context = {
                 'workflow': workflow,
                 'prepared_fields': prepared_fields,
@@ -758,6 +709,43 @@ def submit_document(request, workflow_id):
             }
             html = render_to_string('document/form_errors.html', context)
             return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
+
+        # If there are no errors, proceed with saving the document
+        document = form.save(commit=False)
+        document.submitted_by = request.user
+        document.workflow = workflow
+        document.status = 'in_review'
+        document.current_step = workflow.steps.first()
+        document.save()
+
+        # Save all the DynamicFieldValue objects
+        for dynamic_field_value in dynamic_field_values:
+            dynamic_field_value.document = document
+            dynamic_field_value.save()
+
+        custom_approvers = {}
+        if workflow.allow_custom_approvers:
+            for step in workflow.steps.all():
+                approver_id = request.POST.get(f'approver_{step.id}')
+                if approver_id:
+                    custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
+
+        try:
+            document.create_approvals(custom_approvers)
+            logger.info(f"Approvals created for document {document.id}")
+            messages.success(request, "Document submitted successfully")
+            response = render(request, 'partials/submit_success.html', {'document': document})
+            return retarget(response, '#content-div')
+        except Exception as e:
+            logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
+            document.delete()
+            messages.error(request, "Error creating approvals. Please try again.")
+            context = {
+                'workflow': workflow,
+                'prepared_fields': prepared_fields,
+                'form_data': request.POST,
+            }
+            return render(request, 'document/components/submit_document.html', context)
 
     else:
         form = DocumentSubmissionForm()
