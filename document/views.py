@@ -244,19 +244,9 @@ def document_list(request):
         return render(request, 'partials/document_list_partial.html', context)
     return render(request, 'document/document_list.html', context)
 
-def render_error_response(request, document, user_approval, errors):
-    context = {
-        'document': document,
-        'user_approval': user_approval,
-        'errors': errors,
-        'form_data': request.POST,
-    }
-    html = render_to_string('document/form_errors.html', context)
-    return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
 @login_required
 def document_detail(request, pk):
-
     try:
         document = get_object_or_404(Document, pk=pk)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
@@ -277,9 +267,8 @@ def document_detail(request, pk):
                 prepared_value['value'] = value.value
             prepared_values.append(prepared_value)
 
-
         if request.method == 'POST' and user_approval and document.status == 'in_review':
-            errors = []
+            errors = {}
             is_approved = request.POST.get('is_approved') == 'true'
             comment = request.POST.get('comment', '')
 
@@ -290,25 +279,31 @@ def document_detail(request, pk):
                 for field in user_approval.step.editable_fields.all():
                     field_name = f'dynamic_{field.id}'
                     if field.field_type == 'attachment':
-                        if field_name in request.FILES:
-                            uploaded_files[field_name] = request.FILES[field_name]
-                        elif field.required and field_name not in request.FILES:
-                            errors.append(f"{field.name} is required.")
+                        file = request.FILES.get(field_name)
+                        existing_file = DynamicFieldValue.objects.filter(document=document, field=field).first()
+                        if field.required and not file and not (existing_file and existing_file.file):
+                            errors[field.name] = ["This attachment is required."]
+                        elif file:
+                            try:
+                                field.validate_file(file)
+                                uploaded_files[field_name] = file
+                            except ValidationError as e:
+                                errors[field.name] = e.messages
                     elif field.field_type == 'choice':
                         value = request.POST.get(field_name)
                         if value:
                             if value not in field.get_choices():
-                                errors.append(f"Invalid choice for {field.name}")
+                                errors[field.name] = ["Invalid choice."]
                             else:
                                 edited_values[field_name] = value
                         elif field.required:
-                            errors.append(f"{field.name} is required.")
+                            errors[field.name] = ["This field is required."]
                     else:
                         value = request.POST.get(field_name)
                         if value:
                             edited_values[field_name] = value
                         elif field.required:
-                            errors.append(f"{field.name} is required.")
+                            errors[field.name] = ["This field is required."]
 
             if errors:
                 context = {
@@ -327,29 +322,30 @@ def document_detail(request, pk):
                     comment=comment,
                     edited_values=edited_values,
                     uploaded_files=uploaded_files
-
                 )
-                messages.success(request, "Thanks you for reviewing document")
+                messages.success(request, "Thank you for reviewing the document")
 
-            except ValidationError as ve:
-                errors.extend(ve.messages if hasattr(ve, 'messages') else [str(ve)])
-                return render_error_response(request, document, user_approval, errors)
-
-            except Exception as e:
-               logger.error(f"Error processing approval: {str(e)}")
-               logger.error(traceback.format_exc())  # This will log the full traceback
-               errors.append(f"Error processing approval: {str(e)}")
-               errors.append(f"An unexpected error occurred while processing your approval.")
-               return render_error_response(request, document, user_approval, errors)
-
-            if request.htmx:
+                if request.htmx:
                     response = render(request, 'partials/submit_success.html', {'document': document})
                     return retarget(response, '#content-div')
-            return redirect('document_approval:document_detail', pk=document.pk)
+                return redirect('document_approval:document_detail', pk=document.pk)
 
+            except ValidationError as ve:
+                errors = {field: [str(error)] for field, error in ve.message_dict.items()}
+            except Exception as e:
+                logger.error(f"Error processing approval: {str(e)}")
+                logger.error(traceback.format_exc())
+                errors['__all__'] = [f"An unexpected error occurred while processing your approval: {str(e)}"]
 
-
-
+            if errors:
+                context = {
+                    'document': document,
+                    'user_approval': user_approval,
+                    'errors': errors,
+                    'form_data': request.POST,
+                }
+                html = render_to_string('document/form_errors.html', context)
+                return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
         editable_fields = user_approval.step.editable_fields.all() if user_approval and user_approval.step.requires_edit else []
 
@@ -372,7 +368,7 @@ def document_detail(request, pk):
 
         return render(request, 'document/document_detail.html', context)
     except Exception as e:
-        logger.exception(f"Unexpected error in resubmit_document view for document {pk}")
+        logger.exception(f"Unexpected error in document_detail view for document {pk}")
         if request.htmx:
             return HttpResponse("An error occurred while loading the document.", status=500)
         return render(request, 'error.html', {'message': "An error occurred while loading the document."})
