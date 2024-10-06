@@ -401,9 +401,13 @@ def resubmit_document(request, pk):
             field_data['products'] = field_value.json_value if field_value else []
         elif field.field_type == 'attachment':
             field_data['file'] = field_value.file if field_value else None
-        elif field.field_type == 'choice':
-            field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
-            field_data['value'] = field_value.value if field_value else ''
+        elif field.field_type in ['choice', 'multiple_choice']:
+            field_data['choices'] = field.get_choices()
+            if field_value:
+                if field.field_type == 'multiple_choice':
+                    field_data['value'] = field_value.value.split(',') if field_value.value else []
+                else:
+                    field_data['value'] = field_value.value
         else:
             field_data['value'] = field_value.value if field_value else ''
         prepared_fields.append(field_data)
@@ -469,12 +473,28 @@ def resubmit_document(request, pk):
                     except Exception as e:
                         errors[field.name] = [f"Error uploading file: {str(e)}"]
 
+
+            elif field.field_type == 'multiple_choice':
+                values = request.POST.getlist(f'{field_key}[]')
+                if field.required and not values:
+                    errors[field.name] = ["At least one option must be selected"]
+                elif not all(value in field.get_choices() for value in values):
+                    errors[field.name] = ["Invalid choice"]
+                else:
+                    DynamicFieldValue.objects.update_or_create(
+                        document=document,
+                        field=field,
+                        defaults={'value': ','.join(values)}
+                    )
+
             elif field.field_type == 'number' and field.name == 'Total Quantity':
                 DynamicFieldValue.objects.update_or_create(
                     document=document,
                     field=field,
                     defaults={'value': str(total_quantity)}
                 )
+
+
             else:
                 value = request.POST.get(f'dynamic_{field.id}')
                 if field.required and not value:
@@ -614,7 +634,7 @@ def submit_document(request, workflow_id):
             'input_width': field.input_width,
             'textarea_rows': field.textarea_rows,
         }
-        if field.field_type == 'choice':
+        if field.field_type in ['choice', 'multiple_choice']:
             field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
         elif field.field_type == 'product_list':
             field_data['default_products'] = [{'name': '', 'quantity': ''} for _ in range(2)]
@@ -686,6 +706,18 @@ def submit_document(request, workflow_id):
                 elif is_required_for_submission:
                     errors[field.name] = ["This field is required"]
 
+            elif field.field_type == 'multiple_choice':
+                values = request.POST.getlist(f'{field_key}[]')
+                if is_required_for_submission and not values:
+                    errors[field.name] = ["At least one option must be selected"]
+                elif not all(value in field.get_choices() for value in values):
+                    errors[field.name] = ["Invalid choice"]
+                else:
+                    dynamic_field_values.append(DynamicFieldValue(
+                        field=field,
+                        value=','.join(values)  # Store as comma-separated string
+                    ))
+
             else:
                 value = request.POST.get(f'dynamic_{field.id}')
                 if is_required_for_submission and not value:
@@ -710,8 +742,9 @@ def submit_document(request, workflow_id):
         document = form.save(commit=False)
         document.submitted_by = request.user
         document.workflow = workflow
-        document.status = 'in_review'
-        document.current_step = workflow.steps.first()
+       
+
+
         document.save()
 
         # Save all the DynamicFieldValue objects

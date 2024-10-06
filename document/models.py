@@ -75,7 +75,8 @@ class DynamicField(models.Model):
         ('number', 'Number'),
         ('date', 'Date'),
         ('boolean', 'Yes/No'),
-        ('choice', 'Multiple Choice'),
+        ('choice', 'Single Choice'),
+        ('multiple_choice', 'Multiple Choice'),
         ('attachment', 'File Attachment'),
         ('product_list', 'Product List'),
     )
@@ -116,7 +117,7 @@ class DynamicField(models.Model):
             raise ValidationError({'textarea_rows': 'Number of rows must be at least 1.'})
 
     def get_choices(self):
-        if self.field_type == 'choice' and self.choices:
+        if self.field_type in ['choice', 'multiple_choice'] and self.choices:
             return [choice.strip() for choice in self.choices.split(',')]
         return []
 
@@ -287,8 +288,8 @@ class Document(models.Model):
     def resubmit(self, title, content):
         self.title = title
         self.content = content
-        self.status = 'in_review'
-        self.current_step = self.workflow.steps.first()
+        # self.status = 'in_review'
+        # self.current_step = None
         self.last_submitted_at = timezone.now()
         self.approvals.filter(is_approved__isnull=True).delete()
         self.save()
@@ -319,6 +320,10 @@ class Document(models.Model):
 
         if approvals_created:
             send_approval_email(approvals_created[0])
+            self.status = 'in_review'
+            self.current_step = approvals_created[0].step
+            self.save()
+
         return approvals_created
 
     def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):

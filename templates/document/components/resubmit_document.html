@@ -80,15 +80,26 @@
                                {% if field.value %}checked{% endif %} {% if field.required %}{% endif %}>
                         <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
                     </div>
-                {% elif field.field_type == 'choice' %}
-                    <select class="w-full select select-bordered"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                            {% if field.required %}required{% endif %}>
+                    {% elif field.field_type == 'choice' %}
+                    <select name="dynamic_{{ field.id }}" class="select select-bordered w-full" {% if field.required %}required{% endif %}>
                         <option value="">Select an option</option>
                         {% for choice in field.choices %}
                             <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
                         {% endfor %}
                     </select>
+                {% elif field.field_type == 'multiple_choice' %}
+                    <div class="flex flex-col space-y-2">
+                        {% for choice in field.choices %}
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox"
+                                       {% if choice in field.value %}checked{% endif %}
+                            
+                                <span>{{ choice }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
                 {% endif %}
+
             </div>
     {% endif %}
     {% endfor %}
