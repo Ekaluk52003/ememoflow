@@ -5,20 +5,12 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 import os
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
-
-# https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = "django-insecure-0peo@#x9jur3!h$ryje!$879xww8y1y66jx!%*#ymhg&jkozs2"
-
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
-# https://docs.djangoproject.com/en/dev/ref/settings/#debug
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 
 DEBUG = bool(os.environ.get("DEBUG", default=0))
+
+
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", 'https://www.smartflow.pw', 'www.smartflow.pw', 'smartflow.pw']
@@ -45,6 +37,7 @@ INSTALLED_APPS = [
      'django_celery_results',
       'django_htmx',
       "crispy_tailwind",
+      'django_browser_reload',
     # Local
     "accounts",
     "pages",
@@ -58,8 +51,9 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
 MIDDLEWARE = [
+
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # WhiteNoise
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # WhiteNoise# django_browser_reload
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",  # Django Debug Toolbar
@@ -69,7 +63,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
     "django_htmx.middleware.HtmxMiddleware",  # django-htmx
-    'document.middleware.msgMiddleware',# toast
+    "document.middleware.msgMiddleware", # toast
+    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
@@ -151,6 +146,10 @@ STATIC_URL = "/static/"
 
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+}
 
 # https://whitenoise.readthedocs.io/en/latest/django.html
 # STORAGES = {

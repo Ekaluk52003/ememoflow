@@ -16,15 +16,15 @@
         </div>
 
         <div>
-            <button class="btn btn-active btn-primary">
+
                 <a
                   hx-get="{% url 'document_approval:submit_document' workflow.id %}"
                   hx-target="#content-div"
                   hx-push-url="true"
                   hx-indicator=".progress"
-                  >Submit Document</a
+                  >   <button class="btn btn-active btn-primary">Submit Document</button></a
                 >
-              </button>
+
         </div>
     </div>
     </div>

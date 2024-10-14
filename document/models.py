@@ -12,7 +12,7 @@ from django.db.models import Q
 import logging
 logger = logging.getLogger(__name__)
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -43,7 +43,7 @@ class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    allow_custom_approvers = models.BooleanField(default=False)
+    # allow_custom_approvers = models.BooleanField(default=False)
     # Reject email fields
     send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection")
     reject_email_subject = models.TextField(blank=True, help_text="Subject for rejection emails")
@@ -169,6 +169,8 @@ class ApprovalStep(models.Model):
     order = models.PositiveIntegerField()
     # approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
     approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
+    allow_custom_approver = models.BooleanField(default=False)
+    approver_group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     # approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
 
     # Fields for conditional logic
@@ -253,8 +255,29 @@ class ApprovalStep(models.Model):
     def __str__(self):
         return f"{self.workflow.name} - {self.name}"
 
+    def clean(self):
+        if self.allow_custom_approver and not self.approver_group:
+            raise ValidationError("Approver group must be set when custom approver is allowed.")
 
 
+class ReferenceID(models.Model):
+    year = models.IntegerField()
+    last_number = models.IntegerField(default=0)
+
+    @classmethod
+    def get_next_reference(cls):
+        from datetime import datetime
+        current_year = int(datetime.now().year % 100)  # Get last two digits of current year
+
+        # Get or create reference for the current year
+        reference, created = cls.objects.get_or_create(year=current_year)
+
+        # Increment the last number and format it
+        reference.last_number += 1
+        reference.save()
+
+        # Return the new reference in the format YYNNN
+        return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(5)}"
 
 class Document(models.Model):
     STATUS_CHOICES = [
@@ -264,7 +287,7 @@ class Document(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     ]
-
+    document_reference = models.CharField(max_length=7, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
     content = models.TextField()
     submitted_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='submitted_documents')
@@ -277,10 +300,15 @@ class Document(models.Model):
     last_submitted_at = models.DateTimeField(auto_now_add=True)
 
 
+
     def __str__(self):
         return self.title
 
-
+    def save(self, *args, **kwargs):
+        if not self.document_reference:
+            # Fetch the reference from the Reference table (explained below)
+            self.document_reference = ReferenceID.get_next_reference()
+        super().save(*args, **kwargs)
 
     def is_favorited_by(self, user):
         return self.favorites.filter(user=user).exists()
@@ -298,25 +326,21 @@ class Document(models.Model):
         approvals_created = []
         for step in self.workflow.steps.all():
             if step.evaluate_condition(self):
-                if not self.workflow.allow_custom_approvers:
-                            for approver in step.approvers.all():
-                                approval = Approval.objects.create(
-                                document=self,
-                                step=step,
-                                approver=approver
-                                )
-                                approvals_created.append(approval)
-
-
-                elif custom_approvers and step.id in custom_approvers:
+                if step.allow_custom_approver and custom_approvers and step.id in custom_approvers:
                     approval = Approval.objects.create(
                         document=self,
                         step=step,
-                        approver=custom_approvers[step.id],
-                        is_approved=None
+                        approver=custom_approvers[step.id]
                     )
                     approvals_created.append(approval)
-
+                else:
+                    for approver in step.approvers.all():
+                        approval = Approval.objects.create(
+                            document=self,
+                            step=step,
+                            approver=approver
+                        )
+                        approvals_created.append(approval)
 
         if approvals_created:
             send_approval_email(approvals_created[0])

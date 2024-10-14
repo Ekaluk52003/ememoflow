@@ -1,5 +1,7 @@
-from django.urls import path
+from django.urls import path,include
 from . import views
+from django.conf import settings
+
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -21,3 +23,4 @@ urlpatterns = [
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
 
 ]
+

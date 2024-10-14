@@ -16,6 +16,9 @@ import Highlight from '@tiptap/extension-highlight'
 import { Extension } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold';
 
+
+
+
 const CustomBold = Bold.extend({
   addAttributes() {
     return {
@@ -398,4 +401,5 @@ window.addEventListener('click', function(e) {
     }
   });
 });
+
 

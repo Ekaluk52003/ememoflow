@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue, DynamicField, PDFTemplate, ReportConfiguration
+from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue, DynamicField, PDFTemplate, ReportConfiguration, ReferenceID
 from django.core.exceptions import ValidationError
 
 @admin.register(PDFTemplate)
@@ -98,3 +98,21 @@ class ApprovalAdmin(admin.ModelAdmin):
         if obj:  # editing an existing object
             return ('document', 'step', 'approver', 'created_at')
         return ()
+
+
+@admin.register(ReferenceID)
+class ReferenceIDAdmin(admin.ModelAdmin):
+    list_display = ('formatted_reference', 'year', 'last_number')
+    readonly_fields = ('formatted_reference',)
+
+    def formatted_reference(self, obj):
+        return f"{str(obj.year % 100).zfill(2)}{str(obj.last_number).zfill(5)}"
+    formatted_reference.short_description = 'Reference'
+
+    def has_add_permission(self, request):
+        # Prevent manual creation of new references
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of references
+        return False

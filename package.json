@@ -1,7 +1,9 @@
 {
   "scripts": {
     "dev": "webpack --mode development --watch",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "watch": "webpack --mode=development"
+
   },
   "dependencies": {
     "@tiptap/core": "^2.2.4",

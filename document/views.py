@@ -25,7 +25,8 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
 import traceback
-
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +264,14 @@ def document_detail(request, pk):
                 prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
             elif value.field.field_type == 'attachment':
                 prepared_value['file'] = value.file
+            elif value.field.field_type in ['choice', 'multiple_choice']:
+                prepared_value['choices'] = value.field.get_choices()
+                if value.field.field_type == 'multiple_choice':
+                    # Split the comma-separated string and join with nice formatting
+                    choices = value.value.split(',') if value.value else []
+                    prepared_value['value'] = ', '.join(choices)
+                else:
+                    prepared_value['value'] = value.value
             else:
                 prepared_value['value'] = value.value
             prepared_values.append(prepared_value)
@@ -298,6 +307,19 @@ def document_detail(request, pk):
                                 edited_values[field_name] = value
                         elif field.required:
                             errors[field.name] = ["This field is required."]
+
+
+                    elif field.field_type == 'multiple_choice':
+                        values = request.POST.getlist(f'{field_name}[]')
+                        if field.required and not values:
+                            errors[field.name] = ["At least one option must be selected"]
+                        elif values:
+                            edited_values[field_name] = ','.join(values)
+
+
+
+
+
                     else:
                         value = request.POST.get(field_name)
                         if value:
@@ -512,11 +534,12 @@ def resubmit_document(request, pk):
         if not errors:
             document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
             custom_approvers = {}
-            if workflow.allow_custom_approvers:
-                for step in workflow.steps.all():
+            for step in workflow.steps.all():
+                if step.allow_custom_approver:
                     approver_id = request.POST.get(f'approver_{step.id}')
                     if approver_id:
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
+
             document.create_approvals(custom_approvers)
             messages.success(request, "Document re-submitted successfully")
 
@@ -534,12 +557,25 @@ def resubmit_document(request, pk):
 
     form = DocumentSubmissionForm(instance=document)
 
+
+    steps_with_approvers = []
+    for step in workflow.steps.all():
+            if step.allow_custom_approver and step.approver_group:
+                potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
+            if potential_approvers.exists():
+                previous_approver = document.approvals.filter(step=step).first()
+                steps_with_approvers.append({
+                    'step': step,
+                    'potential_approvers': potential_approvers,
+                    'previous_approver': previous_approver.approver if previous_approver else None
+                })
+
     context = {
         'form': form,
         'document': document,
         'workflow': document.workflow,
         'prepared_fields': prepared_fields,
-        'potential_approvers': CustomUser.objects.all(),
+       'steps_with_approvers': steps_with_approvers,
     }
 
     if request.htmx:
@@ -742,7 +778,7 @@ def submit_document(request, workflow_id):
         document = form.save(commit=False)
         document.submitted_by = request.user
         document.workflow = workflow
-       
+
 
 
         document.save()
@@ -753,11 +789,11 @@ def submit_document(request, workflow_id):
             dynamic_field_value.save()
 
         custom_approvers = {}
-        if workflow.allow_custom_approvers:
-            for step in workflow.steps.all():
-                approver_id = request.POST.get(f'approver_{step.id}')
-                if approver_id:
-                    custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
+        for step in workflow.steps.all():
+                if step.allow_custom_approver:
+                    approver_id = request.POST.get(f'approver_{step.id}')
+                    if approver_id:
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
         try:
             document.create_approvals(custom_approvers)
@@ -778,11 +814,22 @@ def submit_document(request, workflow_id):
 
     else:
         form = DocumentSubmissionForm()
+
+        steps_with_approvers = []
+        for step in workflow.steps.all():
+            if step.allow_custom_approver and step.approver_group:
+                potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
+
+                steps_with_approvers.append({
+                    'step': step,
+                    'potential_approvers': potential_approvers
+                })
         context = {
             'form': form,
             'workflow': workflow,
             'prepared_fields': prepared_fields,
-            'potential_approvers': CustomUser.objects.all(),
+            # 'potential_approvers': CustomUser.objects.all(),
+            'steps_with_approvers': steps_with_approvers,
         }
 
         if request.htmx:
