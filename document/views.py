@@ -818,11 +818,14 @@ def submit_document(request, workflow_id):
         steps_with_approvers = []
         for step in workflow.steps.all():
             if step.allow_custom_approver and step.approver_group:
-                potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
+                potential_approvers = list(CustomUser.objects.filter(groups=step.approver_group).values('id', 'username', 'first_name', 'last_name'))
+                for approver in potential_approvers:
+                    approver['full_name'] = f"{approver['first_name']} {approver['last_name']}".strip() or approver['username']
 
                 steps_with_approvers.append({
                     'step': step,
-                    'potential_approvers': potential_approvers
+                    'potential_approvers_json': potential_approvers
+
                 })
         context = {
             'form': form,
