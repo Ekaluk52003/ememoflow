@@ -24,6 +24,8 @@
                                     <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
                                 </p>
                                 <div class="mt-2">
+
+                                    <small class="badge text-bg-light">Reference:{{document.document_reference}}</small>
                                     <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
 
                                     <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>

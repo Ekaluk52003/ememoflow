@@ -113,7 +113,8 @@
    {% for step_info in steps_with_approvers %}
    <div class="mt-6 mb-6">
            <div for="approver_{{ step_info.step.id }}">
-               Choose approver for {{ step_info.step.name }} ({{ step_info.step.approver_group.name }})
+               Choose approver for {{ step_info.step.name }}
+               <p>Group :{{ step_info.step.approver_group.name }}</p>
            </div>
            <select name="approver_{{ step_info.step.id }}" id="approver_{{ step_info.step.id }}" required class="w-full max-w-xs select select-bordered">
                <option value="">Select an approver</option>

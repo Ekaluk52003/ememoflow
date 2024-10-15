@@ -4,7 +4,6 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.django
     command: python manage.py runserver 0.0.0.0:${DJANGO_PORT}
     volumes:
       - .:/code
@@ -33,7 +32,7 @@ services:
   db:
     image: postgres:16
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data_djangox:/var/lib/postgresql/data/
     env_file:
       - .env
     ports:
@@ -57,4 +56,4 @@ services:
       - redis
 
 volumes:
-  postgres_data:
+  postgres_data_djangox:

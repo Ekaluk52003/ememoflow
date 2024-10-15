@@ -5,19 +5,19 @@
 
 
     <div class="flex items-center justify-between">
-        <div><h3 class="text-lg font-medium leading-6 text-base-content">Document Ref:{{document.document_reference}}</h3>
-            <p class="max-w-2xl mt-1 text-sm text-gray-500">Please Review Document</p></div>
-        <div>
+        <h3 class="text-lg font-medium leading-6 text-base-content">Document Ref:{{document.document_reference}}</h3>
+
+
 
             <div>
             {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
             <div>
                 <a href="{% url 'document_approval:generate_pdf_report' document.id 1 %}" class="btn btn-primary" target="_blank">PDF Report</a></div>
             </div>
-</div>
+        </d>
 
 
-    </div>
+
 
 
     <div class="p-6 mt-6 mb-6 bg-white border shadow-sm rounded-2xl">
@@ -228,4 +228,4 @@
 
 
 
-    </div>
+
