@@ -30,14 +30,18 @@ services:
 
 
   db:
-    image: postgres:16
+    image: postgres:13-alpine
     volumes:
-      - postgres_data_djangox:/var/lib/postgresql/data/
+      - postgres_djangox:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "${SQL_PORT}:5433"
+    command: -p 5433
     env_file:
       - .env
-    ports:
-      - "5433:5433"
-    command: -p 5433
 
   redis:
     image: redis:7.0.10-alpine
@@ -56,4 +60,4 @@ services:
       - redis
 
 volumes:
-  postgres_data_djangox:
+  postgres_djangox:

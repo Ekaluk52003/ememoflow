@@ -17,6 +17,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
 class ReportConfiguration(models.Model):
     company_name = models.CharField(max_length=200)
     company_address = models.TextField()
