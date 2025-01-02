@@ -105,9 +105,32 @@ document.addEventListener("alpine:init", () => {
       currentColor: '#000000',
       currentHighlight: 'transparent',
       isToolbarFixed: false,
+      toolbarHeight: 0,
       toolbarOffsetTop: 0,
+      scrollPosition: 0,
+      isEditing: false,
     toolbarInitialWidth: 0,
     lastScrollPosition: 0,
+
+    preventScrollJump(callback) {
+      if (this.isToolbarFixed) {
+        // Store current scroll position
+        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+        // Execute the callback (formatting action)
+        callback();
+
+        // Use RAF for smoother visual update
+        requestAnimationFrame(() => {
+          window.scrollTo({
+            top: currentScroll,
+            behavior: 'auto' // Use 'auto' instead of 'instant' for smoother effect
+          });
+        });
+      } else {
+        callback();
+      }
+    },
 
     handleScroll() {
       const toolbar = this.$refs.toolbar;
@@ -140,12 +163,6 @@ document.addEventListener("alpine:init", () => {
         toolbar.style.zIndex = '';
         container.style.paddingTop = '';
         this.isToolbarFixed = false;
-      }
-    },
-    preventScrollOnFocus(event) {
-      // Prevent scrolling when focusing on toolbar elements
-      if (this.isToolbarFixed) {
-        window.scrollTo(0, this.lastScrollPosition);
       }
     },
 
@@ -213,31 +230,53 @@ document.addEventListener("alpine:init", () => {
           this.updateCurrentColor();
           this.updateCurrentHighlight();
           this.$nextTick(() => {
-            window.addEventListener('scroll', () => this.handleScroll());
-            window.addEventListener('resize', () => {
-              this.toolbarOffsetTop = 0;
-              this.toolbarInitialWidth = 0;
-              this.handleScroll();
-            });
+            const toolbar = this.$refs.toolbar;
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'sticky';
+            wrapper.style.top = '0';
+            wrapper.style.zIndex = '1000';
+            wrapper.style.backgroundColor = 'white';
+            wrapper.style.width = '100%';
 
-            // Add event listeners to prevent scrolling on focus
-            const toolbarButtons = this.$refs.toolbar.querySelectorAll('button, input, select, textarea');
+            // Move toolbar into wrapper
+            toolbar.parentNode.insertBefore(wrapper, toolbar);
+            wrapper.appendChild(toolbar);
+
+            // Scroll event listener
+            window.addEventListener('scroll', () => {
+              const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+              const toolbarOffset = wrapper.offsetTop;
+
+              if (scrollPosition > toolbarOffset) {
+                if (!this.isToolbarFixed) {
+                  wrapper.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  this.isToolbarFixed = true;
+                }
+              } else {
+                if (this.isToolbarFixed) {
+                  wrapper.style.boxShadow = 'none';
+                  this.isToolbarFixed = false;
+                }
+              }
+            }, { passive: true });
+
+            // Add scroll lock during toolbar button interactions
+            const toolbarButtons = toolbar.querySelectorAll('button');
             toolbarButtons.forEach(button => {
-              button.addEventListener('focus', this.preventScrollOnFocus);
-            });
+              button.addEventListener('mousedown', () => {
+                if (this.isToolbarFixed) {
+                  this.scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+                }
+              });
 
-            this.handleScroll(); // Initial call to set correct state
+              button.addEventListener('click', () => {
+                if (this.isToolbarFixed) {
+                  this.lockScroll();
+                }
+              });
+            });
           });
 
-            // Clean up event listeners
-      this.$cleanup = () => {
-        window.removeEventListener('scroll', () => this.handleScroll());
-        window.removeEventListener('resize', () => this.handleScroll());
-        const toolbarButtons = this.$refs.toolbar.querySelectorAll('button, input, select, textarea');
-        toolbarButtons.forEach(button => {
-          button.removeEventListener('focus', this.preventScrollOnFocus);
-        });
-      };
 
 
         }
@@ -253,13 +292,17 @@ document.addEventListener("alpine:init", () => {
       toggleHeading(opts) {
         editor.chain().toggleHeading(opts).focus().run();
       },
-      toggleBold() {
-        const { color } = editor.getAttributes('textStyle');
-        editor.chain().focus().toggleBold().run();
-        if (editor.isActive('bold')) {
-          editor.chain().focus().updateAttributes('bold', { color }).run();
-        }
+
+        toggleBold() {
+        this.preventScrollJump(() => {
+          const { color } = editor.getAttributes('textStyle');
+          editor.chain().focus().toggleBold().run();
+          if (editor.isActive('bold')) {
+            editor.chain().focus().updateAttributes('bold', { color }).run();
+          }
+        });
       },
+
       toggleTextLeft() {
         editor.chain().focus().setTextAlign('left').run();
       },
