@@ -177,6 +177,10 @@ class ApprovalStep(models.Model):
 
     # Fields for conditional logic
     is_conditional = models.BooleanField(default=False)
+    move_to_next = models.BooleanField(
+        default=True,
+        help_text="If True, move to next step. If False, complete workflow after this step."
+    )
     condition_field = models.ForeignKey(DynamicField, on_delete=models.SET_NULL, null=True, blank=True)
     condition_operator = models.CharField(max_length=10, choices=[
         ('eq', 'Equals'),
@@ -187,6 +191,7 @@ class ApprovalStep(models.Model):
         ('lte', 'Less Than or Equal'),
     ], null=True, blank=True)
     condition_value = models.CharField(max_length=255, null=True, blank=True)
+
 
 
     input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
@@ -224,31 +229,67 @@ class ApprovalStep(models.Model):
         if not dynamic_value:
             return False
 
+        field_type = self.condition_field.field_type
         actual_value = dynamic_value.value
         condition_value = self.condition_value
 
-        if self.condition_field.field_type == 'number':
+        # Handle different field types based on FIELD_TYPES in DynamicField
+        if field_type == 'text' or field_type == 'textarea':
+            # Direct string comparison for text fields
+            return self._compare_values(str(actual_value), str(condition_value))
+
+        elif field_type == 'number':
             try:
                 actual_value = float(actual_value)
                 condition_value = float(condition_value)
-            except ValueError:
+                return self._compare_values(actual_value, condition_value)
+            except (ValueError, TypeError):
                 return False
 
-        if self.condition_operator == 'eq':
-            return actual_value == condition_value
-        elif self.condition_operator == 'ne':
-            return actual_value != condition_value
-        elif self.condition_operator == 'gt':
-            return actual_value > condition_value
-        elif self.condition_operator == 'lt':
-            return actual_value < condition_value
-        elif self.condition_operator == 'gte':
-            return actual_value >= condition_value
-        elif self.condition_operator == 'lte':
-            return actual_value <= condition_value
+        elif field_type == 'boolean':
+            actual_value = str(actual_value).lower() in ('true', '1', 'yes')
+            condition_value = str(condition_value).lower() in ('true', '1', 'yes')
+            # For boolean, only equality and inequality make sense
+            if self.condition_operator in ['eq', 'ne']:
+                return actual_value == condition_value if self.condition_operator == 'eq' else actual_value != condition_value
+            return False
+
+        elif field_type == 'choice':
+            # Single choice comparison - direct string comparison
+            actual_value = str(actual_value).strip()
+            condition_value = str(condition_value).strip()
+            return self._compare_values(actual_value, condition_value)
+
+        elif field_type == 'multiple_choice':
+            # Convert to sets for comparison, ignoring empty strings and whitespace
+            actual_set = set(choice.strip() for choice in actual_value.split(',') if choice.strip())
+            condition_set = set(choice.strip() for choice in condition_value.split(',') if choice.strip())
+
+            if self.condition_operator in ['eq', 'ne']:
+                # For eq/ne, compare the exact sets
+                result = actual_set == condition_set
+                return result if self.condition_operator == 'eq' else not result
+            else:
+                # For other operators, compare the number of selections
+                return self._compare_values(len(actual_set), len(condition_set))
 
         return False
 
+    def _compare_values(self, actual, condition):
+        """Helper method to compare values based on the condition operator"""
+        if self.condition_operator == 'eq':
+            return actual == condition
+        elif self.condition_operator == 'ne':
+            return actual != condition
+        elif self.condition_operator == 'gt':
+            return actual > condition
+        elif self.condition_operator == 'lt':
+            return actual < condition
+        elif self.condition_operator == 'gte':
+            return actual >= condition
+        elif self.condition_operator == 'lte':
+            return actual <= condition
+        return False
 
     class Meta:
         ordering = ['workflow', 'order']
@@ -326,7 +367,10 @@ class Document(models.Model):
 
     def create_approvals(self, custom_approvers=None):
         approvals_created = []
+        last_conditional_step = None
+
         for step in self.workflow.steps.all():
+            # Check if step condition is met
             if step.evaluate_condition(self):
                 if step.allow_custom_approver and custom_approvers and step.id in custom_approvers:
                     approval = Approval.objects.create(
@@ -344,13 +388,34 @@ class Document(models.Model):
                         )
                         approvals_created.append(approval)
 
+                # If this step has conditions and they're met, store it
+                if step.is_conditional:
+                    last_conditional_step = step
+
+                # Only break if this is the conditional step that was met
+                # and it's marked as not moving to next
+                if step.is_conditional and not step.move_to_next:
+                    break
+            else:
+                # If condition not met, continue creating next steps
+                continue
+
         if approvals_created:
+            # If we have a conditional step that was met and doesn't move to next,
+            # filter out any approvals after that step
+            if last_conditional_step and not last_conditional_step.move_to_next:
+                approvals_created = [
+                    approval for approval in approvals_created
+                    if approval.step.order <= last_conditional_step.order
+                ]
+
             send_approval_email(approvals_created[0])
             self.status = 'in_review'
             self.current_step = approvals_created[0].step
             self.save()
 
         return approvals_created
+
 
     def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):
 
@@ -414,33 +479,41 @@ class Document(models.Model):
 # When a step's conditions are not met, it continues the loop to check the next step instead of immediately approving the document.
 
     def move_to_next_step(self, approval):
-        while True:
-            next_step = ApprovalStep.objects.filter(
-                workflow=self.workflow,
-                order__gt=approval.step.order
-            ).order_by('order').first()
+        current_step = approval.step
 
-            if not next_step:
-                # No more steps, document is approved
-                send_approved_email(self)
-                self.status = 'approved'
-                self.save()
-                break
+        # If current step condition met and move_to_next is False, complete workflow
+        if current_step.evaluate_condition(self) and not current_step.move_to_next:
+            send_approved_email(self)
+            self.status = 'approved'
+            self.save()
+            return
 
-            if next_step.evaluate_condition(self):
-                # Condition met, move to this step
-                self.current_step = next_step
-                self.status = 'in_review'
-                self.save()
+        next_step = ApprovalStep.objects.filter(
+            workflow=self.workflow,
+            order__gt=approval.step.order
+        ).order_by('order').first()
 
-                # Send approval emails for the next step
-                approvals = self.approvals.filter(step=next_step)
-                for appr in approvals:
-                    send_approval_email(appr)
-                break
-            else:
-                # Condition not met, continue searching for next applicable step
-                approval = type('obj', (object,), {'step': next_step})()
+        if not next_step:
+            # No more steps, document is approved
+            send_approved_email(self)
+            self.status = 'approved'
+            self.save()
+            return
+
+        if next_step.evaluate_condition(self):
+            # Condition met, move to this step
+            self.current_step = next_step
+            self.status = 'in_review'
+            self.save()
+
+            # Send approval emails for the next step
+            approvals = self.approvals.filter(step=next_step)
+            for appr in approvals:
+                send_approval_email(appr)
+        else:
+            # If condition not met for next step, recursively try next step
+            dummy_approval = type('obj', (object,), {'step': next_step})()
+            self.move_to_next_step(dummy_approval)
 
     def withdraw(self):
          #allow to withdraw for all next cycle if is_approved is null in next cycle

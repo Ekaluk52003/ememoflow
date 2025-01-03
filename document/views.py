@@ -566,15 +566,17 @@ def resubmit_document(request, pk):
 
     steps_with_approvers = []
     for step in workflow.steps.all():
-            if step.allow_custom_approver and step.approver_group:
-                potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
-            if potential_approvers.exists():
-                previous_approver = document.approvals.filter(step=step).first()
-                steps_with_approvers.append({
-                    'step': step,
-                    'potential_approvers': potential_approvers,
-                    'previous_approver': previous_approver.approver if previous_approver else None
-                })
+        potential_approvers = CustomUser.objects.none()  # Initialize with empty queryset
+        if step.allow_custom_approver and step.approver_group:
+            potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
+
+        if potential_approvers.exists():
+            previous_approver = document.approvals.filter(step=step).first()
+            steps_with_approvers.append({
+                'step': step,
+                'potential_approvers': potential_approvers,
+                'previous_approver': previous_approver.approver if previous_approver else None
+            })
 
     context = {
         'form': form,
