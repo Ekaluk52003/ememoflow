@@ -16,16 +16,17 @@
 
         {{ form.title|as_crispy_field }}
 
-
+        {% if workflow.content_editor %}
         {% include "document/components/editor.html" %}
-
+        {% endif %}
+        
         <div class="flex flex-wrap -mx-2">
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
 
     <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
         <label for="dynamic_{{ field.id }}" class="w-full max-w-xs">
-            <div class="label">
+            <div class="label" class="cursor-pointer label">
                 <span class="label-text">{{ field.name }} {% if field.required %}
                     <span class="text-error">*</span>
                 {% endif %}</span>
@@ -37,6 +38,8 @@
                 <div id="product-list-{{ field.id }}">
                     {% for product in field.default_products %}
                     <div class="mb-2 product-row">
+                        <input type="text" class="w-full max-w-xs input input-bordered" name="product_id_{{ field.id }}[]" placeholder="ID" value="{{ product.id }}" required>
+                        <input type="text" class="w-full max-w-xs input input-bordered" name="product_code_{{ field.id }}[]" placeholder="CODE" value="{{ product.code }}" required>
                             <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
                             <input type="number" class="w-full max-w-xs input input-bordered"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
                             <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
@@ -86,10 +89,10 @@
                        {% if field.required %}{% endif %}>
 
             {% elif field.field_type == 'boolean' %}
-                <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="checkbox"
                        {% if field.required %}{% endif %}>
                        {% elif field.field_type == 'choice' %}
-                       <select name="dynamic_{{ field.id }}" class="select select-bordered w-full" {% if field.required %}required{% endif %}>
+                       <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
                            <option value="">Select an option</option>
                            {% for choice in field.choices %}
                                <option value="{{ choice }}">{{ choice }}</option>
@@ -145,7 +148,7 @@
             </div>
             <div class="relative">
 
-                <p x-show="!selected && !focused" class="text-red-500 text-sm mt-1">
+                <p x-show="!selected && !focused" class="mt-1 text-sm text-red-500">
                     Please select an approver
                 </p>
                 <input
@@ -173,7 +176,7 @@
                 </select>
                 <div
                     x-show="focused"
-                    class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-w-xs"
+                    class="absolute z-50 w-full max-w-xs mt-1 bg-white border border-gray-300 rounded-md shadow-lg"
                 >
                     <ul class="py-1 overflow-auto text-base max-h-60">
                         <template x-if="filteredOptions.length === 0">
@@ -182,7 +185,7 @@
                         <template x-for="option in filteredOptions" :key="option.id">
                             <li
                                 @mousedown.prevent="selectOption(option)"
-                                class="px-3 py-2 cursor-pointer hover:bg-gray-100 truncate"
+                                class="px-3 py-2 truncate cursor-pointer hover:bg-gray-100"
                                 :class="{ 'bg-gray-100': selected === option.id }"
                             >
                                 <span x-text="option.full_name"></span>

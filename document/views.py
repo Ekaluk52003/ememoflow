@@ -452,13 +452,19 @@ def resubmit_document(request, pk):
             field_key = f'dynamic_{field.id}'
 
             if field.field_type == 'product_list':
+                product_ids = request.POST.getlist(f'product_id_{field.id}[]')
+                product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
                 products = []
                 field_errors = []
 
-                for name, quantity in zip(product_names, product_quantities):
-                    if name or quantity:
+                for id,code, name, quantity in zip( product_ids,product_codes, product_names, product_quantities):
+                    if id or code or name or quantity:
+                        if not id:
+                            field_errors.append("Id is required")
+                        if not code:
+                            field_errors.append("Code name is required")
                         if not name:
                             field_errors.append("Product name is required")
                         if not quantity:
@@ -466,7 +472,7 @@ def resubmit_document(request, pk):
                         else:
                             try:
                                 qty = int(quantity)
-                                products.append({'name': name, 'quantity': qty})
+                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty})
                                 total_quantity += qty
                             except ValueError:
                                 field_errors.append(f"Invalid quantity for product {name}")
@@ -673,7 +679,7 @@ def submit_document(request, workflow_id):
         if field.field_type in ['choice', 'multiple_choice']:
             field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
         elif field.field_type == 'product_list':
-            field_data['default_products'] = [{'name': '', 'quantity': ''} for _ in range(2)]
+            field_data['default_products'] = [{'id':'','code':'','name': '', 'quantity': ''} for _ in range(2)]
         prepared_fields.append(field_data)
 
     if request.method == 'POST':
@@ -692,13 +698,19 @@ def submit_document(request, workflow_id):
             is_required_for_submission = field.required and field not in editable_fields
 
             if field.field_type == 'product_list':
+                product_ids = request.POST.getlist(f'product_id_{field.id}[]')
+                product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
                 products = []
                 field_errors = []
 
-                for name, quantity in zip(product_names, product_quantities):
-                    if name or quantity:
+                for id,code, name, quantity in zip( product_ids,product_codes, product_names, product_quantities):
+                    if id or code or name or quantity:
+                        if not id:
+                            field_errors.append("Id is required")
+                        if not code:
+                            field_errors.append("Code name is required")
                         if not name:
                             field_errors.append("Product name is required")
                         if not quantity:
@@ -706,7 +718,7 @@ def submit_document(request, workflow_id):
                         else:
                             try:
                                 qty = int(quantity)
-                                products.append({'name': name, 'quantity': qty})
+                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty})
                                 total_quantity += qty
                             except ValueError:
                                 field_errors.append(f"Invalid quantity for product {name}")

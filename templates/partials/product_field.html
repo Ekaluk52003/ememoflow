@@ -1,6 +1,8 @@
-<div class="product-row mb-2">
-  <input type="text" class="input input-bordered w-full max-w-xs" name="product_name_{{ field_id }}[]" placeholder="Product Name" required>
-  <input type="number" class="input input-bordered w-full max-w-xs" name="product_quantity_{{ field_id }}[]" placeholder="Quantity" required>
+<div class="mb-2 product-row">
+  <input type="text" class="w-full max-w-xs input input-bordered" name="product_id_{{ field.id }}[]" placeholder="ID" value="{{ product.id }}" required>
+  <input type="text" class="w-full max-w-xs input input-bordered" name="product_code_{{ field.id }}[]" placeholder="CODE" value="{{ product.code }}" required>
+  <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field_id }}[]" placeholder="Product Name" required>
+  <input type="number" class="w-full max-w-xs input input-bordered" name="product_quantity_{{ field_id }}[]" placeholder="Quantity" required>
   <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
 
 </div>

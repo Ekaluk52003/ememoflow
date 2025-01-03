@@ -26,6 +26,6 @@ class DocumentSubmissionForm(forms.ModelForm):
         content_without_tags = re.sub(r'<[^>]+>', '', content)
         # Remove all whitespace
         content_stripped = content_without_tags.strip()
-        if not content_stripped:
-            raise forms.ValidationError("Content is required.")
+        # if not content_stripped:
+        #     raise forms.ValidationError("Content is required.")
         return content

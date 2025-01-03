@@ -47,13 +47,17 @@
                             <table class="table table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Product Name</th>
-                                        <th>Quantity</th>
+                                        <th>ลำดับ</th>
+                                        <th>รหัสสินค้า</th>
+                                        <th>รายการ</th>
+                                        <th>จำนวน (แผ่น)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for product in value.value %}
                                         <tr>
+                                            <td>{{ product.id }}</td>
+                                            <td>{{ product.code }}</td>
                                             <td>{{ product.name }}</td>
                                             <td>{{ product.quantity }}</td>
                                         </tr>

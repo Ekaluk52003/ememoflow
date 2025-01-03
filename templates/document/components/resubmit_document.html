@@ -9,9 +9,9 @@
 <form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
-
+    {% if workflow.content_editor %}
     {% include "document/components/editor.html" %}
-
+    {% endif %}
     <div class="flex flex-wrap -mx-2">
     {% for field in prepared_fields %}
     {% if field.name != 'Total Quantity' %}
@@ -27,12 +27,21 @@
         {% if field.field_type == 'product_list' %}
             <div id="product-list-{{ field.id }}">
                 {% for product in field.products %}
-                <div class="mb-2 product-row">
-                    <input type="text" class="w-full max-w-xs input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
-                    <input type="number" class="w-full max-w-xs input input-bordered"  name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                <div class="flex items-center gap-2 mb-2 product-row">
+                    <div class="w-1">
+                        <input type="text" class="w-full input input-bordered" name="product_id_{{ field.id }}[]" placeholder="ID" value="{{ product.id }}" required>
+                    </div>
+                    <div class="w-2">
+                        <input type="text" class="w-full input input-bordered" name="product_code_{{ field.id }}[]" placeholder="CODE" value="{{ product.code }}" required>
+                    </div>
+                    <div class="w-2">
+                        <input type="text" class="w-full input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
+                    </div>
+                    <div class="w-3">
+                        <input type="number" class="w-full input input-bordered" name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
+                    </div>
                     <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
-
-            </div>
+                </div>
             {% endfor %}
             </div>
             <button type="button" class="mt-2 btn btn-secondary"
@@ -83,7 +92,7 @@
                         <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
                     </div>
                     {% elif field.field_type == 'choice' %}
-                    <select name="dynamic_{{ field.id }}" class="select select-bordered w-full" {% if field.required %}required{% endif %}>
+                    <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
                         <option value="">Select an option</option>
                         {% for choice in field.choices %}
                             <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
@@ -94,7 +103,7 @@
                         {% for choice in field.choices %}
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox"
-                                       {% if choice in field.value %}checked{% endif %}
+                                       {% if choice in field.value %}checked{% endif %} >
 
                                 <span>{{ choice }}</span>
                             </label>

@@ -46,6 +46,7 @@ class ApprovalWorkflow(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # allow_custom_approvers = models.BooleanField(default=False)
     # Reject email fields
+    content_editor = models.BooleanField(default=False, help_text="Add content editor for document")
     send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection")
     reject_email_subject = models.TextField(blank=True, help_text="Subject for rejection emails")
     reject_email_body = models.TextField(blank=True, help_text="Body template for rejection emails")
@@ -290,7 +291,7 @@ class Document(models.Model):
     ]
     document_reference = models.CharField(max_length=7, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
-    content = models.TextField()
+    content = models.TextField(null=True, blank=True)
     submitted_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='submitted_documents')
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE)
     current_step = models.ForeignKey(ApprovalStep, on_delete=models.SET_NULL, null=True, blank=True)
@@ -404,17 +405,30 @@ class Document(models.Model):
             self.submitted_by == user
         )
 
+# The move_to_next_step method now uses a while loop to continue checking steps until either:
+
+# A valid next step is found (conditions met)
+# There are no more steps (document is approved)
+# A step's conditions are not met (skip to next step)
+
+# When a step's conditions are not met, it continues the loop to check the next step instead of immediately approving the document.
 
     def move_to_next_step(self, approval):
-    # Determine the next step based on the current approval's step
-        next_step = ApprovalStep.objects.filter(
-            workflow=self.workflow,
-            order__gt=approval.step.order  # Use the order from the current approval's step
-        ).order_by('order').first()
+        while True:
+            next_step = ApprovalStep.objects.filter(
+                workflow=self.workflow,
+                order__gt=approval.step.order
+            ).order_by('order').first()
 
-        if next_step:
+            if not next_step:
+                # No more steps, document is approved
+                send_approved_email(self)
+                self.status = 'approved'
+                self.save()
+                break
+
             if next_step.evaluate_condition(self):
-                print('next step true ?', next_step)
+                # Condition met, move to this step
                 self.current_step = next_step
                 self.status = 'in_review'
                 self.save()
@@ -423,15 +437,10 @@ class Document(models.Model):
                 approvals = self.approvals.filter(step=next_step)
                 for appr in approvals:
                     send_approval_email(appr)
+                break
             else:
-                send_approved_email(self)
-                self.status = 'approved'
-                self.save()
-        else:
-            send_approved_email(self)
-            self.status = 'approved'
-
-        self.save()
+                # Condition not met, continue searching for next applicable step
+                approval = type('obj', (object,), {'step': next_step})()
 
     def withdraw(self):
          #allow to withdraw for all next cycle if is_approved is null in next cycle
