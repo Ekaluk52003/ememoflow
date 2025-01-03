@@ -3,20 +3,6 @@
 @tailwind utilities;
 
 
-.toolbar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: white;
-  transition: box-shadow 0.2s ease;
-}
-
-.toolbar-wrapper.is-fixed {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#editorToolbar {
-  transform: translate3d(0,0,0);
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+/* [x-cloak] {
+  display: none !important;
+} */

@@ -105,66 +105,6 @@ document.addEventListener("alpine:init", () => {
       currentColor: '#000000',
       currentHighlight: 'transparent',
       isToolbarFixed: false,
-      toolbarHeight: 0,
-      toolbarOffsetTop: 0,
-      scrollPosition: 0,
-      isEditing: false,
-    toolbarInitialWidth: 0,
-    lastScrollPosition: 0,
-
-    preventScrollJump(callback) {
-      if (this.isToolbarFixed) {
-        // Store current scroll position
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-
-        // Execute the callback (formatting action)
-        callback();
-
-        // Use RAF for smoother visual update
-        requestAnimationFrame(() => {
-          window.scrollTo({
-            top: currentScroll,
-            behavior: 'auto' // Use 'auto' instead of 'instant' for smoother effect
-          });
-        });
-      } else {
-        callback();
-      }
-    },
-
-    handleScroll() {
-      const toolbar = this.$refs.toolbar;
-      const container = this.$refs.editorContainer;
-      if (!toolbar || !container) return;
-
-      if (!this.toolbarOffsetTop) {
-        this.toolbarOffsetTop = toolbar.offsetTop;
-        this.toolbarInitialWidth = toolbar.offsetWidth;
-      }
-
-      const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-      this.lastScrollPosition = scrollPosition;
-
-      if (scrollPosition > this.toolbarOffsetTop && !this.isToolbarFixed) {
-        toolbar.style.position = 'fixed';
-        toolbar.style.top = '0';
-        toolbar.style.left = '0';
-        toolbar.style.right = '0';
-        toolbar.style.width = '100%';
-        toolbar.style.zIndex = '1000';
-        container.style.paddingTop = `${toolbar.offsetHeight}px`;
-        this.isToolbarFixed = true;
-      } else if (scrollPosition <= this.toolbarOffsetTop && this.isToolbarFixed) {
-        toolbar.style.position = '';
-        toolbar.style.top = '';
-        toolbar.style.left = '';
-        toolbar.style.right = '';
-        toolbar.style.width = `${this.toolbarInitialWidth}px`;
-        toolbar.style.zIndex = '';
-        container.style.paddingTop = '';
-        this.isToolbarFixed = false;
-      }
-    },
 
       init() {
 
@@ -260,21 +200,7 @@ document.addEventListener("alpine:init", () => {
               }
             }, { passive: true });
 
-            // Add scroll lock during toolbar button interactions
-            const toolbarButtons = toolbar.querySelectorAll('button');
-            toolbarButtons.forEach(button => {
-              button.addEventListener('mousedown', () => {
-                if (this.isToolbarFixed) {
-                  this.scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-                }
-              });
 
-              button.addEventListener('click', () => {
-                if (this.isToolbarFixed) {
-                  this.lockScroll();
-                }
-              });
-            });
           });
 
 
@@ -294,13 +220,13 @@ document.addEventListener("alpine:init", () => {
       },
 
         toggleBold() {
-        this.preventScrollJump(() => {
+
           const { color } = editor.getAttributes('textStyle');
           editor.chain().focus().toggleBold().run();
           if (editor.isActive('bold')) {
             editor.chain().focus().updateAttributes('bold', { color }).run();
           }
-        });
+
       },
 
       toggleTextLeft() {

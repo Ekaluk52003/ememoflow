@@ -7,7 +7,7 @@ module.exports = {
     themes: [
       {
         light: {
-          ...require("daisyui/src/theming/themes")["winter"],
+          ...require("daisyui/src/theming/themes")["luxury"],
           primary: "#1961dd",
           warning: "#fde68a",
           success: "#bbf7d0",

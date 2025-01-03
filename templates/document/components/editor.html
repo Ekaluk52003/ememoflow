@@ -9,7 +9,7 @@ class="bg-white rounded-xl">
     <!-- tool bar1 -->
     <div class="flex flex-wrap items-center gap-2 p-2 rounded-tl-lg md:mr-2">
       <div class="relative" x-data="{ open: false }">
-        <button @click="open = !open" class="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <button type="button" @click="open = !open" class="px-3 py-2 text-sm font-medium bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
           <span x-text="isActive('heading', { level: 1 }, updatedAt ) ? 'H1' :
             isActive('heading', { level: 2 }, updatedAt) ? 'H2' :
             isActive('heading', { level: 3 }, updatedAt) ? 'H3' :
@@ -17,14 +17,15 @@ class="bg-white rounded-xl">
         </button>
         <div x-show="open" @click.away="open = false" class="absolute z-10 w-40 mt-2 bg-white rounded-md shadow-lg">
           <div class="py-1">
-            <button @click="toggleHeading({ level: 1 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H1</button>
-            <button @click="toggleHeading({ level: 2 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H2</button>
-            <button @click="toggleHeading({ level: 3 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H3</button>
-            <button @click="toggleParagraph(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Paragraph</button>
+            <button type="button" @click="toggleHeading({ level: 1 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H1</button>
+            <button type="button" @click="toggleHeading({ level: 2 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H2</button>
+            <button type="button" @click="toggleHeading({ level: 3 }); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">H3</button>
+            <button type="button" @click="toggleParagraph(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Paragraph</button>
           </div>
         </div>
       </div>
       <button
+      type="button"
           @click="toggleBold"
           :class="{ 'bg-gray-200': isActive('bold', updatedAt) }"
           class="p-2 rounded-md hover:bg-gray-100"
@@ -36,6 +37,7 @@ class="bg-white rounded-xl">
           </svg>
           </button>
           <button
+          type="button"
           @click="toggleItalic()"
           :class="{ 'bg-gray-200': isActive('italic', updatedAt) }"
           class="p-2 rounded-md hover:bg-gray-100"
@@ -49,6 +51,7 @@ class="bg-white rounded-xl">
         </button>
         <!-- Strikethrough Button -->
         <button
+        type="button"
           @click="toggleStrike()"
           :class="{ 'bg-gray-200': isActive('strike', updatedAt) }"
           class="p-2 rounded-md hover:bg-gray-100"
@@ -60,7 +63,7 @@ class="bg-white rounded-xl">
           </svg>
         </button>
 
-        <button @click="indentText()" class="p-1 rounded-md hover:bg-gray-100" title="Indent">
+        <button type="button" @click="indentText()" class="p-1 rounded-md hover:bg-gray-100" title="Indent">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="8" x2="21" y2="8"></line>
             <line x1="8" y1="13" x2="21" y2="13"></line>
@@ -68,7 +71,7 @@ class="bg-white rounded-xl">
             <polyline points="4 6 6 8 4 10"></polyline>
           </svg>
         </button>
-        <button @click="outdentText()" class="p-1 rounded-md hover:bg-gray-100" title="Outdent">
+        <button type="button" @click="outdentText()" class="p-1 rounded-md hover:bg-gray-100" title="Outdent">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="8" x2="21" y2="8"></line>
             <line x1="3" y1="13" x2="16" y2="13"></line>
@@ -77,6 +80,7 @@ class="bg-white rounded-xl">
           </svg>
         </button>
         <button
+        type="button"
         @click="toggleBulletList()"
         :class="{ 'bg-gray-200': isActive('bulletList', updatedAt) }"
         class="p-2 rounded-md hover:bg-gray-100"
@@ -92,6 +96,7 @@ class="bg-white rounded-xl">
         </svg>
         </button>
         <button
+        type="button"
           @click="clearFormatting()"
           class="p-2 rounded-md hover:bg-gray-100"
           title="Clear Formatting"
@@ -102,6 +107,7 @@ class="bg-white rounded-xl">
           </button>
           <div class="relative">
             <button
+            type="button"
               @click="colorPickerOpen = !colorPickerOpen; highlightPickerOpen = false;"
               class="px-3 py-2 text-sm font-medium bg-white rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
 
@@ -122,16 +128,17 @@ class="bg-white rounded-xl">
               </svg>
             </button>
             <div
+
               x-show="colorPickerOpen"
               @click.away="colorPickerOpen = false"
               class="absolute z-10 p-2 mt-2 bg-white rounded-md shadow-lg"
               x-cloak
             >
             <div class="flex flex-col space-y-2">
-                <button @click="setTextColor('#000000')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#000000') }" class="w-6 h-6 bg-black rounded-full"></button>
-                <button @click="setTextColor('#FF0000')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#FF0000') }" class="w-6 h-6 bg-red-500 rounded-full"></button>
-                <button @click="setTextColor('#00FF00')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#00FF00') }" class="w-6 h-6 bg-green-500 rounded-full"></button>
-                <button @click="setTextColor('#0000FF')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#0000FF') }" class="w-6 h-6 bg-blue-500 rounded-full"></button>
+                <button type="button" @click="setTextColor('#000000')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#000000') }" class="w-6 h-6 bg-black rounded-full"></button>
+                <button type="button" @click="setTextColor('#FF0000')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#FF0000') }" class="w-6 h-6 bg-red-500 rounded-full"></button>
+                <button type="button" @click="setTextColor('#00FF00')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#00FF00') }" class="w-6 h-6 bg-green-500 rounded-full"></button>
+                <button type="button" @click="setTextColor('#0000FF')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveColor('#0000FF') }" class="w-6 h-6 bg-blue-500 rounded-full"></button>
                 <!-- Add more color buttons as needed -->
               </div>
             </div>
@@ -139,6 +146,7 @@ class="bg-white rounded-xl">
            <!-- Highlight Color Picker -->
       <div class="relative">
         <button
+        type="button"
           @click="highlightPickerOpen = !highlightPickerOpen; colorPickerOpen = false;"
 
            class="p-2 rounded-md hover:bg-gray-100"
@@ -167,18 +175,18 @@ class="bg-white rounded-xl">
           x-cloak
         >
         <div class="flex flex-col space-y-2">
-            <button @click="setHighlightColor('yellow')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('yellow') }" class="w-6 h-6 bg-yellow-300 rounded-full"></button>
-            <button @click="setHighlightColor('lime')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('lime') }" class="w-6 h-6 rounded-full bg-lime-300"></button>
-            <button @click="setHighlightColor('cyan')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('cyan') }" class="w-6 h-6 rounded-full bg-cyan-300"></button>
-            <button @click="setHighlightColor('pink')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('pink') }" class="w-6 h-6 bg-pink-300 rounded-full"></button>
-            <button @click="setHighlightColor('transparent')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('transparent') }" class="w-6 h-6 bg-white border border-gray-300 rounded-full"></button>
+            <button type="button" @click="setHighlightColor('yellow')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('yellow') }" class="w-6 h-6 bg-yellow-300 rounded-full"></button>
+            <button type="button" @click="setHighlightColor('lime')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('lime') }" class="w-6 h-6 rounded-full bg-lime-300"></button>
+            <button type="button" @click="setHighlightColor('cyan')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('cyan') }" class="w-6 h-6 rounded-full bg-cyan-300"></button>
+            <button type="button" @click="setHighlightColor('pink')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('pink') }" class="w-6 h-6 bg-pink-300 rounded-full"></button>
+            <button type="button" @click="setHighlightColor('transparent')" :class="{ 'ring-2 ring-offset-2 ring-indigo-500': isActiveHighlight('transparent') }" class="w-6 h-6 bg-white border border-gray-300 rounded-full"></button>
           </div>
         </div>
       </div>
     </div>
     <!-- tool bar2 -->
     <div class="flex flex-wrap items-center gap-2 p-4 rounded-tr-lg">
-      <button @click="toggleTextLeft()" :class="{ 'bg-gray-200': isActive({ textAlign: 'left' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Left">
+      <button type="button" @click="toggleTextLeft()" :class="{ 'bg-gray-200': isActive({ textAlign: 'left' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Left">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="17" y1="10" x2="3" y2="10"></line>
           <line x1="21" y1="6" x2="3" y2="6"></line>
@@ -186,7 +194,7 @@ class="bg-white rounded-xl">
           <line x1="17" y1="18" x2="3" y2="18"></line>
         </svg>
       </button>
-      <button @click="toggleTextCenter()" :class="{ 'bg-gray-200': isActive({ textAlign: 'center' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Center">
+      <button type="button" @click="toggleTextCenter()" :class="{ 'bg-gray-200': isActive({ textAlign: 'center' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Center">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="10" x2="6" y2="10"></line>
           <line x1="21" y1="6" x2="3" y2="6"></line>
@@ -194,7 +202,7 @@ class="bg-white rounded-xl">
           <line x1="18" y1="18" x2="6" y2="18"></line>
         </svg>
       </button>
-      <button @click="toggleTextRight()" :class="{ 'bg-gray-200': isActive({ textAlign: 'right' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Right">
+      <button type="button" @click="toggleTextRight()" :class="{ 'bg-gray-200': isActive({ textAlign: 'right' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Align Right">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="21" y1="10" x2="7" y2="10"></line>
           <line x1="21" y1="6" x2="3" y2="6"></line>
@@ -202,7 +210,7 @@ class="bg-white rounded-xl">
           <line x1="21" y1="18" x2="7" y2="18"></line>
         </svg>
       </button>
-      <button @click="toggleTextJustify()" :class="{ 'bg-gray-200': isActive({ textAlign: 'justify' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Justify">
+      <button type="button" @click="toggleTextJustify()" :class="{ 'bg-gray-200': isActive({ textAlign: 'justify' }, updatedAt) }" class="p-2 rounded-md hover:bg-gray-100" title="Justify">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="21" y1="10" x2="3" y2="10"></line>
           <line x1="21" y1="6" x2="3" y2="6"></line>
@@ -214,33 +222,33 @@ class="bg-white rounded-xl">
 
        <!-- Table Dropdown -->
        <div class="relative" x-data="{ open: false }">
-        <button @click="open = !open" class="p-2 text-gray-500 rounded hover:bg-gray-100">
+        <button type="button" @click="open = !open" class="p-2 text-gray-500 rounded hover:bg-gray-100">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd" />
           </svg>
         </button>
         <div x-show="open" @click.away="open = false" class="absolute z-10 w-48 mt-2 bg-white rounded-md shadow-lg">
           <div class="py-1">
-            <button @click="toggleInsertTable(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Insert Table</button>
-            <button @click="toggleAddColumnBefore(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Column Before</button>
-            <button @click="toggleAddColumnAfter(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Column After</button>
-            <button @click="toggleDelColumn(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Column</button>
-            <button @click="toggleAddRowBefore(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Row Before</button>
-            <button @click="toggleAddRowAfter(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Row After</button>
-            <button @click="toggleDelRow(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Row</button>
-            <button @click="toggleDelTable(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Table</button>
+            <button type="button" @click="toggleInsertTable(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Insert Table</button>
+            <button type="button" @click="toggleAddColumnBefore(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Column Before</button>
+            <button type="button" @click="toggleAddColumnAfter(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Column After</button>
+            <button type="button" @click="toggleDelColumn(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Column</button>
+            <button type="button" @click="toggleAddRowBefore(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Row Before</button>
+            <button type="button" @click="toggleAddRowAfter(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Add Row After</button>
+            <button type="button" @click="toggleDelRow(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Row</button>
+            <button type="button" @click="toggleDelTable(); open = false" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">Delete Table</button>
           </div>
         </div>
       </div>
 
       <!-- Undo/Redo Buttons -->
-      <button @click="toggleUndo()" class="p-2 text-gray-500 rounded hover:bg-gray-100">
+      <button type="button" @click="toggleUndo()" class="p-2 text-gray-500 rounded hover:bg-gray-100">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 7v6h6"></path>
           <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
         </svg>
       </button>
-      <button @click="toggleRedo()" class="p-2 text-gray-500 rounded hover:bg-gray-100">
+      <button type="button" @click="toggleRedo()" class="p-2 text-gray-500 rounded hover:bg-gray-100">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 7v6h-6"></path>
           <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
