@@ -7,9 +7,9 @@
     <ul class="divide-y divide-gray-200">
         <li>
                 <a hx-get="{% url 'document_approval:document_detail'  document.id %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
-                    <div class="bg-white rounded-2xl px-4 py-4 sm:px-6 mb-2">
+                    <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
                         <div class="flex items-center justify-between">
-                            <p class="text-gray-700 text-md dark:text-white md:truncate font-semibold">
+                            <p class="font-semibold text-gray-700 text-md dark:text-white md:truncate">
                                 {{ document.title }}
                             </p>
                             <div class="flex flex-shrink-0 ml-2">
@@ -26,6 +26,7 @@
                                     <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
                                 </p>
                                 <div class="mt-2">
+                                    <small class="badge text-bg-light">Reference:{{document.document_reference}}</small>
                                     <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
 
                                     <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
@@ -44,7 +45,7 @@
 
     {% empty %}
 
-        <p class="alert alert-info mt-6">You haven't favorited any documents yet..</p>
+        <p class="mt-6 alert alert-info">You haven't favorited any documents yet..</p>
     {% endfor %}
 </ul>
 {% endblock %}

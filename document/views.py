@@ -854,48 +854,37 @@ def submit_document(request, workflow_id):
 
         return render(request, 'document/submit_document_full.html', context)
 
+
+from django.db import models
+
 @login_required
 def documents_to_approve_to_resubmit(request):
-    # This Django ORM query is fetching a specific set of documents based on certain conditions. Let's break it down:
-
-# Document.objects.filter(...): This starts a query on the Document model.
-# Q(current_step__approval__approver=request.user):
-# This looks for documents where the current step has an approval assigned to the current user.
-# Q(current_step__approval__is_approved=None):
-# This further filters to only include documents where that approval is pending (not yet approved or rejected).
-# Q(status='in_review'):
-# This ensures only documents with the status 'in_review' are included.
-# .distinct():
-# This removes any duplicate results that might occur due to the nature of the query joins.
-# .order_by('-created_at'):
-# This orders the results by the creation date in descending order (newest first).
-# Putting it all together, this query is finding:
-# "All documents that are currently in review, where the current step has a pending approval assigned to the current user, ordered from newest to oldest."
-# This query would typically be used to show a user all the documents that are waiting for their approval. It ensures that:
-
-# The document is in the review process.
-# The current user is responsible for the next approval.
-# That approval hasn't been made yet (it's still pending).
-
-# The distinct() call is important because without it, you might get duplicate documents if a user has multiple approvals on different steps of the same document.
+    # Documents waiting for current user's approval
     documents_to_approve = Document.objects.filter(
-        Q(current_step__approval__approver=request.user) &
-        Q(current_step__approval__is_approved=None) &
-        Q(status='in_review')
+        status='in_review',
+        current_step__isnull=False,  # Ensure there is a current step
+        approvals__step=models.F('current_step'),  # Approval matches current step
+        approvals__approver=request.user,  # User is the approver
+        approvals__is_approved__isnull=True  # Approval is pending
     )
 
     # Documents rejected that the user can resubmit
-    documents_to_resubmit = Document.objects.filter(
-        Q(submitted_by=request.user) &
-        Q(status='rejected')
+    documents_reject = Document.objects.filter(
+        submitted_by=request.user,
+        status='rejected'
     )
 
-    # Combine both querysets
-    documents = (documents_to_approve | documents_to_resubmit).distinct().order_by('-updated_at')
+     # Documents rejected that the user can resubmit
+    documents_to_resubmit = Document.objects.filter(
+        submitted_by=request.user,
+        status='pending'
+    )
+
+    # Combine both querysets and order by newest first
+    documents = (documents_to_approve | documents_reject | documents_to_resubmit).distinct().order_by('-updated_at')
 
     context = {
         'documents': documents,
-
     }
     return render(request, 'document/documents_to_action.html', context)
 
