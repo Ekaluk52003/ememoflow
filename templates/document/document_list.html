@@ -8,18 +8,18 @@
 
 
 <h3 class="text-lg font-medium leading-6 text-gray-900">All Documents</h3>
-<p class="max-w-2xl mt-1 text-sm text-gray-500">Review All Documentd</p>
+<p class="max-w-2xl mt-1 mb-4 text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
 
 <!-- Search and Filter Form -->
 <form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter" hx-target="#document-list" hx-swap="innerHTML">
             <div class="flex">
-                <input type="text" name="search" class="input input-bordered w-full" placeholder="Search documents..." value="{{ search_query }}">
+                <input type="text" name="search" class="w-full input input-bordered" placeholder="Search documents..." value="{{ search_query }}">
                 <button class="btn btn-primary" type="submit">Search</button>
             </div>
 
             <div class="flex justify-between mt-2">
                 <div>
-                    <select id="workflow-filter" name="workflow" class="select select-bordered w-full">
+                    <select id="workflow-filter" name="workflow" class="w-full select select-bordered">
                         <option value="">All Workflows</option>
                         {% for workflow in workflows %}
                             <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
@@ -27,7 +27,7 @@
                     </select>
                 </div>
                 <div>
-                    <select id="status-filter" name="status" class="select select-bordered w-full">
+                    <select id="status-filter" name="status" class="w-full select select-bordered">
                         <option value="">All Statuses</option>
                         {% for status, display in status_choices %}
                             <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>

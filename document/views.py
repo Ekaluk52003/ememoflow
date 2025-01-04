@@ -188,6 +188,7 @@ def document_list(request):
         documents = documents.filter(
             Q(title__icontains=search_query) |
             Q(content__icontains=search_query) |
+            Q(document_reference__icontains=search_query) |
             q_objects
         ).distinct()
 
@@ -197,7 +198,7 @@ def document_list(request):
     if status:
         documents = documents.filter(status=status)
 
-    paginator = Paginator(documents, 10)  # Show 10 documents per page
+    paginator = Paginator(documents, 5)  # Show 5 documents per page
     page_number = request.GET.get('page', 1)
 
     try:
