@@ -24,35 +24,114 @@
                  </div>
         </label>
 
+
         {% if field.field_type == 'product_list' %}
-            <div id="product-list-{{ field.id }}">
-                {% for product in field.products %}
-                <div class="flex items-center gap-2 mb-2 product-row">
-                    <div class="w-1">
-                        <input type="text" class="w-full input input-bordered" name="product_id_{{ field.id }}[]" placeholder="ID" value="{{ product.id }}" required>
-                    </div>
-                    <div class="w-2">
-                        <input type="text" class="w-full input input-bordered" name="product_code_{{ field.id }}[]" placeholder="CODE" value="{{ product.code }}" required>
-                    </div>
-                    <div class="w-2">
-                        <input type="text" class="w-full input input-bordered" name="product_name_{{ field.id }}[]" placeholder="Product Name" value="{{ product.name }}" required>
-                    </div>
-                    <div class="w-3">
-                        <input type="number" class="w-full input input-bordered" name="product_quantity_{{ field.id }}[]" placeholder="Quantity" value="{{ product.quantity }}" required>
-                    </div>
-                    <button type="button" class="btn btn-error" onclick="removeProductRow(this)">Remove</button>
+    <div x-data="{
+        products: [{% for product in field.products %}
+            {
+                id: '{{ product.id|escapejs }}',
+                code: '{{ product.code|escapejs }}',
+                name: '{{ product.name|escapejs }}',
+                quantity: '{{ product.quantity|escapejs }}'
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}],
+        addProduct() {
+            this.products.push({
+                id: '',
+                code: '',
+                name: '',
+                quantity: ''
+            });
+        },
+        removeProduct(index) {
+            this.products.splice(index, 1);
+            this.calculateTotal();
+        },
+        calculateTotal() {
+            return this.products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0);
+        }
+    }">
+
+    <div class="relative w-full">
+        <div class="relative overflow-x-auto" style="max-width: 100%; overflow-y: hidden;">
+            <div class="min-w-[800px]" style="width: fit-content;">
+
+
+                <div class="flex gap-2 px-1 mb-2 text-sm text-gray-600">
+                    <div style="width: 80px;">ID</div>
+                    <div style="width: 150px;">Code</div>
+                    <div style="width: 300px;">Product Name</div>
+                    <div style="width: 100px;">Quantity</div>
+                    <div style="width: 100px;"></div>
                 </div>
-            {% endfor %}
-            </div>
-            <button type="button" class="mt-2 btn btn-secondary"
-                    hx-get="{% url 'document_approval:add_product_field' field.id %}"
-                    hx-target="#product-list-{{ field.id }}"
-                    hx-swap="beforeend">
+                <div class="space-y-2">
+                <div id="product-list-{{ field.id }}">
+                    <template x-for="(product, index) in products" :key="index">
+                        <div class="flex gap-2 py-2">
+                            <input type="number"
+                                style="width: 80px;"
+                                class="input"
+                                :name="`product_id_{{ field.id }}[]`"
+                                x-model="product.id"
+                                placeholder="ID"
+                                required>
+
+                            <input type="text"
+                                style="width: 150px;"
+                                class="input"
+                                :name="`product_code_{{ field.id }}[]`"
+                                x-model="product.code"
+                                placeholder="CODE"
+                                required>
+
+                            <input type="text"
+                                style="width: 300px;"
+                                class="input"
+                                    :name="`product_name_{{ field.id }}[]`"
+                                x-model="product.name"
+                                placeholder="Product Name"
+                                required>
+
+                            <input type="number"
+                                style="width: 100px;"
+                                class="input"
+                                :name="`product_quantity_{{ field.id }}[]`"
+                                    x-model="product.quantity"
+                                placeholder="Qty"
+                                required
+                                @input="calculateTotal()"
+                                >
+
+                            <button type="button"
+                                    style="width: 100px;"
+                                    class="px-4 text-white bg-red-500 rounded h-9 hover:bg-red-600"
+                                    @click="removeProduct(index)">
+                                Delete
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                </div>
+
+        </div>
+     </div>
+    </div>
+
+
+
+    <div class="flex items-center justify-between gap-4 mt-4">
+            <button type="button"
+                    class="btn btn-primary"
+                    @click="addProduct()">
                 Add Product
             </button>
-            <div class="mt-2">
-                Total QTY: <span id="total-quantity-{{ field.id }}">0</span>
+
+            <div class="text-lg text-gray-600">
+                Total Quantity: <span x-text="calculateTotal()" class="font-bold"></span>
             </div>
+        </div>
+    </div>
+
 
         {% elif field.field_type == 'number' and field.name == 'Total Quantity' %}
             <input type="number" class="form-control" name="dynamic_{{ field.id }}" id="total-quantity-input" value="{{ field.value }}" readonly>
@@ -144,43 +223,6 @@
 
 
 
-<!-- Initialize Quill editor -->
-<script>
-
-
-  function removeProductRow(button) {
-    button.closest('.product-row').remove();
-    updateTotalQuantity();
-}
-
-function updateTotalQuantity() {
-    var productLists = document.querySelectorAll('[id^="product-list-"]');
-    productLists.forEach(function(productList) {
-        var fieldId = productList.id.split('-')[2];
-        var quantityInputs = productList.querySelectorAll('input[name^="product_quantity_"]');
-        var total = 0;
-        quantityInputs.forEach(function(input) {
-            total += parseInt(input.value) || 0;
-        });
-        document.getElementById('total-quantity-' + fieldId).textContent = total;
-    });
-}
-
-document.body.addEventListener('htmx:afterSwap', function(event) {
-    if (event.detail.target.id.startsWith('product-list-')) {
-        updateTotalQuantity();
-    }
-});
-
-document.body.addEventListener('input', function(event) {
-    if (event.target.name && event.target.name.startsWith('product_quantity_')) {
-        updateTotalQuantity();
-    }
-});
-
-// Initial update
-updateTotalQuantity();
-</script>
 
 <script>
     document.body.addEventListener('htmx:responseError', function(evt) {

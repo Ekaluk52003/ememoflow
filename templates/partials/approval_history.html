@@ -31,7 +31,7 @@
 
 {% if can_approve %}
 <h2 class="mb-3">Your Approval!!</h2>
-<form method="post"   hx-post="{% url 'document_approval:document_detail' document.pk %}" target="#document-status" enctype="multipart/form-data">
+<form method="post"   hx-post="{% url 'document_approval:document_detail' document.document_reference %}" target="#document-status" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="mb-3">
         <label class="form-label">Decision:</label>
@@ -48,7 +48,7 @@
         <label for="comment" class="form-label">Comment:</label>
         <textarea class="form-control" name="comment" id="comment" rows="3"></textarea>
     </div>
- 
+
     <button type="submit" class="btn btn-primary">Submit Approval</button>
 </form>
 {% endif %}

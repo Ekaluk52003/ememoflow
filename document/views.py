@@ -73,13 +73,6 @@ def delete_attachment(request, field_id, document_id):
     else:
         return HttpResponse("No file to delete", status=400)  # Bad Request
 
-@require_http_methods(["GET"])
-def add_product_field(request, field_id):
-    context = {
-        'field_id': field_id,
-        'product_index': request.GET.get('index', 0)
-    }
-    return render(request, 'partials/product_field.html', context)
 
 def prepare_dynamic_fields(document):
     prepared_values = []
@@ -247,9 +240,9 @@ def document_list(request):
 
 
 @login_required
-def document_detail(request, pk):
+def document_detail(request, reference_id):
     try:
-        document = get_object_or_404(Document, pk=pk)
+        document = get_object_or_404(Document, document_reference=reference_id)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
         dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
         user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
@@ -350,7 +343,7 @@ def document_detail(request, pk):
                 if request.htmx:
                     response = render(request, 'partials/submit_success.html', {'document': document})
                     return retarget(response, '#content-div')
-                return redirect('document_approval:document_detail', pk=document.pk)
+                return redirect('document_approval:document_detail', reference_id=document.document_reference)
 
             except ValidationError as ve:
                 errors = {field: [str(error)] for field, error in ve.message_dict.items()}
@@ -626,17 +619,17 @@ def withdraw_document(request, document_id):
                      '<div id="approval-form" hx-swap-oob="true">' + approval_form_html + '</div>'
                 )
             else:
-                return redirect('document_approval:document_detail', document_id=document.pk)
+                return redirect('document_approval:document_detail', reference_id=document.document_reference)
         else:
             messages.error(request, "You don't have permission to withdraw this document.")
 
             if request.htmx:
                 return HttpResponse("Permission denied", status=403)
             else:
-                return redirect('document_approval:document_detail', document_id=document.pk)
+                return redirect('document_approval:document_detail', reference_id=document.document_reference)
 
     # If it's not a POST request, redirect to document detail
-    return redirect('document_approval:document_detail', document_id=document.pk)
+    return redirect('document_approval:document_detail', reference_id=document.document_reference)
 
 @login_required
 def cancel_document(request, document_id):

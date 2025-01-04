@@ -136,7 +136,7 @@
         {% if can_approve %}
 <div id="approval-form" class="p-6 mt-6 bg-white rounded-xl">
     <h3 class="mb-6 text-lg font-medium leading-6 text-gray-900">Approve Review</h3>
-    <form hx-post="{% url 'document_approval:document_detail' document.pk %}" hx-target="#content-div" enctype="multipart/form-data">
+    <form hx-post="{% url 'document_approval:document_detail' document.document_reference %}" hx-target="#content-div" enctype="multipart/form-data">
         {% csrf_token %}
         <div id="form-errors">
             <!-- Errors will be displayed here -->

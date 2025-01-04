@@ -6,7 +6,7 @@
     {% for document, is_favorite in favorite_documents %}
     <ul class="divide-y divide-gray-200">
         <li>
-                <a hx-get="{% url 'document_approval:document_detail'  document.id %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
+                <a hx-get="{% url 'document_approval:document_detail'  document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
                     <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
                         <div class="flex items-center justify-between">
                             <p class="font-semibold text-gray-700 text-md dark:text-white md:truncate">

@@ -119,6 +119,8 @@ def send_approved_email(document):
         cc_list
     )
 
+
+# notify to approver for up coming document to approve
 def send_approval_email(approval):
     if not approval.step.send_email:
         logger.info(
