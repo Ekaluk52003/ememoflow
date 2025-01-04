@@ -1,0 +1,10 @@
+/* static/css/admin_custom.css */
+.field-approvers, .field-condition_field, .field-condition_operator, .field-condition_value {
+  max-width: 300px; /* Adjust width as necessary */
+  display: inline-block; /* Makes the fields inline to reduce horizontal space */
+  margin-right: 10px; /* Adds some space between the fields */
+}
+
+.field-approvers {
+  width: 100%; /* Ensures the approvers field takes full width */
+}
