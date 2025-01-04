@@ -3,21 +3,50 @@
 {% block title %}My Documents{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">My Documents</h1>
-{% if documents %}
-    <div class="list-group">
-    {% for document in documents %}
-        <a href="{% url 'document_approval:document_detail' pk=document.pk %}" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h5 class="mb-1">{{ document.title }}</h5>
-                <small>Status: <span class="badge bg-primary">{{ document.get_status_display }}</span></small>
+
+
+
+
+<h3 class="text-lg font-medium leading-6 text-gray-900">All Documents</h3>
+<p class="max-w-2xl mt-1 mb-4 text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
+
+<!-- Search and Filter Form -->
+<form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter" hx-target="#document-list" hx-swap="innerHTML">
+            <div class="flex">
+                <input type="text" name="search" class="w-full input input-bordered" placeholder="Search documents..." value="{{ search_query }}">
+                <button class="btn btn-primary" type="submit">Search</button>
             </div>
-            <small>Current Step: {{ document.current_step.name }}</small>
-        </a>
-    {% endfor %}
-    </div>
-{% else %}
-    <p class="alert alert-info">You haven't submitted any documents yet.</p>
-{% endif %}
-<a href="{% url 'document_approval:submit_document' %}" class="btn btn-primary mt-3">Submit New Document</a>
+
+            <div class="flex justify-between mt-2">
+                <div>
+                    <select id="workflow-filter" name="workflow" class="w-full select select-bordered">
+                        <option value="">All Workflows</option>
+                        {% for workflow in workflows %}
+                            <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <select id="status-filter" name="status" class="w-full select select-bordered">
+                        <option value="">All Statuses</option>
+                        {% for status, display in status_choices %}
+                            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+
+            </div>
+
+</form>
+
+
+
+<!-- Document List -->
+<div id="document-list">
+    {% include "partials/document_list_partial.html" %}
+</div>
+
+
 {% endblock %}
+

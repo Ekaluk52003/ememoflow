@@ -1,0 +1,51 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<h1>My Favorite Documents</h1>
+
+    {% for document, is_favorite in favorite_documents %}
+    <ul class="divide-y divide-gray-200">
+        <li>
+                <a hx-get="{% url 'document_approval:document_detail'  document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
+                    <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <p class="font-semibold text-gray-700 text-md dark:text-white md:truncate">
+                                {{ document.title }}
+                            </p>
+                            <div class="flex flex-shrink-0 ml-2">
+                                <p class="inline-flex px-2 text-xs font-semibold leading-5
+
+                                 {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-error text-white{% elif document.status == 'in_review' %}bg-primary text-white{% elif document.status == 'cancel' %}bg-base-300{% else %}bg-secondary text-white{% endif %} rounded-md">
+                                 {{ document.get_status_display }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+
+                                <p class="flex items-center font-light text-gray-500 text-md dark:text-gray-300">
+                                    <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
+                                </p>
+                                <div class="mt-2">
+                                    <small class="badge text-bg-light">Reference:{{document.document_reference}}</small>
+                                    <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
+
+                                    <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
+                                    <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
+                                </div>
+                        </div>
+                    </div>
+
+        </a>
+
+        </li>
+
+    </ul>
+
+
+
+    {% empty %}
+
+        <p class="mt-6 alert alert-info">You haven't favorited any documents yet..</p>
+    {% endfor %}
+</ul>
+{% endblock %}

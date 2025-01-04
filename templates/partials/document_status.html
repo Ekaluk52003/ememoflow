@@ -1,0 +1,19 @@
+<div id="document-status">
+  <h5 class="text-lg font-medium leading-6 text-base-content mt-3">Status:
+    <span class=" font-bold text-md {% if document.status == 'approved' %}text-green-400
+                        {% elif document.status == 'rejected' %}text-error
+                        {% else %}text-primary{% endif %}">
+        {{ document.get_status_display }}
+    </span>
+  </h5>
+
+
+  <h5 class="text-lg font-medium leading-6 text-base-content mt-4">Current Step:
+    <span class="text-primary font-bold text-md">{{ document.current_step.name }}</span>
+
+</h6>
+</div>
+
+
+
+

@@ -2,20 +2,62 @@ version: '3.9'
 
 services:
   web:
-    build: .
-    command: python /code/manage.py runserver 0.0.0.0:8000
+    build:
+      context: .
+    command: python manage.py runserver 0.0.0.0:${DJANGO_PORT}
     volumes:
       - .:/code
     ports:
-      - 8000:8000
+      - "${DJANGO_PORT}:${DJANGO_PORT}"
+    env_file:
+      - .env
     depends_on:
       - db
-  db:
-    image: postgres:16
+
+  webpack:
+    build:
+      context: .
+      dockerfile: Dockerfile.webpack  # Create a separate Dockerfile for Webpack
+    command: npm run watch  # Using watch mode
+    stdin_open: true        # Add for interactive inputs
+    tty: true               # Keep the terminal session open
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - .:/code
+    depends_on:
+      - web
     environment:
-      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - NODE_ENV=development
+
+
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_djangox:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "${SQL_PORT}:5433"
+    command: -p 5433
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7.0.10-alpine
+    ports:
+      - 6379:6379
+
+  celery:
+    build: .
+    command: celery -A django_project worker --loglevel=info
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
 
 volumes:
-  postgres_data:
+  postgres_djangox:

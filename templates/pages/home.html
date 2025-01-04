@@ -1,12 +1,21 @@
 {% extends '_base.html' %}
+
 {% load static %}
 
 {% block title %}Home page{% endblock title %}
 
 {% block content %}
-<div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-  <h1 class="text-body">A Django starter project with batteries.</h1>
-  <h2 class="text-secondary">A Django starter project with batteries.</h2>
-  <p>Quickly and easily get started with Bootstrap's compiled, production-ready files with this barebones example featuring some basic HTML and helpful links. Download all our examples to get started.</p>
-</div>
+<section class="flex flex-col items-start gap-2 px-4 py-8 mx-auto md:py-12 md:pb-8 lg:py-12 lg:pb-10"
+>
+
+  <h1 class="text-3xl font-bold leading-tight tracking-tighter" >
+    SmartFlow
+  </h1>
+
+  <p class="max-w-2xl text-lg font-light text-foreground">
+    SmartFlow: Streamline your document approvals with intelligent workflows. Automate, track, and optimize your business processes effortlessly.
+  </p>
+  <button class="btn btn-primary"><a hx-get="{% url 'document_approval:workflow_list' %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Get Start</a></button>
+
+</section>
 {% endblock content %}
