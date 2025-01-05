@@ -94,9 +94,13 @@ def prepare_dynamic_fields(document):
     return prepared_values
 
 
+@login_required
+def generate_pdf_report(request, reference_id, template_id):
 
-def generate_pdf_report(request, document_id, template_id):
-    document = get_object_or_404(Document, id=document_id)
+    document_response = get_allowed_document(request.user, reference_id)
+    if isinstance(document_response, HttpResponse):
+        return document_response  # Return the error template response
+    document = document_response
     template = get_object_or_404(PDFTemplate, id=template_id)
     report_config = ReportConfiguration.objects.first()  # Assuming you have only one configuration
     # Get the context data from the document
@@ -129,7 +133,7 @@ def generate_pdf_report(request, document_id, template_id):
 
     # Create HTTP response
     response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'filename="document_{document_id}_report.pdf"'
+    response['Content-Disposition'] = f'filename="document_{reference_id}_report.pdf"'
     return response
 
 
@@ -168,6 +172,17 @@ def get_allowed_documents(user):
 
     # Order the documents by creation date, most recent first
     return documents.order_by('-created_at')
+
+
+def get_allowed_document(user, reference_id):
+    allowed_documents = get_allowed_documents(user)
+    try:
+        document = allowed_documents.get(document_reference=reference_id)
+    except Document.DoesNotExist:
+        return render(None, 'error.html', {
+            'message': "Document not found or you don't have permission to access it."
+        })
+    return document
 
 @login_required
 def document_list(request):
@@ -243,7 +258,9 @@ def document_list(request):
 @login_required
 def document_detail(request, reference_id):
     try:
-        document = get_object_or_404(Document, document_reference=reference_id)
+
+        document = get_allowed_document(request.user, reference_id)
+        # document = get_object_or_404(Document, document_reference=reference_id)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
         dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
         user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
@@ -384,10 +401,10 @@ def document_detail(request, reference_id):
 
         return render(request, 'document/document_detail.html', context)
     except Exception as e:
-        logger.exception(f"Unexpected error in document_detail view for document {pk}")
+
         if request.htmx:
-            return HttpResponse("An error occurred while loading the document.", status=500)
-        return render(request, 'error.html', {'message': "An error occurred while loading the document."})
+            return HttpResponse("you are not auhtorize", status=500)
+        return render(request, 'error.html', {'message': "you are not auhtorize"})
 
 
 @login_required
@@ -429,7 +446,7 @@ def resubmit_document(request, pk):
         prepared_fields.append(field_data)
 
     if request.user != document.submitted_by or document.status not in ['pending', 'rejected']:
-        return HttpResponseForbidden("You don't have permission to resubmit this document.")
+        return render(request, 'error.html', {'message': "you are not authirized to resubmit this document"})
 
     if request.method == 'POST':
 
