@@ -902,3 +902,7 @@ def documents_to_approve_to_resubmit(request):
 
 def clear_toast(request):
     return HttpResponse("")
+
+
+
+

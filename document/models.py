@@ -611,7 +611,10 @@ class Approval(models.Model):
 
 
 def dynamic_field_file_path(instance, filename):
-    return f'documents/{instance.document.id}/dynamic_fields/{filename}'
+    # return f'documents/{instance.document.id}/dynamic_fields/{filename}'
+
+    return f'documents/{instance.document.document_reference}/{filename}'
+
 
 class DynamicFieldValue(models.Model):
     document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='dynamic_values')
@@ -620,6 +623,10 @@ class DynamicFieldValue(models.Model):
     file = models.FileField(upload_to=dynamic_field_file_path, blank=True, null=True)
     json_value = JSONField(default=list, blank=True)
 
+
+    def get_protected_url(self):
+        # Generate the URL for the protected view
+        return f"/protected-media/{self.id}/{self.file.name}"
 
     @classmethod
     def update_or_create_values(cls, document, dynamic_fields, post_data):

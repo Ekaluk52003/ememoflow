@@ -127,7 +127,10 @@ document.addEventListener("alpine:init", () => {
               }),
               TextStyle,
               Color.configure({ types: ['textStyle'] }),
-              Image,
+              Image.configure({
+                allowBase64: true,
+                inline: true,
+              }),
               CustomBold,
 
               // ImageResize,
@@ -231,6 +234,12 @@ document.addEventListener("alpine:init", () => {
 
       toggleTextLeft() {
         editor.chain().focus().setTextAlign('left').run();
+      },
+      promptForImageUrl() {
+        const url = window.prompt('Enter the image URL:');
+        if (url) {
+          editor.chain().focus().setImage({ src: url }).run()
+        }
       },
 
       toggleTextCenter() {
