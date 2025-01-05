@@ -1,0 +1,13 @@
+
+{% extends '_base.html' %}
+{% block content %}
+
+
+       We have sent an email to you for verification. Follow the link provided to finalize the signup process. If you do not see the verification email in your main inbox, check your spam folder.
+
+       <button class="mt-6 btn btn-primary">
+        <a href="{% url 'account_signup' %}">Resend verification email</a>
+       </button>
+
+{% endblock content %}
+
