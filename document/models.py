@@ -624,10 +624,6 @@ class DynamicFieldValue(models.Model):
     json_value = JSONField(default=list, blank=True)
 
 
-    def get_protected_url(self):
-        # Generate the URL for the protected view
-        return f"/protected-media/{self.id}/{self.file.name}"
-
     @classmethod
     def update_or_create_values(cls, document, dynamic_fields, post_data):
         for field in dynamic_fields:
