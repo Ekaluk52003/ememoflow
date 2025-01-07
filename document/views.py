@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.db.models import Q
 from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
 from accounts.models import CustomUser
@@ -27,10 +27,9 @@ from pathlib import Path
 import traceback
 import json
 from django.core.serializers.json import DjangoJSONEncoder
-
+import os
+from .utils import get_allowed_documents, get_allowed_document
 logger = logging.getLogger(__name__)
-
-
 
 
 @login_required
@@ -146,44 +145,6 @@ def workflow_list(request):
 
     return render(request, 'document/workflow_list_full.html', {'workflows': workflows})
 
-
-
-def get_allowed_documents(user):
-    # Check if the user is in the "super user" group
-    if user.is_superuser:
-        return Document.objects.all().order_by('-created_at')
-
-
-    is_super_user = user.groups.filter(name='super user').exists()
-
-    # Base queryset
-    documents = Document.objects.all()
-
-    if not is_super_user:
-        # If not a superuser, filter documents where the user is an approver or the submitter
-        approver_documents = Approval.objects.filter(
-            document=OuterRef('pk'),
-            approver=user
-        )
-        documents = documents.filter(
-            Q(Exists(approver_documents)) |  # User is an approver
-            Q(submitted_by=user)  # User is the submitter
-        )
-
-    # Order the documents by creation date, most recent first
-    return documents.order_by('-created_at')
-
-
-def get_allowed_document(user, reference_id):
-    allowed_documents = get_allowed_documents(user)
-    try:
-        document = allowed_documents.get(document_reference=reference_id)
-    except Document.DoesNotExist:
-        return render(None, 'error.html', {
-            'message': "Document not found or you don't have permission to access it."
-        })
-    return document
-
 @login_required
 def document_list(request):
     user = request.user
@@ -255,6 +216,8 @@ def document_list(request):
     return render(request, 'document/document_list.html', context)
 
 
+from django.urls import reverse
+
 @login_required
 def document_detail(request, reference_id):
     try:
@@ -273,8 +236,18 @@ def document_detail(request, reference_id):
             if value.field.field_type == 'product_list':
                 prepared_value['value'] = value.json_value
                 prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
-            elif value.field.field_type == 'attachment':
-                prepared_value['file'] = value.file
+
+            if value.field.field_type == 'attachment' and value.file:
+               file_url = reverse('document_approval:view_file', args=[value.id])
+               full_file_name = os.path.basename(value.file.name)
+               original_file_name = os.path.basename(value.file.name).split("_", 1)[0]+ os.path.splitext(full_file_name)[1]  # Remove timestamp
+               is_image = value.file.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'))
+               prepared_value['file_url'] = file_url
+               prepared_value['is_image'] = is_image
+               prepared_value['original_file_name'] = original_file_name
+
+
+
             elif value.field.field_type in ['choice', 'multiple_choice']:
                 prepared_value['choices'] = value.field.get_choices()
                 if value.field.field_type == 'multiple_choice':
@@ -903,6 +876,42 @@ def documents_to_approve_to_resubmit(request):
 def clear_toast(request):
     return HttpResponse("")
 
+import boto3
 
+def view_file(request, field_value_id):
+    """
+    Serve a file from S3 if the user has access to the related document.
+    """
+    from document.models import DynamicFieldValue  # Ensure this import matches your model's location
+    dynamic_field_value = get_object_or_404(DynamicFieldValue, pk=field_value_id)
 
+    # Check if the user has access to this file
+    if not dynamic_field_value.has_access(request.user):
+        return HttpResponseForbidden("You do not have permission to view this file.")
 
+    # Check if the file exists
+    if not dynamic_field_value.file:
+        return HttpResponseForbidden("No file is associated with this field value.")
+
+    # Generate a signed URL for the file
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        endpoint_url=settings.AWS_S3_ENDPOINT_URL,  # Custom S3-compatible endpoint
+    )
+
+    try:
+        # Ensure the Key matches the exact file path in your bucket
+        signed_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                'Key': dynamic_field_value.file.name,  # Full path of the file
+            },
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+        return HttpResponseRedirect(signed_url)
+    except Exception as e:
+        # Handle errors in generating the signed URL
+        return HttpResponseForbidden(f"Error generating URL: {e}")

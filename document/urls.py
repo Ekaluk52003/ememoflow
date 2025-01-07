@@ -20,6 +20,7 @@ urlpatterns = [
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
+    path('view_file/<int:field_value_id>/', views.view_file, name='view_file'),
 
 ]
 

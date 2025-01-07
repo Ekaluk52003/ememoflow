@@ -64,11 +64,21 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
-
-
                         {% elif value.field_type == 'attachment' %}
-                            {% if value.file %}
-                                <p><a href="{{ value.file.url }}" class="btn btn-sm btn-primary" target="_blank">Download {{ value.file.name }}</a></p>
+                            {% if value.file_url %}
+                                 {% if value.is_image %}
+                                     <div class="w-10">
+                                        <img src="{{ value.file_url }}" alt="Attachment"class="rounded-lg">
+                                        <div class="badge"> <a href="{{ value.file_url }}"  target="_blank">
+                                            {{ value.original_file_name }}</a></div>
+                                     </div>
+                                  {% else %}
+                                  <div class="mt-2">
+                                        <div class="p-4 text-lg badge badge-lg"> <a href="{{ value.file_url }}"  target="_blank">
+                                            File:{{ value.original_file_name }}</a>
+                                        </div>
+                                  </div>
+                                  {% endif %}
                             {% else %}
                                 <p>No file attached.</p>
                             {% endif %}
@@ -79,40 +89,23 @@
                         {% endif %}
                 {% endfor %}
 
-
-
-
-
         </div>
-
-
         {% if document.approvals.all|length > 0  %}
-
         <div class="p-6 mt-6 mb-6 bg-white border shadow-sm rounded-2xl">
-
-
             <h3 class="text-lg font-medium leading-6 text-gray-900">Approval Steps</h3>
-
             {% endif %}
                 {% for approval in ordered_approvals %}
-
                     <div class="p-4 rounded my-2 {% if document.current_step and approval.is_approved is None  %}bg-gray-50{% endif %}{% if approval.is_approved == False %} bg-red-50{% endif %}{% if approval.is_approved == True%} bg-green-50{% endif %}">
-
                         <div class="flex justify-between">
-
                             <div>
                                 <span class="font-medium">{{ approval.step.name }} - {{ approval.approver.username }}</span>
-
                                 {% if approval.comment %}
                                 <p class="mt-2 text-sm text-gray-600"><small>Comment: {{ approval.comment }}</small></p>
                             {% endif %}
                             {% if approval.recorded_at %}
                             <p class="mt-2 text-sm text-gray-600"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
                             {% endif %}
-
-
                             </div>
-
                             <div>
                               {% if approval.is_approved == True %}
                                 <span class="flex items-center px-2 py-1 text-sm text-white bg-green-500 rounded">Approved</span>
@@ -123,16 +116,9 @@
                             {% endif %}
                             </div>
                         </div>
-
-
                     </div>
                 {% endfor %}
-
-
-
         </div>
-
-
         {% if can_approve %}
 <div id="approval-form" class="p-6 mt-6 bg-white rounded-xl">
     <h3 class="mb-6 text-lg font-medium leading-6 text-gray-900">Approve Review</h3>
@@ -154,7 +140,8 @@
                          </div>
                 </label>
                 {% if editable_field.field_type == 'attachment' %}
-                    <input type="file" name="dynamic_{{ editable_field.id }}" id="dynamic_{{ editable_field.id }}" class="w-full file-input file-input-bordered" >
+
+                       <input type="file" name="dynamic_{{ editable_field.id }}" id="dynamic_{{ editable_field.id }}" class="w-full file-input file-input-bordered" >
 
                     {% elif editable_field.field_type == 'choice' %}
                     <select name="dynamic_{{ editable_field.id }}" class="w-full select select-bordered" {% if editable_field.required %}required{% endif %}>
@@ -221,13 +208,8 @@
 </div>
 {% endif %}
 
-
-
     {% include "partials/document_actions.html" %}
-
-
-
-    </div>
+</div>
 
 
 

@@ -322,6 +322,42 @@ class ReferenceID(models.Model):
         # Return the new reference in the format YYNNN
         return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(5)}"
 
+
+
+
+from django.db.models import Q, Exists, OuterRef
+
+
+class DocumentManager(models.Manager):
+    def get_allowed_documents(self, user):
+        """
+        Return documents the user is allowed to access.
+        """
+        if user.is_superuser:
+            return self.all().order_by('-created_at')
+
+        is_super_user = user.groups.filter(name='super user').exists()
+
+        documents = self.all()
+        if not is_super_user:
+            approver_documents = Approval.objects.filter(
+                document=OuterRef('pk'),
+                approver=user
+            )
+            documents = documents.filter(
+                Q(Exists(approver_documents)) |  # User is an approver
+                Q(submitted_by=user)  # User is the submitter
+            )
+
+        return documents.order_by('-created_at')
+
+    def get_allowed_document(self, user, reference_id):
+        """
+        Return a specific document by reference ID if the user is allowed to access it.
+        """
+        documents = self.get_allowed_documents(user)
+        return documents.filter(document_reference=reference_id).first()
+
 class Document(models.Model):
     STATUS_CHOICES = [
         ('cancel', 'Cancel'),
@@ -341,6 +377,7 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # important a lot mill
     last_submitted_at = models.DateTimeField(auto_now_add=True)
+    objects = DocumentManager()
 
 
 
@@ -616,11 +653,24 @@ def dynamic_field_file_path(instance, filename):
     return f'documents/{instance.document.document_reference}/{filename}'
 
 
+
+
+from django_project.storage_backends import CustomS3Storage
+# s3_storage = CustomS3Storage()
+
+def dynamic_file_upload_path(instance, filename):
+    return custom_storage.generate_path(instance, filename)
+
+custom_storage = CustomS3Storage()
+
+from .utils import get_allowed_document
+from django.http import HttpResponse
 class DynamicFieldValue(models.Model):
     document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='dynamic_values')
     field = models.ForeignKey('DynamicField', on_delete=models.CASCADE)
     value = models.TextField()
-    file = models.FileField(upload_to=dynamic_field_file_path, blank=True, null=True)
+    file = models.FileField(storage=custom_storage, upload_to=dynamic_field_file_path, blank=True,
+        null=True)
     json_value = JSONField(default=list, blank=True)
 
 
@@ -661,3 +711,10 @@ class DynamicFieldValue(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+
+    def has_access(self, user):
+        """
+        Check if the user has access to view this file.        """
+
+        document = get_allowed_document(user, self.document.document_reference)
+        return document is not None and not isinstance(document, HttpResponse)
