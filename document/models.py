@@ -1,4 +1,3 @@
-
 from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
@@ -14,6 +13,9 @@ logger = logging.getLogger(__name__)
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
+
+from django_project.storage_backends import CustomS3Storage
+custom_storage = CustomS3Storage()
 
 User = get_user_model()
 
@@ -322,41 +324,36 @@ class ReferenceID(models.Model):
         # Return the new reference in the format YYNNN
         return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(5)}"
 
+def editor_image_path(instance, filename):
+    return f'documents/{instance.document.document_reference}/editor_images/{filename}'
 
+class EditorImage(models.Model):
+    document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='editor_images')
+    image = models.ImageField(upload_to=editor_image_path, storage=custom_storage)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    base_url = models.TextField(blank=True)
 
+    def __str__(self):
+        return f"Image for {self.document.document_reference}"
 
-from django.db.models import Q, Exists, OuterRef
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Save first to ensure we have an ID
+        if self.image and not self.base_url:
+            # Store the URL that points to our view
+            self.base_url = f'/document/view-editor-image/{self.id}/'
+            super().save(update_fields=['base_url'])
 
+    @property
+    def url(self):
+        return self.base_url
 
-class DocumentManager(models.Manager):
-    def get_allowed_documents(self, user):
-        """
-        Return documents the user is allowed to access.
-        """
-        if user.is_superuser:
-            return self.all().order_by('-created_at')
+    def has_access(self, user):
+        """Check if user has access to this image"""
+        return (user.is_superuser or 
+                user.groups.filter(name='super user').exists() or
+                self.document.submitted_by == user or
+                self.document.approvals.filter(approver=user).exists())
 
-        is_super_user = user.groups.filter(name='super user').exists()
-
-        documents = self.all()
-        if not is_super_user:
-            approver_documents = Approval.objects.filter(
-                document=OuterRef('pk'),
-                approver=user
-            )
-            documents = documents.filter(
-                Q(Exists(approver_documents)) |  # User is an approver
-                Q(submitted_by=user)  # User is the submitter
-            )
-
-        return documents.order_by('-created_at')
-
-    def get_allowed_document(self, user, reference_id):
-        """
-        Return a specific document by reference ID if the user is allowed to access it.
-        """
-        documents = self.get_allowed_documents(user)
-        return documents.filter(document_reference=reference_id).first()
 
 class Document(models.Model):
     STATUS_CHOICES = [
@@ -377,18 +374,63 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # important a lot mill
     last_submitted_at = models.DateTimeField(auto_now_add=True)
-    objects = DocumentManager()
-
 
 
     def __str__(self):
         return self.title
 
     def save(self, *args, **kwargs):
+        # First save to ensure we have a document_reference
         if not self.document_reference:
-            # Fetch the reference from the Reference table (explained below)
             self.document_reference = ReferenceID.get_next_reference()
+        
+        # Save document first to ensure it exists in database
         super().save(*args, **kwargs)
+        
+        # Then process images if there's content
+        if self.content:
+            import re
+            import base64
+            from django.core.files.base import ContentFile
+            
+            pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
+            matches = re.finditer(pattern, self.content)
+            content_updated = False
+            processed_images = set()
+        
+        for match in matches:
+            img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
+            base64_data = match.group(2)
+            data_url = f'data:image/{img_type};base64,{base64_data}'
+        
+            if base64_data in processed_images:
+                continue
+                    
+            try:
+                image_data = base64.b64decode(base64_data)
+                file_content = ContentFile(image_data)
+                
+                # Create EditorImage instance
+                editor_image = EditorImage.objects.create(document=self)
+                
+                # Use proper extension based on image type
+                ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
+                filename = f'image.{ext}'
+                editor_image.image.save(filename, file_content, save=True)
+                
+                # The base_url is now automatically set in EditorImage.save()
+                image_url = editor_image.url
+                
+                # Replace the entire data URL with the base image URL
+                self.content = self.content.replace(data_url, image_url)
+                content_updated = True
+                processed_images.add(base64_data)
+            except Exception as e:
+                logger.error(f"Error processing image: {str(e)}")
+        
+        # Only save again if we updated the content with image URLs
+        if content_updated:
+            super().save(update_fields=['content'])
 
     def is_favorited_by(self, user):
         return self.favorites.filter(user=user).exists()
@@ -455,6 +497,7 @@ class Document(models.Model):
 
 
     def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):
+        # TODO: Validate if user is the current approver
 
         approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
 
@@ -655,13 +698,11 @@ def dynamic_field_file_path(instance, filename):
 
 
 
-from django_project.storage_backends import CustomS3Storage
-# s3_storage = CustomS3Storage()
 
 def dynamic_file_upload_path(instance, filename):
     return custom_storage.generate_path(instance, filename)
 
-custom_storage = CustomS3Storage()
+
 
 from .utils import get_allowed_document
 from django.http import HttpResponse

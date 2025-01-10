@@ -1,4 +1,3 @@
-
 import '../css/tailwind.css';
 import '../css/base.css';
 import Alpine from 'alpinejs';
@@ -15,9 +14,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { Extension } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold';
-
-
-
 
 const CustomBold = Bold.extend({
   addAttributes() {
@@ -38,7 +34,6 @@ const CustomBold = Bold.extend({
     };
   },
 });
-
 
 const CustomIndent = Extension.create({
   name: 'customIndent',
@@ -90,15 +85,14 @@ const CustomIndent = Extension.create({
   }
 })
 
-
 // Tiptap editor on alpine init
 document.addEventListener("alpine:init", () => {
-  Alpine.data("editor", (initialContent) => {
-    let editor; // Alpine's reactive engine automatically wraps component properties in proxy objects. Attempting to use a proxied editor instance to apply a transaction will cause a "Range Error: Applying a mismatched transaction", so be sure to unwrap it using Alpine.raw(), or simply avoid storing your editor as a component property, as shown in this example.
+  Alpine.data("editor", (content = "") => {
+    let editor;
 
     return {
-      updatedAt: Date.now(), // force Alpine to rerender on selection change
-      htmlContent:initialContent,
+      htmlContent: content,
+      updatedAt: Date.now(),
       headingOpen: false,
       colorPickerOpen: false,
       highlightPickerOpen: false,
@@ -107,135 +101,125 @@ document.addEventListener("alpine:init", () => {
       isToolbarFixed: false,
 
       init() {
+        const _this = this;
+        editor = new Editor({
+          element: this.$refs.element,
+          editable:true,
+          content: this.htmlContent,
+          editorProps: {
+            attributes: {
+              class: 'rounded-b-lg border-t-4',
+            },
+          },
+          extensions: [
+            StarterKit.configure({
+              bold: false, 
+            }),
+            TextStyle,
+            Color.configure({ types: ['textStyle'] }),
+            Image.configure({
+              inline: true,
+              allowBase64: true,
+            }),
+            CustomBold,
 
-
-        if (this.$refs.element) {
-          const _this = this;
-
-          editor = new Editor({
-            element: this.$refs.element,
-            editable:true,
-            content: this.htmlContent,
-            editorProps: {
-              attributes: {
-                class: 'rounded-b-lg border-t-4',
+            Table.configure({
+              HTMLAttributes: {
+                class: "mytable",
               },
-            },
-            extensions: [
-              StarterKit.configure({
-                bold: false, // Disable default bold
-              }),
-              TextStyle,
-              Color.configure({ types: ['textStyle'] }),
-              Image.configure({
-                allowBase64: true,
-                inline: true,
-              }),
-              CustomBold,
-
-              // ImageResize,
-              Table.configure({
-                HTMLAttributes: {
-                  class: "mytable",
-                },
-                resizable: true,
-                allowTableNodeSelection: true,
-              }),
-              TableRow,
-              TableHeader,
-              TableCell,
-              TextAlign.configure({
-                types: ['heading', 'paragraph'],
-              }),
-              Highlight.configure({
-                multicolor: true,
-              }),
-              CustomIndent,
+              resizable: true,
+              allowTableNodeSelection: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
+            TextAlign.configure({
+              types: ['heading', 'paragraph'],
+            }),
+            Highlight.configure({
+              multicolor: true,
+            }),
+            CustomIndent,
 
 
-            ],
+          ],
 
-            onCreate({ editor }) {
-              _this.updatedAt = Date.now();
-            },
-            onUpdate({ editor }) {
-              _this.updatedAt = Date.now();
-              _this.htmlContent = editor.getHTML();
-              _this.updateCurrentColor();
-              _this.updateCurrentHighlight();
-            },
-            onSelectionUpdate({ editor }) {
-              _this.updatedAt = Date.now();
-              _this.updateCurrentColor();
-              _this.updateCurrentHighlight();
-            },
-          });
-          this.updateCurrentColor();
-          this.updateCurrentHighlight();
-          this.$nextTick(() => {
-            const toolbar = this.$refs.toolbar;
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'sticky';
-            wrapper.style.top = '0';
-            wrapper.style.zIndex = '1000';
-            wrapper.style.backgroundColor = 'white';
-            wrapper.style.width = '100%';
+          onCreate({ editor }) {
+            _this.updatedAt = Date.now();
+          },
+          onUpdate({ editor }) {
+            _this.updatedAt = Date.now();
+            _this.htmlContent = editor.getHTML();
+            _this.updateCurrentColor();
+            _this.updateCurrentHighlight();
+          },
+          onSelectionUpdate({ editor }) {
+            _this.updatedAt = Date.now();
+            _this.updateCurrentColor();
+            _this.updateCurrentHighlight();
+          },
+        });
+        this.updateCurrentColor();
+        this.updateCurrentHighlight();
+        this.$nextTick(() => {
+          const toolbar = this.$refs.toolbar;
+          const wrapper = document.createElement('div');
+          wrapper.style.position = 'sticky';
+          wrapper.style.top = '0';
+          wrapper.style.zIndex = '1000';
+          wrapper.style.backgroundColor = 'white';
+          wrapper.style.width = '100%';
 
-            // Move toolbar into wrapper
-            toolbar.parentNode.insertBefore(wrapper, toolbar);
-            wrapper.appendChild(toolbar);
+          toolbar.parentNode.insertBefore(wrapper, toolbar);
+          wrapper.appendChild(toolbar);
 
-            // Scroll event listener
-            window.addEventListener('scroll', () => {
-              const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
-              const toolbarOffset = wrapper.offsetTop;
+          window.addEventListener('scroll', () => {
+            const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            const toolbarOffset = wrapper.offsetTop;
 
-              if (scrollPosition > toolbarOffset) {
-                if (!this.isToolbarFixed) {
-                  wrapper.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                  this.isToolbarFixed = true;
-                }
-              } else {
-                if (this.isToolbarFixed) {
-                  wrapper.style.boxShadow = 'none';
-                  this.isToolbarFixed = false;
-                }
+            if (scrollPosition > toolbarOffset) {
+              if (!this.isToolbarFixed) {
+                wrapper.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                this.isToolbarFixed = true;
               }
-            }, { passive: true });
-
-
-          });
-
-
-
-        }
-
+            } else {
+              if (this.isToolbarFixed) {
+                wrapper.style.boxShadow = 'none';
+                this.isToolbarFixed = false;
+              }
+            }
+          }, { passive: true });
+        });
       },
 
       isLoaded() {
         return editor;
       },
       isActive(type, opts = {}) {
+        if (!editor) return false;
         return editor.isActive(type, opts);
       },
       toggleHeading(opts) {
-        editor.chain().toggleHeading(opts).focus().run();
+        if (!editor) return;
+        editor.chain().focus().toggleHeading(opts).run();
       },
 
-        toggleBold() {
-
-          const { color } = editor.getAttributes('textStyle');
-          editor.chain().focus().toggleBold().run();
-          if (editor.isActive('bold')) {
-            editor.chain().focus().updateAttributes('bold', { color }).run();
-          }
+      toggleBold() {
+        if (!editor) return;
+        const { color } = editor.getAttributes('textStyle');
+        editor.chain().focus().toggleBold().run();
+        if (editor.isActive('bold')) {
+          editor.chain().focus().updateAttributes('bold', { color }).run();
+        }
 
       },
 
       toggleTextLeft() {
+        if (!editor) return;
         editor.chain().focus().setTextAlign('left').run();
       },
       promptForImageUrl() {
+        if (!editor) return;
         const url = window.prompt('Enter the image URL:');
         if (url) {
           editor.chain().focus().setImage({ src: url }).run()
@@ -243,30 +227,38 @@ document.addEventListener("alpine:init", () => {
       },
 
       toggleTextCenter() {
+        if (!editor) return;
         editor.chain().focus().setTextAlign('center').run();
       },
 
       toggleTextRight() {
+        if (!editor) return;
         editor.chain().focus().setTextAlign('right').run();
       },
 
       toggleTextJustify() {
+        if (!editor) return;
         editor.chain().focus().setTextAlign('justify').run();
       },
 
       toggleItalic() {
+        if (!editor) return;
         editor.chain().toggleItalic().focus().run();
       },
       toggleStrike() {
+        if (!editor) return;
         editor.chain().toggleStrike().focus().run();
       },
       toggleRedFont() {
+        if (!editor) return;
         editor.chain().setColor("#ff0000").focus().run();
       },
       toggleUnsetFontColor() {
+        if (!editor) return;
         editor.chain().unsetColor().focus().run();
       },
       updateCurrentColor() {
+        if (!editor) return;
         let color = editor.getAttributes('textStyle').color;
         if (editor.isActive('bold')) {
           color = editor.getAttributes('bold').color || color;
@@ -274,10 +266,12 @@ document.addEventListener("alpine:init", () => {
         this.currentColor = color || '#000000';
       },
       updateCurrentHighlight() {
+        if (!editor) return;
         this.currentHighlight = editor.getAttributes('highlight').color || 'transparent';
       },
 
       setTextColor(color) {
+        if (!editor) return;
         editor.chain().focus().setColor(color).run();
         if (editor.isActive('bold')) {
           editor.chain().focus().updateAttributes('bold', { color }).run();
@@ -286,18 +280,22 @@ document.addEventListener("alpine:init", () => {
         this.updateCurrentColor();
       },
       setHighlightColor(color) {
+        if (!editor) return;
         editor.chain().focus().toggleHighlight({ color }).run();
         this.highlightPickerOpen = false;
         this.updateCurrentHighlight();
       },
 
       isActiveColor(color) {
+        if (!editor) return false;
         return this.currentColor === color;
       },
       isActiveHighlight(color) {
+        if (!editor) return false;
         return this.currentHighlight === color;
       },
       toggleInsertTable() {
+        if (!editor) return;
         editor
           .chain()
           .insertTable({ rows: 2, cols: 2, withHeaderRow: true })
@@ -305,61 +303,112 @@ document.addEventListener("alpine:init", () => {
           .run();
       },
       toggleAddColumnBefore() {
+        if (!editor) return;
         editor.chain().addColumnBefore().focus().run();
       },
       toggleAddColumnAfter() {
+        if (!editor) return;
         editor.chain().addColumnAfter().focus().run();
       },
       toggleDelColumn() {
+        if (!editor) return;
         editor.chain().deleteColumn().focus().run();
       },
       toggleAddRowBefore() {
+        if (!editor) return;
         editor.chain().addRowBefore().focus().run();
       },
       toggleAddRowAfter() {
+        if (!editor) return;
         editor.chain().addRowAfter().focus().run();
       },
       toggleDelRow() {
+        if (!editor) return;
         editor.chain().deleteRow().focus().run();
       },
       toggleDelTable() {
+        if (!editor) return;
         editor.chain().deleteTable().focus().run();
       },
       toggleUndo() {
+        if (!editor) return;
         editor.chain().undo().focus().run();
       },
       toggleRedo() {
+        if (!editor) return;
         editor.chain().redo().focus().run();
       },
 
       toggleParagraph() {
-      editor.chain().setParagraph().focus().run();
+        if (!editor) return;
+        editor.chain().setParagraph().focus().run();
       },
       toggleBulletList() {
+        if (!editor) return;
         editor.chain().focus().toggleBulletList().run();
       },
       clearFormatting() {
+        if (!editor) return;
         editor.chain()
           .focus()
-          .unsetAllMarks() // Removes inline formatting like bold, italic, etc.
-          .clearNodes() // Clears block-level formatting like headings, lists, etc.
+          .unsetAllMarks() 
+          .clearNodes() 
           .run();
       },
       indentText() {
+        if (!editor) return;
         editor.chain().focus().indent().run();
       },
       outdentText() {
+        if (!editor) return;
         editor.chain().focus().outdent().run();
       },
 
+      handleImageUpload() {
+        if (!editor) return;
 
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+
+        input.onchange = () => {
+          const file = input.files[0];
+          if (!file) return;
+
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file');
+            return;
+          }
+
+          // Count existing images
+          const content = editor.getJSON();
+          let imageCount = 0;
+          const countImages = (node) => {
+            if (node.type === 'image') imageCount++;
+            if (node.content) node.content.forEach(countImages);
+          };
+          content.content.forEach(countImages);
+
+          if (imageCount >= 2) {
+            alert('Maximum 2 images allowed');
+            return;
+          }
+
+          // Create image preview
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            editor.chain().focus().setImage({ src: e.target.result }).run();
+          };
+          reader.readAsDataURL(file);
+        };
+
+        input.click();
+      },
 
     };
-
   });
-
 });
-
 
 // Add Alpine object to the window scope
 window.Alpine = Alpine
@@ -369,15 +418,10 @@ Alpine.start()
 
 window.htmx = require('htmx.org');
 
-
-
 window.addEventListener('click', function(e) {
   document.querySelectorAll('.dropdown').forEach(function(dropdown) {
     if (!dropdown.contains(e.target)) {
-      // Click was outside the dropdown, close it
       dropdown.open = false;
     }
   });
 });
-
-

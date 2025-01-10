@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.db.models import Q
-from .models import Document, Approval, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
+from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.contrib import messages
@@ -29,7 +29,9 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 import os
 from .utils import get_allowed_documents, get_allowed_document
-logger = logging.getLogger(__name__)
+from urllib.parse import urlparse
+from urllib.request import urlopen
+print("Starting views.py")
 
 
 @login_required
@@ -95,24 +97,78 @@ def prepare_dynamic_fields(document):
 
 @login_required
 def generate_pdf_report(request, reference_id, template_id):
+    import boto3
+    from urllib.parse import urlparse
+    import weasyprint
 
     document_response = get_allowed_document(request.user, reference_id)
     if isinstance(document_response, HttpResponse):
-        return document_response  # Return the error template response
+        return document_response
     document = document_response
     template = get_object_or_404(PDFTemplate, id=template_id)
-    report_config = ReportConfiguration.objects.first()  # Assuming you have only one configuration
-    # Get the context data from the document
+    report_config = ReportConfiguration.objects.first()
+    
+    # Create S3 client for generating signed URLs
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+    )
+
+    def url_fetcher(url):
+        """Custom URL fetcher to handle S3 URLs"""
+        
+        # Handle both relative and absolute URLs for editor images
+        if url.startswith(('http://', 'https://')):
+            parsed = urlparse(url)
+            if parsed.path.startswith('/document/view-editor-image/'):
+                url = parsed.path
+            else:
+                # For external URLs, use default fetcher
+                return weasyprint.default_url_fetcher(url)
+        
+        if url.startswith('/document/view-editor-image/'):
+            try:
+                # Extract image ID from URL
+                image_id = int(url.split('/')[-2])
+                
+                editor_image = get_object_or_404(EditorImage, id=image_id)
+             
+                # Generate signed URL for the image
+                signed_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                        'Key': editor_image.image.name,
+                    },
+                    ExpiresIn=3600
+                )
+                
+                # Fetch the image using the signed URL
+                result = weasyprint.default_url_fetcher(signed_url)
+             
+                return result
+                
+            except Exception as e:
+                import traceback
+                return weasyprint.default_url_fetcher(url)
+        
+        return weasyprint.default_url_fetcher(url)
+
+    # Get the context data and render template
     context_data = document.get_report_context()
-    # Add report configuration to context
     context_data['report_config'] = report_config
-    # Add prepared dynamic fields to context
     context_data['prepared_values'] = prepare_dynamic_fields(document)
-    # Render the template with the document data
+
     html_template = Template(template.html_content)
     context = Context(context_data)
     html_content = html_template.render(context)
-    # Generate PDF
+
+    
+   
+
+    # Generate PDF with custom URL fetcher
     font_config = FontConfiguration()
     font_path = Path(settings.STATIC_ROOT) / 'fonts' / 'NotoSansThai-Regular.ttf'
 
@@ -125,11 +181,16 @@ def generate_pdf_report(request, reference_id, template_id):
         font-family: 'Sarabun', Arial, sans-serif;
         line-height: 1.5;
     }
-''', font_config=font_config)
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    ''', font_config=font_config)
 
-    html = HTML(string=html_content)
+    html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
+    
     pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
-
+ 
     # Create HTTP response
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'filename="document_{reference_id}_report.pdf"'
@@ -339,8 +400,8 @@ def document_detail(request, reference_id):
             except ValidationError as ve:
                 errors = {field: [str(error)] for field, error in ve.message_dict.items()}
             except Exception as e:
-                logger.error(f"Error processing approval: {str(e)}")
-                logger.error(traceback.format_exc())
+                print(f"Error processing approval: {str(e)}")
+                print(traceback.format_exc())
                 errors['__all__'] = [f"An unexpected error occurred while processing your approval: {str(e)}"]
 
             if errors:
@@ -461,15 +522,17 @@ def resubmit_document(request, pk):
                             except ValueError:
                                 field_errors.append(f"Invalid quantity for product {name}")
 
-                if field_errors:
-                    errors[field.name] = field_errors
-                else:
+                if products:
                     DynamicFieldValue.objects.update_or_create(
                         document=document,
                         field=field,
                         defaults={'json_value': products}
                     )
+                elif is_required_for_submission:
+                    field_errors.append("At least one product is required")
 
+                if field_errors:
+                    errors[field.name] = field_errors
             elif field.field_type == 'attachment':
                 file = request.FILES.get(f'dynamic_{field.id}')
                 existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
@@ -639,7 +702,6 @@ def cancel_document(request, document_id):
 
     return retarget(response, '#content-div')
 
-
 @login_required
 def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
@@ -795,12 +857,12 @@ def submit_document(request, workflow_id):
 
         try:
             document.create_approvals(custom_approvers)
-            logger.info(f"Approvals created for document {document.id}")
+            print(f"Approvals created for document {document.id}")
             messages.success(request, "Document submitted successfully")
             response = render(request, 'partials/submit_success.html', {'document': document})
             return retarget(response, '#content-div')
         except Exception as e:
-            logger.error(f"Error creating approvals for document {document.id}: {str(e)}")
+            print(f"Error creating approvals for document {document.id}: {str(e)}")
             document.delete()
             messages.error(request, "Error creating approvals. Please try again.")
             context = {
@@ -822,7 +884,7 @@ def submit_document(request, workflow_id):
 
                 steps_with_approvers.append({
                     'step': step,
-                    'potential_approvers_json': potential_approvers
+                    'potential_approvers': potential_approvers
 
                 })
         context = {
@@ -878,6 +940,7 @@ def clear_toast(request):
 
 import boto3
 
+@login_required
 def view_file(request, field_value_id):
     """
     Serve a file from S3 if the user has access to the related document.
@@ -914,4 +977,40 @@ def view_file(request, field_value_id):
         return HttpResponseRedirect(signed_url)
     except Exception as e:
         # Handle errors in generating the signed URL
+        return HttpResponseForbidden(f"Error generating URL: {e}")
+
+@login_required
+def view_editor_image(request, image_id):
+    """
+    Serve an editor image from S3 if the user has access to the related document.
+    """
+    editor_image = get_object_or_404(EditorImage, pk=image_id)
+
+    # Check if the user has access to this image
+    if not editor_image.has_access(request.user):
+        return HttpResponseForbidden("You do not have permission to view this image.")
+
+    # Check if the file exists
+    if not editor_image.image:
+        return HttpResponseForbidden("No image file found.")
+
+    # Generate a signed URL for the file
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+    )
+
+    try:
+        signed_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                'Key': editor_image.image.name,
+            },
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+        return HttpResponseRedirect(signed_url)
+    except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")

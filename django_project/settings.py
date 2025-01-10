@@ -244,6 +244,6 @@ AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')
 AWS_QUERYSTRING_AUTH = True  # Enable signed URLs
 AWS_DEFAULT_ACL = 'private'  # Ensure files are private
 AWS_S3_FILE_OVERWRITE = False  # Avoid overwriting files
-
+AWS_QUERYSTRING_EXPIRE = 30
 
 DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
