@@ -14,6 +14,7 @@ import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { Extension } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold';
+import ImageResize from 'tiptap-extension-resize-image';
 
 const CustomBold = Bold.extend({
   addAttributes() {
@@ -117,6 +118,7 @@ document.addEventListener("alpine:init", () => {
             }),
             TextStyle,
             Color.configure({ types: ['textStyle'] }),
+            ImageResize,
             Image.configure({
               inline: true,
               allowBase64: true,
