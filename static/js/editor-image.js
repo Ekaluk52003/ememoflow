@@ -25,8 +25,8 @@ export function setupImageHandling(editor) {
         };
         content.content.forEach(countImages);
 
-        if (imageCount >= 2) {
-          alert('Maximum 2 images allowed');
+        if (imageCount >= 3) {
+          alert('Maximum 3 images allowed');
           return;
         }
 

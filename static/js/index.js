@@ -1,8 +1,8 @@
 import '../css/tailwind.css';
 import '../css/base.css';
 import Alpine from 'alpinejs';
+import './userSearch.js';
 import { Editor } from "@tiptap/core";
-import { Image } from "@tiptap/extension-image";
 import StarterKit from "@tiptap/starter-kit";
 import TextStyle from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -118,8 +118,8 @@ document.addEventListener("alpine:init", () => {
             }),
             TextStyle,
             Color.configure({ types: ['textStyle'] }),
-            ImageResize,
-            Image.configure({
+           
+            ImageResize.configure({
               inline: true,
               allowBase64: true,
             }),

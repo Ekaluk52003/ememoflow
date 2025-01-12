@@ -644,9 +644,19 @@ def resubmit_document(request, pk):
 
         if potential_approvers.exists():
             previous_approver = document.approvals.filter(step=step).first()
+            # Convert potential approvers to JSON-serializable format
+            potential_approvers_json = [
+                {
+                    'id': user.id,
+                    'full_name': user.get_full_name() or user.username,
+                    'username': user.username,
+                    'email': user.email
+                } for user in potential_approvers
+            ]
             steps_with_approvers.append({
                 'step': step,
                 'potential_approvers': potential_approvers,
+                'potential_approvers_json': potential_approvers_json,
                 'previous_approver': previous_approver.approver if previous_approver else None
             })
 
