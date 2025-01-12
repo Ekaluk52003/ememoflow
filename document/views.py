@@ -616,8 +616,15 @@ def resubmit_document(request, pk):
                 if step.allow_custom_approver:
                     approver_id = request.POST.get(f'approver_{step.id}')
                     if approver_id:
-                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
-
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)                     
+                                    
+                                    
+            if request.POST.get('save_draft'):
+                document.save()
+                document.save_draft()
+                
+                return render(request, 'partials/submit_success.html', {'document': document})
+            
             document.create_approvals(custom_approvers)
             messages.success(request, "Document re-submitted successfully")
 
@@ -873,9 +880,6 @@ def submit_document(request, workflow_id):
         document = form.save(commit=False)
         document.submitted_by = request.user
         document.workflow = workflow
-
-
-
         document.save()
 
         # Save all the DynamicFieldValue objects
@@ -891,11 +895,22 @@ def submit_document(request, workflow_id):
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
         try:
-            document.create_approvals(custom_approvers)
-            print(f"Approvals created for document {document.id}")
-            messages.success(request, "Document submitted successfully")
-            response = render(request, 'partials/submit_success.html', {'document': document})
-            return retarget(response, '#content-div')
+            
+            if request.POST.get('save_draft'):
+                document.save()
+                document.save_draft()
+                for field_value in dynamic_field_values:
+                    field_value.document = document
+                    field_value.save()
+                return render(request, 'partials/submit_success.html', {'document': document})
+            
+            else :
+                document.create_approvals(custom_approvers)
+                print(f"Approvals created for document {document.id}")
+                messages.success(request, "Document submitted successfully")
+                response = render(request, 'partials/submit_success.html', {'document': document})
+                return retarget(response, '#content-div')
+            
         except Exception as e:
             print(f"Error creating approvals for document {document.id}: {str(e)}")
             document.delete()

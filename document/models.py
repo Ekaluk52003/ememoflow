@@ -637,7 +637,10 @@ class Document(models.Model):
         self.status = 'cancel'
         self.save()
 
-
+    def save_draft(self):
+        self.status = 'pending'
+        self.current_step = None
+        self.save()
 
     def get_current_approver(self):
         if not self.current_step:
