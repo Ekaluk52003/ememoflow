@@ -325,7 +325,7 @@ class ReferenceID(models.Model):
         return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(5)}"
 
 def editor_image_path(instance, filename):
-    return f'documents/{instance.document.document_reference}/editor_images/{filename}'
+    return f'documents/{instance.document.document_reference}/{filename}'
 
 class EditorImage(models.Model):
     document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='editor_images')
@@ -346,6 +346,14 @@ class EditorImage(models.Model):
     @property
     def url(self):
         return self.base_url
+
+    def delete(self, *args, **kwargs):
+        # Delete the physical file first
+        if self.image:
+            # Delete from storage
+            self.image.delete(save=False)
+        # Then delete the model instance
+        super().delete(*args, **kwargs)
 
     def has_access(self, user):
         """Check if user has access to this image"""
@@ -393,44 +401,54 @@ class Document(models.Model):
             import base64
             from django.core.files.base import ContentFile
             
+            # Find all current image URLs in the content
+            url_pattern = r'src="(/document/view-editor-image/\d+/)"'
+            current_image_urls = set(re.findall(url_pattern, self.content))
+            
+            # Delete images that are no longer in the content
+            for editor_image in self.editor_images.all():
+                if editor_image.base_url not in current_image_urls:
+                    editor_image.delete()  # This will delete both DB record and S3 file
+            
+            # Process new base64 images
             pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
             matches = re.finditer(pattern, self.content)
             content_updated = False
             processed_images = set()
         
-        for match in matches:
-            img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
-            base64_data = match.group(2)
-            data_url = f'data:image/{img_type};base64,{base64_data}'
+            for match in matches:
+                img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
+                base64_data = match.group(2)
+                data_url = f'data:image/{img_type};base64,{base64_data}'
         
-            if base64_data in processed_images:
-                continue
+                if base64_data in processed_images:
+                    continue
                     
-            try:
-                image_data = base64.b64decode(base64_data)
-                file_content = ContentFile(image_data)
-                
-                # Create EditorImage instance
-                editor_image = EditorImage.objects.create(document=self)
-                
-                # Use proper extension based on image type
-                ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
-                filename = f'image.{ext}'
-                editor_image.image.save(filename, file_content, save=True)
-                
-                # The base_url is now automatically set in EditorImage.save()
-                image_url = editor_image.url
-                
-                # Replace the entire data URL with the base image URL
-                self.content = self.content.replace(data_url, image_url)
-                content_updated = True
-                processed_images.add(base64_data)
-            except Exception as e:
-                logger.error(f"Error processing image: {str(e)}")
+                try:
+                    image_data = base64.b64decode(base64_data)
+                    file_content = ContentFile(image_data)
+                    
+                    # Create EditorImage instance
+                    editor_image = EditorImage.objects.create(document=self)
+                    
+                    # Use proper extension based on image type
+                    ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
+                    filename = f'image.{ext}'
+                    editor_image.image.save(filename, file_content, save=True)
+                    
+                    # The base_url is now automatically set in EditorImage.save()
+                    image_url = editor_image.url
+                    
+                    # Replace the entire data URL with the base image URL
+                    self.content = self.content.replace(data_url, image_url)
+                    content_updated = True
+                    processed_images.add(base64_data)
+                except Exception as e:
+                    logger.error(f"Error processing image: {str(e)}")
         
-        # Only save again if we updated the content with image URLs
-        if content_updated:
-            super().save(update_fields=['content'])
+            # Only save again if we updated the content with image URLs
+            if content_updated:
+                super().save(update_fields=['content'])
 
     def is_favorited_by(self, user):
         return self.favorites.filter(user=user).exists()
