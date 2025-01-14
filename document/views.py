@@ -100,6 +100,7 @@ def generate_pdf_report(request, reference_id, template_id):
     import boto3
     from urllib.parse import urlparse
     import weasyprint
+    from django.urls import reverse
 
     document_response = get_allowed_document(request.user, reference_id)
     if isinstance(document_response, HttpResponse):
@@ -119,10 +120,12 @@ def generate_pdf_report(request, reference_id, template_id):
     def url_fetcher(url):
         """Custom URL fetcher to handle S3 URLs"""
         
-        # Handle both relative and absolute URLs for editor images
+        # Handle both relative and absolute URLs for editor images and view-file
         if url.startswith(('http://', 'https://')):
             parsed = urlparse(url)
             if parsed.path.startswith('/document/view-editor-image/'):
+                url = parsed.path
+            elif parsed.path.startswith('/document/view-file/'):
                 url = parsed.path
             else:
                 # For external URLs, use default fetcher
@@ -154,19 +157,89 @@ def generate_pdf_report(request, reference_id, template_id):
                 import traceback
                 return weasyprint.default_url_fetcher(url)
         
+        if url.startswith('/document/view-file/'):
+            try:
+                # Extract field value ID from URL
+                field_value_id = int(url.split('/')[-2])
+                dynamic_field_value = get_object_or_404(DynamicFieldValue, pk=field_value_id)
+                
+                if not dynamic_field_value.file:
+                    return None
+                    
+                # Generate signed URL for the file
+                signed_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                        'Key': dynamic_field_value.file.name,
+                    },
+                    ExpiresIn=3600
+                )
+                
+                # Fetch the file using the signed URL
+                return weasyprint.default_url_fetcher(signed_url)
+                
+            except Exception as e:
+                print(f"Error fetching file: {e}")
+                return None
+        
         return weasyprint.default_url_fetcher(url)
 
     # Get the context data and render template
     context_data = document.get_report_context()
     context_data['report_config'] = report_config
-    context_data['prepared_values'] = prepare_dynamic_fields(document)
+    
+    # Get approvals ordered by most recent first
+    approvals = document.approvals.all().order_by('-recorded_at', '-created_at')
+    context_data['approvals'] = approvals
+    
+    # Get users who have approved
+    approved_users = document.approvals.filter(
+        is_approved=True
+    ).select_related('approver')
+    
+    approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}".strip() 
+                     for approval in approved_users]
+    context_data['approver_names'] = ", ".join(approver_names)
+    
+    # Prepare dynamic fields with file URLs
+    prepared_values = []
+    dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
+    
+    for value in dynamic_values:
+        prepared_value = {
+            'name': value.field.name,
+            'field_type': value.field.field_type,
+            'value': value.value
+        }
+        
+        if value.field.field_type == 'product_list':
+            products = value.json_value if value.json_value else []
+            prepared_value['value'] = products
+            prepared_value['products'] = products
+            prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
+        elif value.field.field_type == 'attachment' and value.file:
+            # Use view_file URL for all attachments
+            file_url = reverse('document_approval:view_file', args=[value.id])
+            full_filename = value.file.name.split('/')[-1]  # Get filename without path
+            # Extract original filename by removing timestamp
+            original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]  # Remove timestamp
+            file_ext = original_filename.split('.')[-1].lower()
+            is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif']
+            
+            prepared_value['file'] = {
+                'name': original_filename,
+                'url': file_url,
+                'is_image': is_image
+            }
+        
+        prepared_values.append(prepared_value)
+    
+    context_data['prepared_values'] = prepared_values
 
     html_template = Template(template.html_content)
     context = Context(context_data)
     html_content = html_template.render(context)
-
-    
-   
 
     # Generate PDF with custom URL fetcher
     font_config = FontConfiguration()
@@ -320,13 +393,14 @@ def document_detail(request, reference_id):
                 'field_type': value.field.field_type,
             }
             if value.field.field_type == 'product_list':
-                prepared_value['value'] = value.json_value
-                prepared_value['total_quantity'] = sum(product['quantity'] for product in value.json_value)
-
-            if value.field.field_type == 'attachment' and value.file:
+                products = value.json_value if value.json_value else []
+                prepared_value['value'] = products
+                prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
+                prepared_value['products'] = products  # Add this for template compatibility
+            elif value.field.field_type == 'attachment' and value.file:
                file_url = reverse('document_approval:view_file', args=[value.id])
                full_file_name = os.path.basename(value.file.name)
-               original_file_name = os.path.basename(value.file.name).split("_", 1)[0]+ os.path.splitext(full_file_name)[1]  # Remove timestamp
+               original_file_name = os.path.basename(value.file.name).split("_", 1)[0] + os.path.splitext(full_file_name)[1]
                is_image = value.file.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'))
                prepared_value['file_url'] = file_url
                prepared_value['is_image'] = is_image
@@ -491,8 +565,15 @@ def resubmit_document(request, pk):
         field_value = document.dynamic_values.filter(field=field).first()
         if field.field_type == 'product_list':
             field_data['products'] = field_value.json_value if field_value else []
-        elif field.field_type == 'attachment':
-            field_data['file'] = field_value.file if field_value else None
+        elif field.field_type == 'attachment' and field_value and field_value.file:
+            file_url = reverse('document_approval:view_file', args=[field_value.id])
+            full_file_name = os.path.basename(field_value.file.name)
+            original_file_name = os.path.basename(field_value.file.name).split("_", 1)[0] + os.path.splitext(full_file_name)[1]
+            is_image = field_value.file.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'))
+            field_data['file_url'] = file_url
+            field_data['is_image'] = is_image
+            field_data['original_file_name'] = original_file_name
+            field_data['file'] = field_value.file
         elif field.field_type in ['choice', 'multiple_choice']:
             field_data['choices'] = field.get_choices()
             if field_value:
@@ -558,6 +639,14 @@ def resubmit_document(request, pk):
 
                 if field_errors:
                     errors[field.name] = field_errors
+            elif field.name == 'Total Quantity':
+                DynamicFieldValue.objects.update_or_create(
+                    document=document,
+                    field=field,
+                    defaults={'value': str(total_quantity)}
+                )
+
+
             elif field.field_type == 'attachment':
                 file = request.FILES.get(f'dynamic_{field.id}')
                 existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
@@ -586,14 +675,6 @@ def resubmit_document(request, pk):
                         field=field,
                         defaults={'value': ','.join(values)}
                     )
-
-            elif field.field_type == 'number' and field.name == 'Total Quantity':
-                DynamicFieldValue.objects.update_or_create(
-                    document=document,
-                    field=field,
-                    defaults={'value': str(total_quantity)}
-                )
-
 
             else:
                 value = request.POST.get(f'dynamic_{field.id}')
@@ -899,9 +980,7 @@ def submit_document(request, workflow_id):
             if request.POST.get('save_draft'):
                 document.save()
                 document.save_draft()
-                for field_value in dynamic_field_values:
-                    field_value.document = document
-                    field_value.save()
+                
                 return render(request, 'partials/submit_success.html', {'document': document})
             
             else :
