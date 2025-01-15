@@ -32,5 +32,5 @@ COPY . /code/
 # Ensure the entrypoint script has the correct permissions
 RUN chmod +x /code/entrypoint.prod.sh
     
-# Use shell form
+# Use shell form cmd
 ENTRYPOINT sh /code/entrypoint.prod.sh
