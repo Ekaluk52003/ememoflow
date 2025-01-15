@@ -19,7 +19,6 @@ python manage.py collectstatic --noinput
 echo "Applying database migrations..."
 python manage.py migrate
 
-
-exec "$@"
+# Start Gunicorn
 echo "Starting Gunicorn..."
 exec gunicorn ${DJANGO_PROJECT_NAME}.wsgi:application --bind 0.0.0.0:8000

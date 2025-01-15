@@ -15,7 +15,7 @@ services:
       - .env.prod
     depends_on:
       - db
-      - redis
+
 
   db:
     image: postgres:16
@@ -23,19 +23,7 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env.prod.db
-
-  redis:
-    image: redis:7.0.10-alpine
-
-  celery:
-    build: .
-    command: celery -A django_project worker --loglevel=info
-    env_file:
-      - .env.prod
-    depends_on:
-      - db
-      - redis
-      - web
+ 
 
   caddy:
     image: caddy:2
