@@ -39,11 +39,9 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "crispy_forms",
-    "debug_toolbar",
      'django_celery_results',
       'django_htmx',
       "crispy_tailwind",
-      'django_browser_reload',
       'dbbackup',
     # Local
     "accounts",
@@ -51,6 +49,10 @@ INSTALLED_APPS = [
     "document",
 
 ]
+
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    INSTALLED_APPS.append("django_browser_reload")
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 
@@ -60,10 +62,9 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 MIDDLEWARE = [
 
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # WhiteNoise# django_browser_reload
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # WhiteNoise
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",  # Django Debug Toolbar
+    "django.middleware.common.CommonMiddleware", 
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -71,8 +72,11 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
     "django_htmx.middleware.HtmxMiddleware",  # django-htmx
     "document.middleware.msgMiddleware", # toast
-    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
+
+if DEBUG:
+    MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
+    MIDDLEWARE.append("django_browser_reload.middleware.BrowserReloadMiddleware")
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
 ROOT_URLCONF = "django_project.urls"
@@ -236,6 +240,7 @@ CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
 CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw', 'https://smartflow.pw']
+
 
 
 CELERY_BROKER_URL = 'redis://redis:6379/0'
