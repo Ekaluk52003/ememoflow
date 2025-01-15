@@ -13,9 +13,8 @@ DEBUG = bool(os.environ.get("DEBUG", default=0))
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", 'https://www.smartflow.pw', 'www.smartflow.pw', 'smartflow.pw']
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
-# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -226,11 +225,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
-CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
+CSRF_COOKIE_DOMAIN = os.environ.get('CSRF_COOKIE_DOMAIN')
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw', 'https://smartflow.pw']
 
+
+
+CSRF_TRUSTED_ORIGINS = [origin.strip()
+                        for origin in csrf_origins.split(',') if origin.strip()]
 
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
