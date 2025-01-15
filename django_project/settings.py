@@ -298,7 +298,7 @@ LOGGING = {
 # Configure django-dbbackup
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, 'backups')}
-DBBACKUP_CLEANUP_KEEP = 10  # Adjust this number as needed
+DBBACKUP_CLEANUP_KEEP = 15  # Adjust this number as needed
 
 
 # Add this near your other dbbackup settings
