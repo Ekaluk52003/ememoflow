@@ -1,0 +1,288 @@
+
+{% load crispy_forms_tags %}
+
+<div id="form-errors"></div>
+
+<div><h3 class="text-lg font-medium leading-6 text-base-content">Document Ref:{{document.document_reference}}</h3>
+    <p class="max-w-2xl mt-1 text-sm text-gray-500">Resubmit</p></div>
+<div>
+<form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
+    {% csrf_token %}
+    {{ form.title|as_crispy_field }}
+    {% if workflow.content_editor %}
+    {% include "document/components/editor.html" %}
+    {% endif %}
+    <div class="flex flex-wrap -mx-2">
+    {% for field in prepared_fields %}
+    {% if field.name != 'Total Quantity' %}
+    <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
+        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs">
+            <div class="label">
+                <span class="label-text">{{ field.name }} {% if field.required %}
+                    <span class="text-error">*</span>
+                {% endif %}</span>
+                 </div>
+        </label>
+
+
+        {% if field.field_type == 'product_list' %}
+    <div x-data="{
+        products: [{% for product in field.products %}
+            {
+                id: '{{ product.id|escapejs }}',
+                code: '{{ product.code|escapejs }}',
+                name: '{{ product.name|escapejs }}',
+                quantity: '{{ product.quantity|escapejs }}'
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}],
+        addProduct() {
+            this.products.push({
+                id: '',
+                code: '',
+                name: '',
+                quantity: ''
+            });
+        },
+        removeProduct(index) {
+            this.products.splice(index, 1);
+            this.calculateTotal();
+        },
+        calculateTotal() {
+            return this.products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0);
+        }
+    }">
+
+    <div class="relative w-full">
+        <div class="relative overflow-x-auto" style="max-width: 100%; overflow-y: hidden;">
+            <div class="min-w-[800px]" style="width: fit-content;">
+
+
+                <div class="flex gap-2 px-1 mb-2 text-sm text-gray-600">
+                    <div style="width: 80px;">ID</div>
+                    <div style="width: 150px;">Code</div>
+                    <div style="width: 300px;">Product Name</div>
+                    <div style="width: 100px;">Quantity</div>
+                    <div style="width: 100px;"></div>
+                </div>
+                <div class="space-y-2">
+                <div id="product-list-{{ field.id }}">
+                    <template x-for="(product, index) in products" :key="index">
+                        <div class="flex gap-2 py-2">
+                            <input type="number"
+                                style="width: 80px;"
+                                class="input"
+                                :name="`product_id_{{ field.id }}[]`"
+                                x-model="product.id"
+                                placeholder="ID"
+                                required>
+
+                            <input type="text"
+                                style="width: 150px;"
+                                class="input"
+                                :name="`product_code_{{ field.id }}[]`"
+                                x-model="product.code"
+                                placeholder="CODE"
+                                required>
+
+                            <input type="text"
+                                style="width: 300px;"
+                                class="input"
+                                    :name="`product_name_{{ field.id }}[]`"
+                                x-model="product.name"
+                                placeholder="Product Name"
+                                required>
+
+                            <input type="number"
+                                style="width: 100px;"
+                                class="input"
+                                :name="`product_quantity_{{ field.id }}[]`"
+                                    x-model="product.quantity"
+                                placeholder="Qty"
+                                required
+                                @input="calculateTotal()"
+                                >
+
+                            <button type="button"
+                                    style="width: 100px;"
+                                    class="px-4 text-white bg-red-500 rounded h-9 hover:bg-red-600"
+                                    @click="removeProduct(index)">
+                                Delete
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                </div>
+
+        </div>
+     </div>
+    </div>
+
+
+
+    <div class="flex items-center justify-between gap-4 mt-4">
+            <button type="button"
+                    class="btn btn-primary"
+                    @click="addProduct()">
+                Add Product
+            </button>
+
+            <div class="text-lg text-gray-600">
+                Total Quantity: <span x-text="calculateTotal()" class="font-bold"></span>
+            </div>
+        </div>
+    </div>
+
+
+        {% elif field.field_type == 'number' and field.name == 'Total Quantity' %}
+            <input type="number" class="form-control" name="dynamic_{{ field.id }}" id="total-quantity-input" value="{{ field.value }}" readonly>
+
+        {% elif field.field_type == 'attachment' %}
+            <div id="attachment-field-{{ field.id }}">
+                 {% if field.file %}
+
+           <a href='{{ field.file.url }}'>{{ field.file.name }}</a>
+                <button type="button" class="btn btn-warning"
+                hx-delete="{% url 'document_approval:delete_attachment' field.id document.id %}"
+                hx-target="#attachment-field-{{ field.id }}"
+                hx-swap="outerHTML">Delete File {{ field.value.id }}</button>
+                    {% else %}
+                    <input type="file" class="w-full file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                  >
+
+                    {% endif %}
+
+        </div>
+
+
+
+            {% elif field.field_type == 'text' %}
+                    <input type="text" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                    {% elif field.field_type  == 'textarea' %}
+                    <textarea name="dynamic_{{ field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
+                {% elif field.field_type == 'number' %}
+                    <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                {% elif field.field_type == 'date' %}
+                    <input type="date" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                           value="{{ field.value}}" {% if field.required %}{% endif %}>
+                {% elif field.field_type == 'boolean' %}
+                    <div class="form-check">
+                        <input type="checkbox" class="checkbox checkbox-md" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                               {% if field.value %}checked{% endif %} {% if field.required %}{% endif %}>
+                        <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
+                    </div>
+                    {% elif field.field_type == 'choice' %}
+                    <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
+                        <option value="">Select an option</option>
+                        {% for choice in field.choices %}
+                            <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif field.field_type == 'multiple_choice' %}
+                    <div class="flex flex-col space-y-2">
+                        {% for choice in field.choices %}
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox"
+                                       {% if choice in field.value %}checked{% endif %} >
+
+                                <span>{{ choice }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+            </div>
+    {% endif %}
+    {% endfor %}
+
+   </div>
+
+   {% if steps_with_approvers %}
+   <h3>Select Custom Approvers</h3>
+   {% for step_info in steps_with_approvers %}
+   <div class="mt-6 mb-6"
+   x-data="userSearch({{ step_info.potential_approvers_json|safe }})">
+  <div class="mb-2">
+      Choose approver for {{ step_info.step.name }} ({{ step_info.step.approver_group.name }})
+  </div>
+  <div class="relative">
+      <div class="relative flex items-center">
+          <input
+              type="text"
+              x-model="search"
+              :readonly="!isEditing"
+              @focus="focused = true"
+              @click.away="focused = false"
+              placeholder="Search approver..."
+              class="w-full max-w-xs input input-bordered pr-10"
+              :class="{ 'cursor-pointer': !isEditing }"
+          >
+          <button 
+              x-show="selected && !isEditing" 
+              @click.prevent="startEditing"
+              type="button"
+              class="btn btn-primary"
+          >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+          </button>
+      </div>
+
+      <select
+          name="approver_{{ step_info.step.id }}"
+          x-model="selected"
+          required
+          class="hidden"
+      >
+          <option value="">Select an approver</option>
+          <template x-for="option in filteredOptions" :key="option.id">
+              <option :value="option.id" x-text="option.full_name"></option>
+          </template>
+      </select>
+
+      <div
+          x-show="focused"
+          class="absolute z-50 w-full max-w-xs mt-1 bg-white border border-gray-300 rounded-md shadow-lg"
+      >
+          <ul class="py-1 overflow-auto text-base max-h-60">
+              <template x-if="filteredOptions.length === 0">
+                  <li class="px-3 py-2 text-gray-500">No users found</li>
+              </template>
+              <template x-for="option in filteredOptions" :key="option.id">
+                  <li
+                      @click="selectUser(option)"
+                      class="px-3 py-2 truncate cursor-pointer hover:bg-gray-100"
+                      :class="{ 'bg-gray-100': selected === option.id }"
+                  >
+                      <span x-text="option.full_name"></span>
+                  </li>
+              </template>
+          </ul>
+      </div>
+  </div>
+  <p x-show="!selected" class="mt-1 text-sm text-red-500">
+      Please select an approver
+  </p>
+</div>
+   {% endfor %}
+{% endif %}
+
+
+
+<div class="mt-4 flex space-x-2">
+    <button type="submit" name="save_draft" value="1" class="btn btn-secondary mr-2">Save Draft</button>
+    <button type="submit" class="btn btn-primary">Resubmit Document</button>
+</div>
+</form>
+
+
+
+
+<script>
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        if (evt.detail.target.id === "attachment-field-{{ field.id }}") {
+            var errorDiv = document.getElementById("error-message-{{ field.id }}");
+            errorDiv.textContent = evt.detail.xhr.response;
+        }
+    });
+</script>

@@ -1,0 +1,38 @@
+<div class="sm:px-2 px-4 py-8">
+
+
+  <div class="py-4">
+    <h3 class="text-lg font-medium leading-6 text-gray-900">Available Workflows</h3>
+
+
+    {% for workflow in workflows %}
+    <div
+      class="rounded-lg text-left my-6 bg-white p-6"
+    >
+      <div class="flex justify-between items-center">
+        <div class="text-md mb-2 font-semibold">{{ workflow.name }}
+
+            <div class="text-xs font-medium mt-4">Created on: {{ workflow.created_at|date:"F d, Y" }}</div>
+        </div>
+
+        <div>
+
+                <a
+                  hx-get="{% url 'document_approval:submit_document' workflow.id %}"
+                  hx-target="#content-div"
+                  hx-push-url="true"
+                  hx-indicator=".progress"
+                  >   <button class="btn btn-active btn-primary">Submit Document</button></a
+                >
+
+        </div>
+    </div>
+    </div>
+
+    {% empty %}
+    <div class="col-12">
+      <p class="text-center">No workflows available.</p>
+    </div>
+    {% endfor %}
+  </mx-auto>
+</div>

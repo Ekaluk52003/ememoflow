@@ -1,27 +1,38 @@
-# Pull base image
 FROM python:3.12.2-slim-bookworm
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV DEBIAN_FRONTEND noninteractive
 
-# Create and set work directory called `app`
-RUN mkdir -p /code
 WORKDIR /code
 
-# Install dependencies
-COPY requirements.txt /tmp/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-thai-tlwg \
+    build-essential \
+    python3-dev \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    netcat-traditional \
+    libpq-dev \
+    nodejs \
+    cron \
+    postgresql-client \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN set -ex && \
-    pip install --upgrade pip && \
-    pip install -r /tmp/requirements.txt && \
-    rm -rf /root/.cache/
+COPY ./requirements.txt .
 
-# Copy local project
-COPY . /code/
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Expose port 8000
-EXPOSE 8000
+COPY ./entrypoint.sh .
 
-# Use gunicorn on port 8000
-CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "django_project.wsgi"]
+RUN chmod +x /code/entrypoint.sh
+
+COPY . .
+
+ENTRYPOINT ["/code/entrypoint.sh"]

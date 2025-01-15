@@ -1,0 +1,23 @@
+<div id="approval-form">
+  {% if can_approve %}
+      <h4>Approval Action</h4>
+      <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+              <label for="is_approved" class="form-label">Decision:</label>
+              <select name="is_approved" id="is_approved" class="form-select" required>
+                  <option value="true">Approve</option>
+                  <option value="false">Reject</option>
+              </select>
+          </div>
+          <div class="mb-3">
+              <label for="comment" class="form-label">Comment:</label>
+              <textarea name="comment" id="comment" class="form-control"></textarea>
+          </div>
+
+   
+
+          <button type="submit" class="btn btn-primary">Submit Decision</button>
+      </form>
+  {% endif %}
+</div>

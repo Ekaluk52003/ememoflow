@@ -1,0 +1,83 @@
+
+<div class="mb-3">
+  <label for="editor" class="form-label">Content:</label>
+  <div id="quill-editor" style="height: 300px;"></div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+
+<script defer>
+  let quill;
+  let quillInitialized = false;
+
+  function initQuill() {
+      console.log('Initializing Quill');
+      var editorContainer = document.getElementById('quill-editor');
+      if (editorContainer && !editorContainer.querySelector('.ql-editor')) {
+          quill = new Quill('#quill-editor', {
+              theme: 'snow',
+              modules: {
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['image'], // Add image button here
+                        ['undo', 'redo']  // Add undo and redo buttons here
+                    ],
+                    handlers: {
+                        'undo': function() {
+                            this.quill.history.undo();
+                        },
+                        'redo': function() {
+                            this.quill.history.redo();
+                        },
+                        'image': function() {
+                            var range = this.quill.getSelection();
+                            var value = prompt('Please enter the image URL:');
+                            if (value) {
+                                this.quill.insertEmbed(range.index, 'image', value, Quill.sources.USER);
+                            }
+                        }
+                    }
+                },
+                history: {  // Enable the history module
+                    delay: 2000,
+                    maxStack: 500,
+                    userOnly: true
+                },
+
+            }
+
+          });
+
+          // If there's existing content, load it into the editor
+          var contentField = document.getElementById('id_content');
+          if (contentField && contentField.value) {
+              quill.root.innerHTML = contentField.value;
+          }
+
+          quillInitialized = true;
+          console.log('Quill initialized');
+      } else {
+          console.log('Quill editor container not found or already initialized');
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', initQuill);
+
+  // Also try to initialize Quill after HTMX content load
+  document.body.addEventListener('htmx:afterSettle', initQuill);
+
+
+</script>

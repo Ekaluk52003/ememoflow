@@ -1,0 +1,15 @@
+<div class="px-4 py-5 my-5 text-center">
+
+  <h1 class="display-5 fw-bold">Success</h1>
+  <div class="mx-auto col-lg-6">
+    <p class="mb-4 lead">Status : {{ document.status }}</p>
+    <p class="mb-4 lead">{{ document.title }}</p>
+    <div class="gap-2 d-grid d-sm-flex justify-content-sm-center">
+      <a hx-get="{% url 'document_approval:document_detail' document.document_reference %}"
+
+      hx-target="#content-div" hx-push-url="true"
+      hx-indicator=".progress"><button type="button" class="gap-3 px-4 btn btn-primary btn-lg">Review submit Document</button></a>
+      <a href="{% url 'document_approval:workflow_list' %}"><button type="button" class="px-4 btn btn-secondary btn-lg">Submit Again</button></a>
+    </div>
+  </div>
+</div>
