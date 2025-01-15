@@ -24,15 +24,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt .
-
-# Install Python packages
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
-
-COPY ./entrypoint.prod.sh .
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+    
+COPY . /code/
+    
+# Ensure the entrypoint script has the correct permissions
 RUN chmod +x /code/entrypoint.prod.sh
-
-COPY . .
-
-ENTRYPOINT ["/code/entrypoint.prod.sh"]
+    
+# Use shell form for ENTRYPOINT
+ENTRYPOINT sh /code/entrypoint.prod.sh
