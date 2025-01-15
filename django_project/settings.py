@@ -38,6 +38,7 @@ INSTALLED_APPS = [
       'django_htmx',
       "crispy_tailwind",
       'django_browser_reload',
+      'dbbackup',
     # Local
     "accounts",
     "pages",
@@ -292,3 +293,14 @@ LOGGING = {
         },
     },
 }
+
+
+# Configure django-dbbackup
+DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
+DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, 'backups')}
+DBBACKUP_CLEANUP_KEEP = 20  # Adjust this number as needed
+
+
+# Add this near your other dbbackup settings
+DBBACKUP_BACKUP_DIRECTORY = os.path.join(BASE_DIR, 'backups')
+# DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'

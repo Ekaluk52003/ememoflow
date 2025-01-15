@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-traditional \
     libpq-dev \
     nodejs \
+    cron \
+    postgresql-client \
     npm \
     && rm -rf /var/lib/apt/lists/*
 
