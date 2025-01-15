@@ -256,43 +256,6 @@ AWS_QUERYSTRING_EXPIRE = 30
 DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
 
 
-# Logging Configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '[{asctime}] {levelname} {name} {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',  # Changed to DEBUG to catch all levels
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
-            'formatter': 'verbose',
-            'mode': 'a',  # append mode
-        },
-        'console': {
-            'level': 'DEBUG',  # Changed to DEBUG to catch all levels
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        '': {  # Root logger
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-        'document': {  # App-specific logger
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
 
 
 # Configure django-dbbackup
