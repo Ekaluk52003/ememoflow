@@ -33,4 +33,4 @@ COPY . /code/
 RUN chmod +x /code/entrypoint.prod.sh
     
 # Use shell form cmd
-ENTRYPOINT ["sh","/code/entrypoint.prod.sh"]
+ENTRYPOINT ["/bin/sh", "/code/entrypoint.prod.sh"]
