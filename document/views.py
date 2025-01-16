@@ -244,18 +244,33 @@ def generate_pdf_report(request, reference_id, template_id):
     # Generate PDF with custom URL fetcher
     font_config = FontConfiguration()
     
+    # Debug font loading
+    print("Checking font paths:")
+    font_regular = '/code/static/fonts/NotoSansThai-Regular.ttf'
+    font_bold = '/code/static/fonts/NotoSansThai-Bold.ttf'
+    
+    if os.path.exists(font_regular):
+        print(f"Regular font exists at: {font_regular}")
+    else:
+        print(f"Regular font NOT FOUND at: {font_regular}")
+        
+    if os.path.exists(font_bold):
+        print(f"Bold font exists at: {font_bold}")
+    else:
+        print(f"Bold font NOT FOUND at: {font_bold}")
+    
     # Use direct font paths
     css_content = f'''
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('/code/static/fonts/NotoSansThai-Regular.ttf') format('truetype');
+        src: url('{font_regular}') format('truetype');
         font-weight: normal;
         font-style: normal;
     }}
 
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('/code/static/fonts/NotoSansThai-Bold.ttf') format('truetype');
+        src: url('{font_bold}') format('truetype');
         font-weight: bold;
         font-style: normal;
     }}
@@ -275,6 +290,9 @@ def generate_pdf_report(request, reference_id, template_id):
     
     {template.css_content}
     '''
+
+    print("Using CSS content:")
+    print(css_content)
 
     css = CSS(string=css_content, font_config=font_config)
 
