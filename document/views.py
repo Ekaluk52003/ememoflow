@@ -242,35 +242,15 @@ def generate_pdf_report(request, reference_id, template_id):
     html_content = html_template.render(context)
 
     # Generate PDF with custom URL fetcher
-    font_config = FontConfiguration()
+    # font_config = FontConfiguration()
     # font_path = Path(settings.STATIC_ROOT) / 'fonts' / 'FcRound.ttf'
     
     # Convert font path to URL format for CSS
-    font_url_regular = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Regular.ttf')
-    font_url_bold = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Bold.ttf')
+    # font_url_regular = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Regular.ttf')
+    # font_url_bold = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Bold.ttf')
 
     # Combine local font CSS with template CSS
     css_content = f'''
-    @font-face {{
-        font-family: 'NotoSansThai';
-        src: local('NotoSansThai Regular'),
-             url("{font_url_regular}") format("truetype");
-        font-weight: normal;
-        font-style: normal;
-    }}
-
-    @font-face {{
-        font-family: 'NotoSansThai';
-        src: local('NotoSansThai Bold'),
-             url("{font_url_bold}") format("truetype");
-        font-weight: bold;
-        font-style: normal;
-    }}
-    
-    * {{
-        font-family: 'NotoSansThai', Arial, sans-serif !important;
-    }}
-    
     body {{
         font-family: 'NotoSansThai', Arial, sans-serif;
         line-height: 1.5;
