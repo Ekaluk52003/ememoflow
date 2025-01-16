@@ -169,6 +169,10 @@ def generate_pdf_report(request, reference_id, template_id):
     context_data = document.get_report_context()
     context_data['report_config'] = report_config
     
+    # Add logo data URI to context
+    if report_config and report_config.company_logo:
+        context_data['company_logo_data_uri'] = report_config.logo_data_uri
+    
     # Get approvals ordered by most recent first
     approvals = document.approvals.all().order_by('-recorded_at', '-created_at')
     context_data['approvals'] = approvals

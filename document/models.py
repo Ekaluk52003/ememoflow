@@ -23,15 +23,38 @@ User = get_user_model()
 class ReportConfiguration(models.Model):
     company_name = models.CharField(max_length=200)
     company_address = models.TextField()
-    company_logo = models.ImageField(upload_to='report_logos/', storage=FileSystemStorage(location=settings.MEDIA_ROOT))
+    company_logo = models.ImageField(upload_to='logo/', storage=custom_storage)
     footer_text = models.TextField()
 
     @property
     def logo_data_uri(self):
         import base64
-        with open(self.company_logo.path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode()
-        return f"data:image/png;base64,{encoded_string}"
+        import boto3
+        from django.conf import settings
+        
+        if not self.company_logo:
+            return ""
+            
+        # Create S3 client
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+        )
+        
+        try:
+            # Get the image directly from S3
+            response = s3_client.get_object(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+                Key=self.company_logo.name
+            )
+            image_content = response['Body'].read()
+            encoded_string = base64.b64encode(image_content).decode()
+            return f"data:image/png;base64,{encoded_string}"
+        except Exception:
+            return ""
+
 
 class PDFTemplate(models.Model):
     name = models.CharField(max_length=100)
