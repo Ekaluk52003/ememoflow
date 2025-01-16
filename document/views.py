@@ -103,197 +103,223 @@ def generate_pdf_report(request, reference_id, template_id):
     import weasyprint
     from django.urls import reverse
 
-    document_response = get_allowed_document(request.user, reference_id)
-    if isinstance(document_response, HttpResponse):
-        return document_response
-    document = document_response
-    template = get_object_or_404(PDFTemplate, id=template_id)
-    report_config = ReportConfiguration.objects.first()
-    
-    # Create S3 client for generating signed URLs
-    s3_client = boto3.client(
-        's3',
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-    )
+    try:
+        print("Getting document...")
+        document_response = get_allowed_document(request.user, reference_id)
+        if isinstance(document_response, HttpResponse):
+            return document_response
+        document = document_response
+        template = get_object_or_404(PDFTemplate, id=template_id)
+        report_config = ReportConfiguration.objects.first()
+        print("Got document and template")
+        
+        # Create S3 client for generating signed URLs
+        print("Creating S3 client...")
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+        )
+        print("S3 client created")
 
-    def url_fetcher(url):
-        """Custom URL fetcher to handle S3 URLs"""
-        
-        # Handle both relative and absolute URLs for editor images and view-file
-        if url.startswith(('http://', 'https://')):
-            parsed = urlparse(url)
-            if parsed.path.startswith('/document/view-editor-image/'):
-                url = parsed.path
-            elif parsed.path.startswith('/document/view-file/'):
-                url = parsed.path
-            else:
-                # For external URLs, use default fetcher
-                return weasyprint.default_url_fetcher(url)
-        
-        if url.startswith('/document/view-editor-image/'):
-            try:
-                # Extract image ID from URL
-                image_id = int(url.split('/')[-2])
-                
-                editor_image = get_object_or_404(EditorImage, id=image_id)
-             
-                # Generate signed URL for the image
-                signed_url = s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={
-                        'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                        'Key': editor_image.image.name,
-                    },
-                    ExpiresIn=3600
-                )
-                
-                # Fetch the image using the signed URL
-                result = weasyprint.default_url_fetcher(signed_url)
-             
-                return result
-                
-            except Exception as e:
-                import traceback
-                return weasyprint.default_url_fetcher(url)
-        
-        if url.startswith('/document/view-file/'):
-            try:
-                # Extract field value ID from URL
-                field_value_id = int(url.split('/')[-2])
-                dynamic_field_value = get_object_or_404(DynamicFieldValue, pk=field_value_id)
-                
-                if not dynamic_field_value.file:
-                    return None
-                    
-                # Generate signed URL for the file
-                signed_url = s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={
-                        'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                        'Key': dynamic_field_value.file.name,
-                    },
-                    ExpiresIn=3600
-                )
-                
-                # Fetch the file using the signed URL
-                return weasyprint.default_url_fetcher(signed_url)
-                
-            except Exception as e:
-                print(f"Error fetching file: {e}")
-                return None
-        
-        return weasyprint.default_url_fetcher(url)
-
-    # Get the context data and render template
-    context_data = document.get_report_context()
-    context_data['report_config'] = report_config
-    
-    # Get approvals ordered by most recent first
-    approvals = document.approvals.all().order_by('-recorded_at', '-created_at')
-    context_data['approvals'] = approvals
-    
-    # Get users who have approved
-    approved_users = document.approvals.filter(
-        is_approved=True
-    ).select_related('approver')
-    
-    approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}".strip() 
-                     for approval in approved_users]
-    context_data['approver_names'] = ", ".join(approver_names)
-    
-    # Prepare dynamic fields with file URLs
-    prepared_values = []
-    dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
-    
-    for value in dynamic_values:
-        prepared_value = {
-            'name': value.field.name,
-            'field_type': value.field.field_type,
-            'value': value.value
-        }
-        
-        if value.field.field_type == 'product_list':
-            products = value.json_value if value.json_value else []
-            prepared_value['value'] = products
-            prepared_value['products'] = products
-            prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
-        elif value.field.field_type == 'attachment' and value.file:
-            # Use view_file URL for all attachments
-            file_url = reverse('document_approval:view_file', args=[value.id])
-            full_filename = value.file.name.split('/')[-1]  # Get filename without path
-            # Extract original filename by removing timestamp
-            original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]  # Remove timestamp
-            file_ext = original_filename.split('.')[-1].lower()
-            is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif']
+        def url_fetcher(url):
+            """Custom URL fetcher to handle S3 URLs"""
+            print(f"Fetching URL: {url}")
             
-            prepared_value['file'] = {
-                'name': original_filename,
-                'url': file_url,
-                'is_image': is_image
-            }
+            # Handle both relative and absolute URLs for editor images and view-file
+            if url.startswith(('http://', 'https://')):
+                parsed = urlparse(url)
+                if parsed.path.startswith('/document/view-editor-image/'):
+                    url = parsed.path
+                elif parsed.path.startswith('/document/view-file/'):
+                    url = parsed.path
+                else:
+                    # For external URLs, use default fetcher
+                    return weasyprint.default_url_fetcher(url)
+            
+            if url.startswith('/document/view-editor-image/'):
+                try:
+                    # Extract image ID from URL
+                    image_id = int(url.split('/')[-2])
+                    
+                    editor_image = get_object_or_404(EditorImage, id=image_id)
+                 
+                    # Generate signed URL for the image
+                    signed_url = s3_client.generate_presigned_url(
+                        'get_object',
+                        Params={
+                            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                            'Key': editor_image.image.name,
+                        },
+                        ExpiresIn=3600
+                    )
+                    
+                    # Fetch the image using the signed URL
+                    result = weasyprint.default_url_fetcher(signed_url)
+                 
+                    return result
+                    
+                except Exception as e:
+                    import traceback
+                    return weasyprint.default_url_fetcher(url)
+            
+            if url.startswith('/document/view-file/'):
+                try:
+                    # Extract field value ID from URL
+                    field_value_id = int(url.split('/')[-2])
+                    dynamic_field_value = get_object_or_404(DynamicFieldValue, pk=field_value_id)
+                    
+                    if not dynamic_field_value.file:
+                        return None
+                        
+                    # Generate signed URL for the file
+                    signed_url = s3_client.generate_presigned_url(
+                        'get_object',
+                        Params={
+                            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                            'Key': dynamic_field_value.file.name,
+                        },
+                        ExpiresIn=3600
+                    )
+                    
+                    # Fetch the file using the signed URL
+                    return weasyprint.default_url_fetcher(signed_url)
+                    
+                except Exception as e:
+                    print(f"Error fetching file: {e}")
+                    return None
+            
+            return weasyprint.default_url_fetcher(url)
+
+        # Get the context data and render template
+        print("Preparing context data...")
+        context_data = document.get_report_context()
+        context_data['report_config'] = report_config
         
-        prepared_values.append(prepared_value)
-    
-    context_data['prepared_values'] = prepared_values
+        # Get approvals ordered by most recent first
+        approvals = document.approvals.all().order_by('-recorded_at', '-created_at')
+        context_data['approvals'] = approvals
+        
+        # Get users who have approved
+        approved_users = document.approvals.filter(
+            is_approved=True
+        ).select_related('approver')
+        print("Got approvals data")
+        
+        approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}".strip() 
+                         for approval in approved_users]
+        context_data['approver_names'] = ", ".join(approver_names)
+        
+        # Prepare dynamic fields with file URLs
+        print("Preparing dynamic fields...")
+        prepared_values = []
+        dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
+        
+        for value in dynamic_values:
+            prepared_value = {
+                'name': value.field.name,
+                'field_type': value.field.field_type,
+                'value': value.value
+            }
+            
+            if value.field.field_type == 'product_list':
+                products = value.json_value if value.json_value else []
+                prepared_value['value'] = products
+                prepared_value['products'] = products
+                prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
+            elif value.field.field_type == 'attachment' and value.file:
+                # Use view_file URL for all attachments
+                file_url = reverse('document_approval:view_file', args=[value.id])
+                full_filename = value.file.name.split('/')[-1]  # Get filename without path
+                # Extract original filename by removing timestamp
+                original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]  # Remove timestamp
+                file_ext = original_filename.split('.')[-1].lower()
+                is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif']
+                
+                prepared_value['file'] = {
+                    'name': original_filename,
+                    'url': file_url,
+                    'is_image': is_image
+                }
+            
+            prepared_values.append(prepared_value)
+        
+        context_data['prepared_values'] = prepared_values
+        print("Context data prepared")
 
-    html_template = Template(template.html_content)
-    context = Context(context_data)
-    html_content = html_template.render(context)
+        print("Rendering template...")
+        html_template = Template(template.html_content)
+        context = Context(context_data)
+        html_content = html_template.render(context)
+        print("Template rendered")
 
-    # Generate PDF with custom URL fetcher
-    font_config = FontConfiguration()
-    # font_path = Path(settings.STATIC_ROOT) / 'fonts' / 'FcRound.ttf'
-    
-    # Convert font path to URL format for CSS
-    font_url_regular = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Regular.ttf')
-    font_url_bold = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Bold.ttf')
+        # Generate PDF with custom URL fetcher
+        print("Setting up font configuration...")
+        font_config = FontConfiguration()
+        
+        # Convert font path to URL format for CSS
+        font_url_regular = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Regular.ttf')
+        font_url_bold = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Bold.ttf')
+        print(f"Font URLs: {font_url_regular}, {font_url_bold}")
 
-    # Combine local font CSS with template CSS
-    css_content = f'''
-    @font-face {{
-        font-family: 'NotoSansThai';
-        src: local('NotoSansThai Regular'),
-             url("{font_url_regular}") format("truetype");
-        font-weight: normal;
-        font-style: normal;
-    }}
+        # Combine local font CSS with template CSS
+        css_content = f'''
+        @font-face {{
+            font-family: 'NotoSansThai';
+            src: local('NotoSansThai Regular'),
+                 url("{font_url_regular}") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }}
 
-    @font-face {{
-        font-family: 'NotoSansThai';
-        src: local('NotoSansThai Bold'),
-             url("{font_url_bold}") format("truetype");
-        font-weight: bold;
-        font-style: normal;
-    }}
-    
-    * {{
-        font-family: 'NotoSansThai', Arial, sans-serif !important;
-    }}
-    
-    body {{
-        font-family: 'NotoSansThai', Arial, sans-serif;
-        line-height: 1.5;
-    }}
+        @font-face {{
+            font-family: 'NotoSansThai';
+            src: local('NotoSansThai Bold'),
+                 url("{font_url_bold}") format("truetype");
+            font-weight: bold;
+            font-style: normal;
+        }}
+        
+        * {{
+            font-family: 'NotoSansThai', Arial, sans-serif !important;
+        }}
+        
+        body {{
+            font-family: 'NotoSansThai', Arial, sans-serif;
+            line-height: 1.5;
+        }}
 
-    strong, b {{
-        font-weight: bold !important;
-    }}
-    
-    {template.css_content}
-    '''
+        strong, b {{
+            font-weight: bold !important;
+        }}
+        
+        {template.css_content}
+        '''
 
-    css = CSS(string=css_content, font_config=font_config)
+        print("Creating CSS...")
+        css = CSS(string=css_content, font_config=font_config)
+        print("CSS created")
 
-    html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
-    
-    pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
- 
-    # Create HTTP response
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'filename="document_{reference_id}_report.pdf"'
-    return response
+        print("Creating HTML object...")
+        html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
+        print("HTML object created")
+        
+        print("Starting PDF generation...")
+        pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
+        print("PDF generated successfully")
+     
+        # Create HTTP response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'filename="document_{reference_id}_report.pdf"'
+        print("Sending response")
+        return response
+    except Exception as e:
+        print(f"Error generating PDF: {str(e)}")
+        print("Full error:", e.__class__.__name__, str(e))
+        import traceback
+        print("Traceback:", traceback.format_exc())
+        return HttpResponse(f"Error generating PDF: {str(e)}", status=500)
 
 
 @login_required
