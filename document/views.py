@@ -257,36 +257,15 @@ def generate_pdf_report(request, reference_id, template_id):
         # Generate PDF with custom URL fetcher
         print("Setting up font configuration...")
         font_config = FontConfiguration()
-        
-        # Convert font path to URL format for CSS
-        font_url_regular = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Regular.ttf')
-        font_url_bold = request.build_absolute_uri(settings.STATIC_URL + 'fonts/NotoSansThai-Bold.ttf')
-        print(f"Font URLs: {font_url_regular}, {font_url_bold}")
 
-        # Combine local font CSS with template CSS
+        # Use system fonts instead of URLs
         css_content = f'''
-        @font-face {{
-            font-family: 'NotoSansThai';
-            src: local('NotoSansThai Regular'),
-                 url("{font_url_regular}") format("truetype");
-            font-weight: normal;
-            font-style: normal;
-        }}
-
-        @font-face {{
-            font-family: 'NotoSansThai';
-            src: local('NotoSansThai Bold'),
-                 url("{font_url_bold}") format("truetype");
-            font-weight: bold;
-            font-style: normal;
-        }}
-        
         * {{
-            font-family: 'NotoSansThai', Arial, sans-serif !important;
+            font-family: 'Noto Sans Thai', 'TH Sarabun New', sans-serif !important;
         }}
         
         body {{
-            font-family: 'NotoSansThai', Arial, sans-serif;
+            font-family: 'Noto Sans Thai', 'TH Sarabun New', sans-serif;
             line-height: 1.5;
         }}
 

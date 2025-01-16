@@ -12,6 +12,8 @@ WORKDIR /code
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-thai-tlwg \
+    fonts-noto-cjk \
+    fonts-noto-cjk-extra \
     build-essential \
     python3-dev \
     libcairo2 \
@@ -25,6 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cron \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
+
+# Update font cache
+RUN fc-cache -f -v
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
