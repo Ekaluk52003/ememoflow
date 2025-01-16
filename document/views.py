@@ -248,14 +248,14 @@ def generate_pdf_report(request, reference_id, template_id):
     css_content = f'''
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('fonts/NotoSansThai-Regular.ttf') format('truetype');
+        src: url('/code/static/fonts/NotoSansThai-Regular.ttf') format('truetype');
         font-weight: normal;
         font-style: normal;
     }}
 
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('fonts/NotoSansThai-Bold.ttf') format('truetype');
+        src: url('/code/static/fonts/NotoSansThai-Bold.ttf') format('truetype');
         font-weight: bold;
         font-style: normal;
     }}
