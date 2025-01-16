@@ -101,6 +101,7 @@ def generate_pdf_report(request, reference_id, template_id):
     from urllib.parse import urlparse
     import weasyprint
     from django.urls import reverse
+    import base64
 
     document_response = get_allowed_document(request.user, reference_id)
     if isinstance(document_response, HttpResponse):
@@ -119,8 +120,6 @@ def generate_pdf_report(request, reference_id, template_id):
 
     def url_fetcher(url):
         """Custom URL fetcher to handle S3 URLs"""
-        
-        # Handle both relative and absolute URLs for editor images and view-file
         if url.startswith(('http://', 'https://')):
             parsed = urlparse(url)
             if parsed.path.startswith('/document/view-editor-image/'):
@@ -128,17 +127,12 @@ def generate_pdf_report(request, reference_id, template_id):
             elif parsed.path.startswith('/document/view-file/'):
                 url = parsed.path
             else:
-                # For external URLs, use default fetcher
                 return weasyprint.default_url_fetcher(url)
         
         if url.startswith('/document/view-editor-image/'):
             try:
-                # Extract image ID from URL
                 image_id = int(url.split('/')[-2])
-                
                 editor_image = get_object_or_404(EditorImage, id=image_id)
-             
-                # Generate signed URL for the image
                 signed_url = s3_client.generate_presigned_url(
                     'get_object',
                     Params={
@@ -147,26 +141,16 @@ def generate_pdf_report(request, reference_id, template_id):
                     },
                     ExpiresIn=3600
                 )
-                
-                # Fetch the image using the signed URL
-                result = weasyprint.default_url_fetcher(signed_url)
-             
-                return result
-                
-            except Exception as e:
-                import traceback
+                return weasyprint.default_url_fetcher(signed_url)
+            except Exception:
                 return weasyprint.default_url_fetcher(url)
         
         if url.startswith('/document/view-file/'):
             try:
-                # Extract field value ID from URL
                 field_value_id = int(url.split('/')[-2])
                 dynamic_field_value = get_object_or_404(DynamicFieldValue, pk=field_value_id)
-                
                 if not dynamic_field_value.file:
                     return None
-                    
-                # Generate signed URL for the file
                 signed_url = s3_client.generate_presigned_url(
                     'get_object',
                     Params={
@@ -175,12 +159,8 @@ def generate_pdf_report(request, reference_id, template_id):
                     },
                     ExpiresIn=3600
                 )
-                
-                # Fetch the file using the signed URL
                 return weasyprint.default_url_fetcher(signed_url)
-                
-            except Exception as e:
-                print(f"Error fetching file: {e}")
+            except Exception:
                 return None
         
         return weasyprint.default_url_fetcher(url)
@@ -219,11 +199,9 @@ def generate_pdf_report(request, reference_id, template_id):
             prepared_value['products'] = products
             prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
         elif value.field.field_type == 'attachment' and value.file:
-            # Use view_file URL for all attachments
             file_url = reverse('document_approval:view_file', args=[value.id])
-            full_filename = value.file.name.split('/')[-1]  # Get filename without path
-            # Extract original filename by removing timestamp
-            original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]  # Remove timestamp
+            full_filename = value.file.name.split('/')[-1]
+            original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]
             file_ext = original_filename.split('.')[-1].lower()
             is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif']
             
@@ -241,39 +219,19 @@ def generate_pdf_report(request, reference_id, template_id):
     context = Context(context_data)
     html_content = html_template.render(context)
 
-    # Generate PDF with custom URL fetcher
+    # Generate PDF with embedded fonts
     font_config = FontConfiguration()
     font_regular = '/code/static/fonts/NotoSansThai-Regular.ttf'
     font_bold = '/code/static/fonts/NotoSansThai-Bold.ttf'
     
-    # Debug font loading
-    print("Checking font paths:")
-    if os.path.exists(font_regular):
-        print(f"Regular font exists at: {font_regular}")
-    else:
-        print(f"Regular font NOT FOUND at: {font_regular}")
-        
-    if os.path.exists(font_bold):
-        print(f"Bold font exists at: {font_bold}")
-    else:
-        print(f"Bold font NOT FOUND at: {font_bold}")
-
-    # Read font files directly
-    try:
-        with open(font_regular, 'rb') as f:
-            regular_font_data = f.read()
-        with open(font_bold, 'rb') as f:
-            bold_font_data = f.read()
-        print("Font files read successfully")
-    except Exception as e:
-        print(f"Error reading font files: {e}")
-        regular_font_data = None
-        bold_font_data = None
+    # Read and encode fonts
+    with open(font_regular, 'rb') as f:
+        regular_font_data = f.read()
+    with open(font_bold, 'rb') as f:
+        bold_font_data = f.read()
     
-    # Use data URIs for fonts
-    import base64
-    regular_font_b64 = base64.b64encode(regular_font_data).decode('utf-8') if regular_font_data else ''
-    bold_font_b64 = base64.b64encode(bold_font_data).decode('utf-8') if bold_font_data else ''
+    regular_font_b64 = base64.b64encode(regular_font_data).decode('utf-8')
+    bold_font_b64 = base64.b64encode(bold_font_data).decode('utf-8')
     
     css_content = f'''
     @font-face {{
@@ -308,11 +266,8 @@ def generate_pdf_report(request, reference_id, template_id):
     {template.css_content}
     '''
 
-    print("CSS content generated with embedded fonts")
     css = CSS(string=css_content, font_config=font_config)
-
     html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
-    
     pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
  
     # Create HTTP response
