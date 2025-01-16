@@ -243,12 +243,11 @@ def generate_pdf_report(request, reference_id, template_id):
 
     # Generate PDF with custom URL fetcher
     font_config = FontConfiguration()
-    
-    # Debug font loading
-    print("Checking font paths:")
     font_regular = '/code/static/fonts/NotoSansThai-Regular.ttf'
     font_bold = '/code/static/fonts/NotoSansThai-Bold.ttf'
     
+    # Debug font loading
+    print("Checking font paths:")
     if os.path.exists(font_regular):
         print(f"Regular font exists at: {font_regular}")
     else:
@@ -258,25 +257,43 @@ def generate_pdf_report(request, reference_id, template_id):
         print(f"Bold font exists at: {font_bold}")
     else:
         print(f"Bold font NOT FOUND at: {font_bold}")
+
+    # Read font files directly
+    try:
+        with open(font_regular, 'rb') as f:
+            regular_font_data = f.read()
+        with open(font_bold, 'rb') as f:
+            bold_font_data = f.read()
+        print("Font files read successfully")
+    except Exception as e:
+        print(f"Error reading font files: {e}")
+        regular_font_data = None
+        bold_font_data = None
     
-    # Use direct font paths
+    # Use data URIs for fonts
+    import base64
+    regular_font_b64 = base64.b64encode(regular_font_data).decode('utf-8') if regular_font_data else ''
+    bold_font_b64 = base64.b64encode(bold_font_data).decode('utf-8') if bold_font_data else ''
+    
     css_content = f'''
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('{font_regular}') format('truetype');
+        src: url(data:font/truetype;charset=utf-8;base64,{regular_font_b64}) format('truetype');
         font-weight: normal;
         font-style: normal;
     }}
 
     @font-face {{
         font-family: 'NotoSansThai';
-        src: url('{font_bold}') format('truetype');
+        src: url(data:font/truetype;charset=utf-8;base64,{bold_font_b64}) format('truetype');
         font-weight: bold;
         font-style: normal;
     }}
     
     * {{
         font-family: 'NotoSansThai', Arial, sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }}
     
     body {{
@@ -291,9 +308,7 @@ def generate_pdf_report(request, reference_id, template_id):
     {template.css_content}
     '''
 
-    print("Using CSS content:")
-    print(css_content)
-
+    print("CSS content generated with embedded fonts")
     css = CSS(string=css_content, font_config=font_config)
 
     html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
@@ -612,6 +627,7 @@ def resubmit_document(request, pk):
         # Validate dynamic fields
         for field in non_editable_fields:
             field_key = f'dynamic_{field.id}'
+            is_required_for_submission = field.required and field not in editable_fields
 
             if field.field_type == 'product_list':
                 product_ids = request.POST.getlist(f'product_id_{field.id}[]')
