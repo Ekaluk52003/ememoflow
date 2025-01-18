@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.management import call_command
 from django.conf import settings
+from django.conf import settings
 import os
 from io import StringIO
 from .models import BackupManagement
@@ -12,6 +13,8 @@ from django.http import FileResponse, Http404
 from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
 from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+
 
 @admin.register(BackupManagement)
 class BackupManagementAdmin(admin.ModelAdmin):
@@ -33,14 +36,13 @@ class BackupManagementAdmin(admin.ModelAdmin):
         custom_urls = [
             path('create_backup/', self.admin_site.admin_view(self.create_backup_view),
                  name='backup_manager_backupmanagement_create_backup'),
-            path('restore_db/<str:filename>/',
+            path('restore_db/<path:filename>/',
                  self.admin_site.admin_view(self.restore_db_view),
                  name='backup_manager_backupmanagement_restore_db'),
-            path('confirm_restore_db/<str:filename>/',
+            path('confirm_restore_db/<path:filename>/',
                  self.admin_site.admin_view(self.confirm_restore_db_view),
                  name='backup_manager_backupmanagement_confirm_restore_db'),
-
-            path('download_backup/<str:filename>/',
+            path('download_backup/<path:filename>/',
                  self.admin_site.admin_view(self.download_backup_view),
                  name='backup_manager_backupmanagement_download_backup'),
             path('upload_backup/',
@@ -50,24 +52,74 @@ class BackupManagementAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def get_backups(self):
-        backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
-        backups = []
-        if os.path.exists(backup_dir):
-            for file in os.listdir(backup_dir):
-                if file.endswith('.psql'):
-                    backups.append(file)
-        return sorted(backups, reverse=True)
+        if settings.DBBACKUP_STORAGE == 'storages.backends.s3boto3.S3Boto3Storage':
+            import boto3
+            s3 = boto3.client(
+                's3',
+                aws_access_key_id=settings.DBBACKUP_STORAGE_OPTIONS['access_key'],
+                aws_secret_access_key=settings.DBBACKUP_STORAGE_OPTIONS['secret_key'],
+                endpoint_url=settings.DBBACKUP_STORAGE_OPTIONS['endpoint_url'],
+            )
+            
+            bucket = settings.DBBACKUP_STORAGE_OPTIONS['bucket_name']
+            prefix = settings.DBBACKUP_STORAGE_OPTIONS.get('location', '')
+            backups = []
+            
+            response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+            if 'Contents' in response:
+                for obj in response['Contents']:
+                    if obj['Key'].endswith('.psql'):
+                        # Strip the prefix/location from the displayed name
+                        display_name = obj['Key']
+                        if prefix and display_name.startswith(prefix):
+                            display_name = display_name[len(prefix):]
+                        if display_name.startswith('/'):
+                            display_name = display_name[1:]
+                        backups.append({'name': display_name, 'key': obj['Key']})
+            return sorted(backups, reverse=True, key=lambda x: x['name'])
+        else:
+            backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+            backups = []
+            if os.path.exists(backup_dir):
+                for file in os.listdir(backup_dir):
+                    if file.endswith('.psql'):
+                        backups.append(file)
+            return sorted(backups, reverse=True)
 
     def download_backup_view(self, request, filename):
-        backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
-        file_path = os.path.join(backup_dir, filename)
-
-        if os.path.exists(file_path):
-            response = FileResponse(open(file_path, 'rb'))
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
+        if settings.DBBACKUP_STORAGE == 'storages.backends.s3boto3.S3Boto3Storage':
+            import boto3
+            s3 = boto3.client(
+                's3',
+                aws_access_key_id=settings.DBBACKUP_STORAGE_OPTIONS['access_key'],
+                aws_secret_access_key=settings.DBBACKUP_STORAGE_OPTIONS['secret_key'],
+                endpoint_url=settings.DBBACKUP_STORAGE_OPTIONS['endpoint_url'],
+            )
+            
+            bucket = settings.DBBACKUP_STORAGE_OPTIONS['bucket_name']
+            
+            try:
+                response = s3.get_object(Bucket=bucket, Key=filename)
+                content = response['Body'].read()
+                
+                # Get just the filename without path for the download
+                display_name = filename.split('/')[-1]
+                
+                response = FileResponse(content)
+                response['Content-Disposition'] = f'attachment; filename="{display_name}"'
+                return response
+            except Exception as e:
+                raise Http404(f"Backup file not found: {str(e)}")
         else:
-            raise Http404("Backup file not found")
+            backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
+            file_path = os.path.join(backup_dir, filename)
+
+            if os.path.exists(file_path):
+                response = FileResponse(open(file_path, 'rb'))
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                return response
+            else:
+                raise Http404("Backup file not found")
 
     @method_decorator(csrf_protect)
     def upload_backup_view(self, request):
@@ -91,70 +143,100 @@ class BackupManagementAdmin(admin.ModelAdmin):
         return render(request, 'admin/upload_backup.html')
 
     def create_backup_view(self, request):
-        backup_dir = settings.DBBACKUP_STORAGE_OPTIONS['location']
-        os.makedirs(backup_dir, exist_ok=True)
-        initial_files = set(os.listdir(backup_dir))
-
-        try:
-            output = StringIO()
-            call_command('dbbackup', '--clean', '--noinput', stdout=output, stderr=output)
-            output_str = output.getvalue()
-
-            new_files = set(os.listdir(backup_dir))
-            created_files = new_files - initial_files
-
-            if created_files:
-                messages.success(request, f'Database backup created successfully. New files: {", ".join(created_files)}')
-            else:
-                messages.warning(request, f'Backup command executed, but no new backup file was found. Output: {output_str}')
-        except Exception as e:
-            messages.error(request, f'Error creating backup: {str(e)}')
+        import boto3
+        from botocore.config import Config
+        from datetime import datetime
+        
+        # Get list of files before backup
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=settings.DBBACKUP_STORAGE_OPTIONS['access_key'],
+            aws_secret_access_key=settings.DBBACKUP_STORAGE_OPTIONS['secret_key'],
+            endpoint_url=settings.DBBACKUP_STORAGE_OPTIONS['endpoint_url'],
+            config=Config(signature_version='s3v4')
+        )
+        bucket = settings.DBBACKUP_STORAGE_OPTIONS['bucket_name']
+        prefix = settings.DBBACKUP_STORAGE_OPTIONS['location']
+        
+        # Get list of files before backup
+        response_before = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        files_before = set()
+        if 'Contents' in response_before:
+            files_before = {obj['Key'] for obj in response_before['Contents']}
+        
+        # Create backup with clean option to keep only recent backups
+        output = StringIO()
+        call_command('dbbackup', '--clean', '--noinput', stdout=output, stderr=output)
+        
+        # Get list of files after backup
+        response_after = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        files_after = set()
+        if 'Contents' in response_after:
+            files_after = {obj['Key'] for obj in response_after['Contents']}
+        
+        # Find new files
+        new_files = files_after - files_before
+        
+        if new_files:
+            new_file = list(new_files)[0]  # Get the first new file
+            messages.success(request, f'Backup created successfully: {os.path.basename(new_file)}')
+        else:
+            messages.warning(request, 'Backup command executed, but no new backup file was found. Check S3 storage.')
+        
         return redirect('..')
 
     def restore_db_view(self, request, filename):
-        backup_file = os.path.join(settings.DBBACKUP_STORAGE_OPTIONS['location'], filename)
-
-        if not os.path.exists(backup_file):
-            messages.error(request, f"Backup file {filename} not found.")
+        if not request.user.is_superuser:
+            messages.error(request, "Only superusers can restore database backups.")
             return redirect('..')
 
-        if os.path.getsize(backup_file) == 0:
-            messages.error(request, f"Backup file {filename} is empty.")
-            return redirect('..')
-
-        try:
-            with open(backup_file, 'r') as f:
-                first_line = f.readline().strip()
-                if not first_line.startswith('--'):
-                    messages.error(request, f"Backup file {filename} does not appear to be a valid PostgreSQL dump.")
-                    return redirect('..')
-
-            return render(request, 'admin/restore_db_confirm.html', {'filename': filename})
-        except Exception as e:
-            messages.error(request, f'Error checking backup file: {str(e)}')
-            return redirect('..')
+        # Show confirmation page first
+        return render(request, 'admin/restore_db_confirm.html', {'filename': filename})
 
     def confirm_restore_db_view(self, request, filename):
         if request.method != 'POST':
             return redirect('..')
 
-        backup_file = os.path.join(settings.DBBACKUP_STORAGE_OPTIONS['location'], filename)
-
-        try:
-            output = StringIO()
-            call_command('dbrestore', '--noinput', '--input-filename', filename, stdout=output, stderr=output)
-            output_str = output.getvalue()
-
-            # Verify database state
-            if self.verify_database_state():
-                messages.success(request, f'Database restored successfully from {filename}. Database contains tables.')
-            else:
-                messages.warning(request, f'Restore command executed, but the database appears to be empty. Please verify the database state.')
-
-        except CommandError as e:
-            messages.error(request, f'Error restoring database: {str(e)}')
-        except Exception as e:
-            messages.error(request, f'Unexpected error during database restore: {str(e)}')
+        if not request.user.is_superuser:
+            messages.error(request, "Only superusers can restore database backups.")
+            return redirect('..')
+            
+        if settings.DBBACKUP_STORAGE == 'storages.backends.s3boto3.S3Boto3Storage':
+            try:
+                # Remove any existing backupdb/ prefix since it's added by the storage
+                clean_filename = filename.replace('backupdb/', '')
+               
+                
+                # Use the S3 path directly with dbrestore
+                output = StringIO()
+                call_command('dbrestore', '--noinput', '--input-filename', clean_filename, stdout=output, stderr=output)                
+                
+                # Verify database state
+                if self.verify_database_state():
+                    messages.success(request, f'Database restored successfully from {os.path.basename(filename)}.')
+      
+                else:
+                    messages.warning(request, f'Database restore completed, but please verify the database state.')
+           
+                
+            except Exception as e:
+       
+                messages.error(request, f"Error restoring database: {str(e)}")
+        else:
+            backup_file = os.path.join(settings.DBBACKUP_STORAGE_OPTIONS['location'], filename)
+            
+            try:
+                output = StringIO()
+                call_command('dbrestore', '--noinput', '--input-filename', backup_file, stdout=output, stderr=output)
+                
+                # Verify database state
+                if self.verify_database_state():
+                    messages.success(request, f'Database restored successfully from {filename}.')
+                else:
+                    messages.warning(request, f'Database restore completed, but please verify the database state.')
+                    
+            except Exception as e:
+                messages.error(request, f"Error restoring database: {str(e)}")
 
         return redirect('admin:backup_manager_backupmanagement_changelist')
 
@@ -163,4 +245,3 @@ class BackupManagementAdmin(admin.ModelAdmin):
             cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
             table_count = cursor.fetchone()[0]
         return table_count > 0
-
