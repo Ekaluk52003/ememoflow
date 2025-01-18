@@ -147,5 +147,5 @@ docker exec -it 2325303790dc sh /code/entrypoint.sh
 
 docker exec -it cbb145ca1cdd8e931b721813177af9d1b28ea030697fcee62d2db9a62a9d945e sh /code/entrypoint.sh
 
-
+<!-- batch to container -->
 docker compose -f docker-compose.prod.yml exec web bash

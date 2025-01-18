@@ -12,6 +12,8 @@ db.sqlite3
 media
 staticfiles/
 
+backups/
+
 # Virtual environment
 .venv
 .env.dev

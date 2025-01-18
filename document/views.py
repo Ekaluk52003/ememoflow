@@ -31,7 +31,7 @@ import os
 from .utils import get_allowed_documents, get_allowed_document
 from urllib.parse import urlparse
 from urllib.request import urlopen
-print("Starting views.py")
+
 
 
 @login_required
