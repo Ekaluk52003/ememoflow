@@ -8,27 +8,33 @@ from django.template import Template, Context, TemplateSyntaxError
 logger = logging.getLogger(__name__)
 
 
-def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None):
+def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None, attachments=None):
     try:
         context = Context(context_dict)
 
-        # Render the subject
-        subject = strip_tags(
-            Template(subject_template).render(context)).strip()[:255]
+        # Render subject
+        subject = Template(subject_template).render(context)
+        # Remove newlines and tags from subject
+        subject = strip_tags(''.join(subject.splitlines()))[:255]
 
-        # Render the body
+        # Render body
         html_content = Template(body_template).render(context)
         text_content = strip_tags(html_content)
 
-        # Create the email message
+        # Create email message
         msg = EmailMultiAlternatives(
             subject,
             text_content,
             settings.DEFAULT_FROM_EMAIL,
             recipient_list,
-            cc=cc_list
+            cc=cc_list if cc_list else None,
         )
         msg.attach_alternative(html_content, "text/html")
+
+        # Add attachment if present
+        if attachments:
+            filename, content, mimetype = attachments[0]  # We only have one attachment
+            msg.attach(filename, content, mimetype)
 
         # Send the email
         msg.send()
@@ -109,12 +115,20 @@ def send_approved_email(document):
     recipient_list = [document.submitted_by.email]
     cc_list = workflow.get_cc_list()
 
+    # Generate PDF attachment
+    pdf_file = generate_email_pdf(document)
+    attachments = None
+    if pdf_file:
+        filename = f"document_{document.document_reference}_report.pdf"
+        attachments = [(filename, pdf_file.getvalue(), 'application/pdf')]
+
     return send_templated_email(
         workflow.email_approved_subject,
         workflow.email_approved_body_template,
         context,
         recipient_list,
-        cc_list
+        cc_list,
+        attachments=attachments
     )
 
 
@@ -176,8 +190,42 @@ def send_approval_email(approval):
         )
 
 
+def generate_email_pdf(document):
+    from document.views import generate_pdf_report
+    from django.http import HttpResponse
+    from io import BytesIO
+    from document.models import PDFTemplate
+    from django.conf import settings
 
+    try:
+        # Get the default template
+        template = PDFTemplate.objects.first()
+        if not template:
+            return None
 
+        # Create a mock request object with user and build_absolute_uri method
+        class MockRequest:
+            def __init__(self, user):
+                self.user = user
+                self.scheme = 'http'
+                self.META = {'HTTP_HOST': settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'}
 
+            def build_absolute_uri(self, path=''):
+                return f"{self.scheme}://{self.META['HTTP_HOST']}{path}"
 
+        mock_request = MockRequest(document.submitted_by)
+        
+        # Call generate_pdf_report
+        response = generate_pdf_report(mock_request, document.document_reference, template.id)
+        
+        if isinstance(response, HttpResponse):
+            # Get the content from the response
+            pdf_content = BytesIO(response.content)
+            pdf_content.seek(0)
+            return pdf_content
+            
+        return None
 
+    except Exception as e:
+        print(f"Error generating PDF: {str(e)}")
+        return None

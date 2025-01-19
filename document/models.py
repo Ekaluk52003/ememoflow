@@ -529,10 +529,11 @@ class Document(models.Model):
                     if approval.step.order <= last_conditional_step.order
                 ]
 
-            send_approval_email(approvals_created[0])
+            
             self.status = 'in_review'
             self.current_step = approvals_created[0].step
             self.save()
+            send_approval_email(approvals_created[0])
 
         return approvals_created
 
@@ -603,10 +604,10 @@ class Document(models.Model):
         current_step = approval.step
 
         # If current step condition met and move_to_next is False, complete workflow
-        if current_step.evaluate_condition(self) and not current_step.move_to_next:
-            send_approved_email(self)
+        if current_step.evaluate_condition(self) and not current_step.move_to_next:            
             self.status = 'approved'
             self.save()
+            send_approved_email(self)
             return
 
         next_step = ApprovalStep.objects.filter(
@@ -616,9 +617,9 @@ class Document(models.Model):
 
         if not next_step:
             # No more steps, document is approved
-            send_approved_email(self)
             self.status = 'approved'
             self.save()
+            send_approved_email(self)
             return
 
         if next_step.evaluate_condition(self):
@@ -641,10 +642,11 @@ class Document(models.Model):
         if self.status != 'in_review' or self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists():
             raise ValidationError("This document cannot be withdrawn.")
         #send email before change systus
-        send_withdraw_email(self)
+        
         self.status = 'pending'
         self.current_step = None
         self.save()
+        send_withdraw_email(self)
 
 
        # Delete only the approvals from the current review cycle
