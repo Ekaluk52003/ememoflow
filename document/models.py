@@ -272,12 +272,10 @@ class ApprovalStep(models.Model):
                 return False
 
         elif field_type == 'boolean':
-            actual_value = str(actual_value).lower() in ('true', '1', 'yes')
-            condition_value = str(condition_value).lower() in ('true', '1', 'yes')
-            # For boolean, only equality and inequality make sense
-            if self.condition_operator in ['eq', 'ne']:
-                return actual_value == condition_value if self.condition_operator == 'eq' else actual_value != condition_value
-            return False
+            # Convert checkbox value to boolean
+            actual_bool = actual_value == 'on'
+            condition_bool = condition_value == 'on'
+            return self._compare_values(actual_bool, condition_bool)
 
         elif field_type == 'choice':
             # Single choice comparison - direct string comparison

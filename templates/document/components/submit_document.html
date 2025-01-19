@@ -57,7 +57,7 @@
             <!-- Main container with relative positioning -->
             <div class="relative w-full">
                 <!-- Fixed width container that forces horizontal scroll -->
-                <div class="relative overflow-x-auto" style="max-width: 100%; overflow-y: hidden;">
+                <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
                     <div class="min-w-[800px]" style="width: fit-content;"> <!-- Content with minimum width -->
                         <!-- Headers -->
                         <div class="flex gap-2 px-1 mb-2 text-sm text-gray-600">
@@ -107,7 +107,7 @@
 
                                     <button type="button"
                                             style="width: 100px;"
-                                            class="px-4 text-white bg-red-500 rounded h-9 hover:bg-red-600"
+                                            class="px-4 h-9 text-white bg-red-500 rounded hover:bg-red-600"
                                             @click="removeProduct(index)">
                                         Delete
                                     </button>
@@ -118,7 +118,7 @@
                 </div>
 
                 <!-- Actions section -->
-                <div class="flex items-center justify-between gap-4 mt-4">
+                <div class="flex gap-4 justify-between items-center mt-4">
                     <button type="button"
                             class="btn btn-primary"
                             @click="addProduct()">
@@ -147,7 +147,7 @@
                        {% if field.required and not field.file %}{% endif %}>
 
             {% elif field.field_type  == 'textarea' %}
-            <textarea name="dynamic_{{ field.id }}" class="block w-full mt-1 textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
+            <textarea name="dynamic_{{ field.id }}" class="block mt-1 w-full textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
 
             {% elif field.field_type == 'number' %}
                 <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
@@ -160,12 +160,15 @@
             {% elif field.field_type == 'date' %}
 
                 <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5" placeholder="Select date"
+                class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 ps-10" placeholder="Select date"
                        {% if field.required %}{% endif %}>
 
             {% elif field.field_type == 'boolean' %}
-                <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="checkbox"
-                       {% if field.required %}{% endif %}>
+            <div class="form-check">
+                <input type="checkbox" class="checkbox checkbox-md" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                       {% if field.value == 'on' %}checked{% endif %} {% if field.required %}required{% endif %}>
+                <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
+            </div>
                        {% elif field.field_type == 'choice' %}
                        <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
                            <option value="">Select an option</option>
@@ -197,7 +200,7 @@
                 Choose approver for {{ step_info.step.name }} ({{ step_info.step.approver_group.name }})
             </div>
             <div class="relative">
-                <div class="relative flex items-center">
+                <div class="flex relative items-center">
                     <input
                         type="text"
                         x-model="search"
@@ -205,7 +208,7 @@
                         @focus="focused = true"
                         @click.away="focused = false"
                         placeholder="Search approver..."
-                        class="rounded-sm p-2 input input-bordered pr-10"
+                        class="p-2 pr-10 rounded-sm input input-bordered"
                         :class="{ 'cursor-pointer': !isEditing }"
                     >
         
@@ -215,7 +218,7 @@
                         type="button"
                         class="btn btn-primary"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                         </svg>
                     </button>
@@ -235,9 +238,9 @@
 
                 <div
                     x-show="focused"
-                    class="absolute z-50 w-full max-w-xs mt-1 bg-white border border-gray-300 rounded-md shadow-lg"
+                    class="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-md border border-gray-300 shadow-lg"
                 >
-                    <ul class="py-1 overflow-auto text-base max-h-60">
+                    <ul class="overflow-auto py-1 max-h-60 text-base">
                         <template x-if="filteredOptions.length === 0">
                             <li class="px-3 py-2 text-gray-500">No users found</li>
                         </template>
@@ -260,8 +263,8 @@
     {% endfor %}
     {% endif %}
 
-        <div class="mt-4 flex space-x-2">
-            <button type="submit" name="save_draft" value="1" class="btn btn-secondary mr-2">Save Draft</button>
+        <div class="flex mt-4 space-x-2">
+            <button type="submit" name="save_draft" value="1" class="mr-2 btn btn-secondary">Save Draft</button>
             <button type="submit" class="btn btn-primary">Submit Document</button>
         </div>
     </form>

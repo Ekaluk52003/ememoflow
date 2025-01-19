@@ -668,6 +668,9 @@ def resubmit_document(request, pk):
                     errors[field.name] = ["This field is required."]
                 else:
                     try:
+                        # For boolean fields, the value is only present in POST data if checked
+                        if field.field_type == 'boolean':
+                            value = 'on' if value else ''
                         DynamicFieldValue.objects.update_or_create(
                             document=document,
                             field=field,
@@ -925,13 +928,19 @@ def submit_document(request, workflow_id):
 
             else:
                 value = request.POST.get(f'dynamic_{field.id}')
-                if is_required_for_submission and not value:
-                    errors[field.name] = ["This field is required"]
-                elif value:
-                    dynamic_field_values.append(DynamicFieldValue(
-                        field=field,
-                        value=value
-                    ))
+                if field.required and not value:
+                    errors[field.name] = ["This field is required."]
+                else:
+                    try:
+                        # For boolean fields, the value is only present in POST data if checked
+                        if field.field_type == 'boolean':
+                            value = 'on' if value else ''
+                        dynamic_field_values.append(DynamicFieldValue(
+                            field=field,
+                            value=value
+                        ))
+                    except Exception as e:
+                        errors[field.name] = [f"Error saving field: {str(e)}"]
 
         if errors:
             context = {
