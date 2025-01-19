@@ -28,6 +28,7 @@ django-crontab==0.7.1
 django-dbbackup==4.2.1
 django-debug-toolbar==4.2.0
 django-htmx==1.18.0
+django-ses==4.3.2
 django-storages==1.14.4
 fonttools==4.53.1
 gunicorn==21.2.0

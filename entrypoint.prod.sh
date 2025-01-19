@@ -19,6 +19,10 @@ python manage.py collectstatic --noinput
 echo "Applying database migrations..."
 python manage.py migrate
 
+# Add crontab jobs
+echo "Adding crontab jobs..."
+python manage.py crontab add
+
 # Start Gunicorn
 echo "Starting Gunicorn..."
 exec gunicorn ${DJANGO_PROJECT_NAME}.wsgi:application --bind 0.0.0.0:8000

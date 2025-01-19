@@ -99,8 +99,6 @@ def send_withdraw_email(document):
 def send_approved_email(document):
     workflow = document.workflow
     if not workflow.send_approved_email:
-        logger.info(
-            f"Withdraw email sending is disabled for workflow {workflow.id}")
         return False
 
     context = {
