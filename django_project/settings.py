@@ -17,11 +17,10 @@ ALLOWED_HOSTS = [
     "localhost",
     "0.0.0.0",
     "127.0.0.1",
-    "www.smartflow.pw",
-    "smartflow.pw",
+    "www.wdc.smartflow.pw",
+    "wdc.smartflow.pw",
 ]
 
-# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -245,10 +244,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
-CSRF_COOKIE_DOMAIN = '.smartflow.pw'  # Include your domain here
+CSRF_COOKIE_DOMAIN = '.wdc.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.smartflow.pw', 'https://smartflow.pw']
+CSRF_TRUSTED_ORIGINS = ['https://www.wdc.smartflow.pw', 'https://wdc.smartflow.pw']
 
 
 

@@ -4,12 +4,30 @@ from django.utils.html import strip_tags
 from django.conf import settings
 import logging
 from django.template import Template, Context, TemplateSyntaxError
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
 
 def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None, attachments=None):
     try:
+        from django.urls import reverse
+        from django.template import Template, Context
+        from django.conf import settings
+        
+        # Create base context with request for url handling
+        context_dict = context_dict.copy()
+        
+        # Add document_url tag to the template if document exists
+        if 'document' in context_dict:
+            document = context_dict['document']
+            host = settings.ALLOWED_HOSTS[4] if settings.ALLOWED_HOSTS else 'localhost:8000'
+            document_url = reverse('document_approval:document_detail', args=[document.document_reference])
+            full_url = f"https://{host}{document_url}"
+            # Add the URL as a clickable link, only replace the template tag
+            html_link = f'<a href="{full_url}">{full_url}</a>'
+            body_template = body_template.replace('{{document_url}}', html_link)
+        
         context = Context(context_dict)
 
         # Render subject
@@ -17,9 +35,26 @@ def send_templated_email(subject_template, body_template, context_dict, recipien
         # Remove newlines and tags from subject
         subject = strip_tags(''.join(subject.splitlines()))[:255]
 
+        # Convert Windows-style line endings to Unix-style
+        body_template = body_template.replace('\r\n', '\n')
+        
+        # Convert line breaks to HTML breaks before rendering
+        body_template = body_template.replace('\n', '<br>\n')
+        
         # Render body
         html_content = Template(body_template).render(context)
-        text_content = strip_tags(html_content)
+        
+        # For plain text, convert <br> back to newlines, convert HTML link to plain URL, and strip other HTML
+        text_content = html_content
+        text_content = text_content.replace('<br>', '\n')
+        
+        # Extract URLs from HTML links for plain text version
+        import re
+        def replace_link_with_url(match):
+            url = match.group(1)
+            return url
+        text_content = re.sub(r'<a href="([^"]+)">[^<]+</a>', replace_link_with_url, text_content)
+        text_content = strip_tags(text_content)
 
         # Create email message
         msg = EmailMultiAlternatives(
@@ -39,7 +74,6 @@ def send_templated_email(subject_template, body_template, context_dict, recipien
         # Send the email
         msg.send()
 
-        logger.info(f"Email sent to {', '.join(recipient_list)}")
         return True
     except Exception as e:
         logger.error(f"Error sending email: {str(e)}")
@@ -50,8 +84,7 @@ def send_reject_email(document):
     print('send email reject')
     workflow = document.workflow
     if not workflow.send_reject_email:
-        logger.info(
-            f"Reject email sending is disabled for workflow {workflow.id}")
+
         return False
 
     rejector = document.get_rejector()
@@ -75,13 +108,11 @@ def send_reject_email(document):
 def send_withdraw_email(document):
     workflow = document.workflow
     if not workflow.send_withdraw_email:
-        logger.info(
-            f"Withdraw email sending is disabled for workflow {workflow.id}")
         return False
 
     current_approver = document.get_current_approver()
     if not current_approver:
-        logger.warning(f"No current approver found for document {document.id}")
+      
         return False
 
     context = {
@@ -141,52 +172,40 @@ def send_approval_email(approval):
         return
 
     try:
-        context = Context({
+        context_dict = {
             'document': approval.document,
             'approver': approval.approver,
             'step': approval.step,
-        })
+        }
 
-        # Render the subject
-        subject_template = Template(approval.step.email_subject)
-        subject = strip_tags(subject_template.render(context)).strip()[:255]
-
-        # Render the body
-        body_template = Template(approval.step.email_body_template)
-        html_content = body_template.render(context)
-        text_content = strip_tags(html_content)
+        # Get email templates
+        subject_template = approval.step.email_subject
+        body_template = approval.step.email_body_template
 
         # Get CC list
         cc_list = approval.step.get_cc_list()
 
-        # Create the email message
-        msg = EmailMultiAlternatives(
-            subject,
-            text_content,
-            settings.DEFAULT_FROM_EMAIL,
+        # Send email using the common function
+        success = send_templated_email(
+            subject_template,
+            body_template,
+            context_dict,
             [approval.approver.email],
-            cc=cc_list
-        )
-        msg.attach_alternative(html_content, "text/html")
-
-        # Send the email
-        msg.send()
-
-        logger.info(
-            f"Approval email sent for document {approval.document.id} to {approval.approver.email}"
+            cc_list
         )
 
-    except TemplateSyntaxError as e:
-        logger.error(
-            f"Template syntax error in send_approval_email for document {approval.document.id}: {str(e)}"
-        )
-    except AttributeError as e:
-        logger.error(
-            f"Attribute error in send_approval_email for document {approval.document.id}: {str(e)}"
-        )
+        if success:
+            logger.info(
+                f"Approval email sent for document {approval.document.id} to {approval.approver.email}"
+            )
+        else:
+            logger.error(
+                f"Failed to send approval email for document {approval.document.id}"
+            )
+
     except Exception as e:
         logger.error(
-            f"Unexpected error in send_approval_email for document {approval.document.id}: {str(e)}"
+            f"Error in send_approval_email for document {approval.document.id}: {str(e)}"
         )
 
 
