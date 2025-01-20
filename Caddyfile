@@ -1,9 +1,15 @@
 {$DOMAIN} {
-    reverse_proxy web:8000
-    file_server /static/* {
-        root /code/static
+    handle {
+        reverse_proxy web:8000
     }
-    file_server /media/* {
-        root /code/media
+    
+    handle /static/* {
+        root * /code/static
+        file_server
+    }
+    
+    handle /media/* {
+        root * /code/media
+        file_server
     }
 }
