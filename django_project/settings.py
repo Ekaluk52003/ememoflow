@@ -309,9 +309,9 @@ DBBACKUP_STORAGE_OPTIONS = {
 
 
 
-CRONJOBS = [
-    ('*/1 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean'])
+# CRONJOBS = [
+#     ('*/1 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean'])
 
-]
+# ]
 
 
