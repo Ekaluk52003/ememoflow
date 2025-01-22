@@ -29,10 +29,11 @@ COPY ./requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-COPY ./entrypoint.sh .
+COPY . /code/
+    
 
-RUN chmod +x /code/entrypoint.sh
-
-COPY . .
-
-ENTRYPOINT ["/code/entrypoint.sh"]
+RUN chmod +x /code/entrypoint.sh \
+        && chown root:root /code/entrypoint.sh
+    
+    # Use shell form cmd
+ENTRYPOINT ["/bin/sh", "/code/entrypoint.sh"]

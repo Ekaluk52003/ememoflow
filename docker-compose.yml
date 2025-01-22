@@ -17,16 +17,17 @@ services:
   webpack:
     build:
       context: .
-      dockerfile: Dockerfile.webpack  # Create a separate Dockerfile for Webpack
-    command: npm run watch  # Using watch mode
-    stdin_open: true        # Add for interactive inputs
-    tty: true               # Keep the terminal session open
+      dockerfile: Dockerfile.webpack
+    command: sh -c "npm install && FORCE_COLOR=1 npm run watch"
+    stdin_open: true
+    tty: true
     volumes:
       - .:/code
     depends_on:
       - web
     environment:
       - NODE_ENV=development
+      - FORCE_COLOR=1
 
 
   db:
@@ -34,30 +35,14 @@ services:
     volumes:
       - postgres_djangox:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${SQL_DATABASE}
+      - POSTGRES_USER=${SQL_USER}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
     ports:
       - "${SQL_PORT}:5433"
     command: -p 5433
     env_file:
       - .env
-
-  redis:
-    image: redis:7.0.10-alpine
-    ports:
-      - 6379:6379
-
-  celery:
-    build: .
-    command: celery -A django_project worker --loglevel=info
-    volumes:
-      - .:/code
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
 
 volumes:
   postgres_djangox:

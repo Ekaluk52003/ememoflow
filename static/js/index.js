@@ -16,6 +16,7 @@ import { Extension } from '@tiptap/core'
 import Bold from '@tiptap/extension-bold';
 import ImageResize from 'tiptap-extension-resize-image';
 
+
 const CustomBold = Bold.extend({
   addAttributes() {
     return {
