@@ -11,6 +11,13 @@ then
     echo "PostgreSQL started"
 fi
 
+# Start cron service
+service cron start
+
+# Add crontab and show crontab list for debugging
+python manage.py crontab add
+python manage.py crontab show
+
 python manage.py migrate
 
 exec "$@"
