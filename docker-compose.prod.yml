@@ -3,11 +3,12 @@ version: '3.9'
 services:
   web:
     build:
-      context: .
-      dockerfile: Dockerfile.prod
-    environment:
-      SERVICE: web
+        context: .
+        dockerfile: Dockerfile.prod
+    expose:
+      - 8000
     volumes:
+      # - static_volume:/code/static
       - static_volume:/code/staticfiles
       - media_volume:/code/media
     env_file:
@@ -15,50 +16,6 @@ services:
     depends_on:
       - db
       - redis
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-
-  celery:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    environment:
-      SERVICE: celery
-    volumes:
-      - .:/code
-      - static_volume:/code/staticfiles
-      - media_volume:/code/media
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-
-  celery-beat:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    environment:
-      SERVICE: celery-beat
-    volumes:
-      - .:/code
-      - static_volume:/code/staticfiles
-      - media_volume:/code/media
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
 
   db:
     image: postgres:14
@@ -68,10 +25,6 @@ services:
       - POSTGRES_DB=${SQL_DATABASE}
       - POSTGRES_USER=${SQL_USER}
       - POSTGRES_PASSWORD=${SQL_PASSWORD}
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
 
   redis:
     image: redis:7-alpine
@@ -83,6 +36,41 @@ services:
       - redis_data:/data
     expose:
       - 6379
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A django_project worker --loglevel=info --concurrency=2 --max-tasks-per-child=500 --optimization=fair
+    volumes:
+      - .:/code
+      - static_volume:/code/staticfiles
+      - media_volume:/code/media
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    command: celery -A django_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/code
+      - static_volume:/code/staticfiles
+      - media_volume:/code/media
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+      - celery
     deploy:
       restart_policy:
         condition: on-failure
@@ -99,15 +87,11 @@ services:
       - caddy_config:/config
     depends_on:
       - web
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
 
 volumes:
   postgres_data:
-  redis_data:
-  static_volume:
-  media_volume:
   caddy_data:
   caddy_config:
+  static_volume:
+  media_volume:
+  redis_data:
