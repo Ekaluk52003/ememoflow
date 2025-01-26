@@ -41,13 +41,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    entrypoint: /code/entrypoint.celery.sh
     command: celery -A django_project worker --loglevel=info --concurrency=2 --max-tasks-per-child=500 --optimization=fair
     volumes:
       - .:/code
       - static_volume:/code/staticfiles
       - media_volume:/code/media
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - redis
       - db
@@ -60,13 +60,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    entrypoint: /code/entrypoint.celery.sh
     command: celery -A django_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - .:/code
       - static_volume:/code/staticfiles
       - media_volume:/code/media
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - redis
       - db
@@ -90,7 +90,6 @@ services:
 
 volumes:
   postgres_data:
-  Caddyfile:
   caddy_data:
   caddy_config:
   static_volume:
