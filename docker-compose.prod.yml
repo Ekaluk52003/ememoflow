@@ -11,8 +11,7 @@ services:
       # - static_volume:/code/static
       - static_volume:/code/staticfiles
       - media_volume:/code/media
-    env_file:
-      - .env.prod
+    env_file: .env.prod
     depends_on:
       - db
       - redis
@@ -21,19 +20,18 @@ services:
     image: postgres:16
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    env_file:
-      - .env.prod
+    env_file: .env.prod
     environment:
-      - POSTGRES_DB=${SQL_DATABASE}
-      - POSTGRES_USER=${SQL_USER}
-      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      POSTGRES_DB: ${SQL_DATABASE}
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASSWORD}
     expose:
       - 5432
     command: -p 5432
 
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     expose:
@@ -46,8 +44,7 @@ services:
     command: celery -A django_project worker --loglevel=info
     volumes:
       - .:/code
-    env_file:
-      - .env.prod
+    env_file: .env.prod
     depends_on:
       - redis
       - db
@@ -59,8 +56,7 @@ services:
     command: celery -A django_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - .:/code
-    env_file:
-      - .env.prod
+    env_file: .env.prod
     depends_on:
       - redis
       - db
