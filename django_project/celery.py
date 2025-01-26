@@ -13,5 +13,10 @@ app = Celery('django_project')
 # the configuration object to child processes.
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+# Configure Celery broker URL with authentication
+broker_url = f"redis://:{os.environ.get('REDIS_PASSWORD')}@redis:6379/0"
+app.conf.broker_url = broker_url
+app.conf.result_backend = broker_url
+
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()

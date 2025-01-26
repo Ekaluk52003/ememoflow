@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.8'
 
 services:
   web:
@@ -13,6 +13,9 @@ services:
       - .env
     depends_on:
       - db
+      - redis
+      - celery
+      - celery-beat
 
   webpack:
     build:
@@ -29,7 +32,6 @@ services:
       - NODE_ENV=development
       - FORCE_COLOR=1
 
-
   db:
     image: postgres:13-alpine
     volumes:
@@ -39,10 +41,44 @@ services:
       - POSTGRES_USER=${SQL_USER}
       - POSTGRES_PASSWORD=${SQL_PASSWORD}
     ports:
-      - "${SQL_PORT}:5433"
-    command: -p 5433
+      - "${SQL_PORT}:${SQL_PORT}"
+    command: -p ${SQL_PORT}
     env_file:
       - .env
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery:
+    build:
+      context: .
+    command: celery -A django_project worker --loglevel=info
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+  celery-beat:
+    build:
+      context: .
+    command: celery -A django_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+      - celery
+
 volumes:
   postgres_djangox:
+  redis_data:

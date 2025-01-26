@@ -10,6 +10,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = bool(os.environ.get("DEBUG", default=0))
 
+
 print(f"DEBUG setting is: {DEBUG}")
 
 
@@ -20,7 +21,6 @@ ALLOWED_HOSTS = [
     "www.wdc.smartflow.pw",
     "wdc.smartflow.pw",
 ]
-
 
 
 # Application definition
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "crispy_forms",
      'django_celery_results',
+     'django_celery_beat',
       'django_htmx',
       "crispy_tailwind",
       'dbbackup',
@@ -189,7 +190,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 USE_SES_V2 = True
 
@@ -249,19 +249,38 @@ SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
 CSRF_TRUSTED_ORIGINS = ['https://www.wdc.smartflow.pw', 'https://wdc.smartflow.pw']
 
-
-
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'
+# Celery Settings
+CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Asia/Bangkok')
+CELERY_BROKER_URL = f"redis://:{os.environ.get('REDIS_PASSWORD')}@redis:6379/0"
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
 
+# Celery Beat Settings
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-WHITENOISE_MANIFEST_STRICT = False
+# Django DB Backup settings
+DBBACKUP_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DBBACKUP_STORAGE_OPTIONS = {
+    'access_key': os.environ.get('AWS_ACCESS_KEY_ID'),
+    'secret_key': os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    'bucket_name': os.environ.get('AWS_STORAGE_BUCKET_NAME'),
+    'endpoint_url': os.environ.get('AWS_S3_ENDPOINT_URL'),
+    'default_acl': 'private',
+    'location': 'backupdb'  
+}
+DBBACKUP_CLEANUP_KEEP = 10  # Keep last 10 backups
+DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
 
-
+# Enable console output for dbbackup
+DBBACKUP_CONNECTORS = {
+    'default': {
+        'CONNECTOR': 'dbbackup.db.postgresql.PgDumpConnector',
+        'DUMP_CMD': 'pg_dump',
+        'RESTORE_CMD': 'psql',
+    }
+}
 
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
@@ -273,45 +292,3 @@ AWS_S3_FILE_OVERWRITE = False  # Avoid overwriting files
 AWS_QUERYSTRING_EXPIRE = 30
 
 DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
-
-
-
-
-# Configure django-dbbackup
-# DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
-DBBACKUP_STORAGE_OPTIONS = {'location': os.path.join(BASE_DIR, 'backups')}
-DBBACKUP_CLEANUP_KEEP = 5  # Adjust this number as needed
-# DBBACKUP_CLEANUP_KEEP_MEDIA = 5  # Adjust this number as needed
-
-# Add this near your other dbbackup settings
-DBBACKUP_BACKUP_DIRECTORY = os.path.join(BASE_DIR, 'backups')
-# DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
-
-
-# Enable console output for dbbackup
-DBBACKUP_CONNECTORS = {
-    'default': {
-        'CONNECTOR': 'dbbackup.db.postgresql.PgDumpConnector',
-        'DUMP_CMD': 'pg_dump',
-        'RESTORE_CMD': 'psql',
-    }
-}
-
-DBBACKUP_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-DBBACKUP_STORAGE_OPTIONS = {
-    'access_key': os.getenv('AWS_ACCESS_KEY_ID'),
-    'secret_key': os.getenv('AWS_SECRET_ACCESS_KEY'),
-    'bucket_name': os.getenv('AWS_STORAGE_BUCKET_NAME'),
-    'default_acl': 'private',
-    'endpoint_url': os.getenv('AWS_S3_ENDPOINT_URL'),  # Add this if you're using a custom endpoint
-    'location': 'backupdb/'  # This will create a folder called backupdb in your bucket
-}
-
-
-
-CRONJOBS = [
-    ('*/1 * * * *', 'django.core.management.call_command', ['dbbackup', '--clean'])
-
-]
-
-

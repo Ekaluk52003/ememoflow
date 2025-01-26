@@ -62,12 +62,5 @@
             {% endfor %}
         </ul>
     </div>
-    <div class="module upload-form">
-        <h2>Upload Backup</h2>
-        <form action="{% url 'admin:backup_manager_backupmanagement_upload_backup' %}" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="file" name="backup_file" accept=".psql" required>
-            <input type="submit" value="Upload Backup" class="backup-button">
-        </form>
-    </div>
+ 
 {% endblock %}
