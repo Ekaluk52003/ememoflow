@@ -11,23 +11,14 @@ then
     echo "PostgreSQL started"
 fi
 
-# Only run migrations and collect static for web service
-if [ "$1" = "gunicorn" ]; then
-    # Collect static files
-    echo "Collecting static files..."
-    python manage.py collectstatic --noinput
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
 
-    # Try to migrate, if it fails due to existing tables, try running migrate with --fake-initial
-    echo "Applying database migrations..."
-    python manage.py migrate --no-input || python manage.py migrate --no-input --fake-initial
-fi
+# Try to migrate, if it fails due to existing tables, try running migrate with --fake-initial
+echo "Applying database migrations..."
+python manage.py migrate --no-input || python manage.py migrate --no-input --fake-initial
 
-# If command starts with celery, handle celery-specific migrations
-if [ "${1%%\ *}" = "celery" ]; then
-    echo "Running Celery migrations..."
-    python manage.py migrate django_celery_beat --fake-initial
-fi
-
-# Start the service
-echo "Starting service: $@"
-exec "$@"
+# Start Gunicorn
+echo "Starting Gunicorn..."
+exec gunicorn ${DJANGO_PROJECT_NAME}.wsgi:application --bind 0.0.0.0:8000
