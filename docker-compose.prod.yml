@@ -38,13 +38,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    command: celery -A django_project worker --loglevel=info
+    command: celery -A django_project worker --loglevel=info --concurrency=2 --max-tasks-per-child=500 --optimization=fair
     volumes:
       - .:/code
     env_file: .env
     depends_on:
       - redis
       - db
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
 
   celery-beat:
     build:
@@ -58,6 +62,10 @@ services:
       - redis
       - db
       - celery
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
 
   caddy:
     image: caddy:2
