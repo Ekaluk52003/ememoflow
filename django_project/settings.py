@@ -193,7 +193,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 USE_SES_V2 = True
 
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", default="local")
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 if EMAIL_BACKEND == "ses":
     EMAIL_BACKEND = 'django_ses.SESBackend'
     AWS_SES_REGION_NAME = os.environ.get('AWS_SES_REGION_NAME')
