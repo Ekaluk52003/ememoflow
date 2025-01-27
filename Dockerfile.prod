@@ -46,8 +46,13 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . /code/
     
 
-RUN chmod +x /code/entrypoint.prod.sh \
-    && chown root:root /code/entrypoint.prod.sh
+# Copy entrypoint scripts
+COPY entrypoint.prod.sh /code/entrypoint.prod.sh
+COPY entrypoint.celery.sh /code/entrypoint.celery.sh
+RUN chmod +x /code/*.sh
+
+# Expose port
+EXPOSE 8000
 
 # Use shell form cmd
-ENTRYPOINT ["/bin/sh", "/code/entrypoint.prod.sh"]
+ENTRYPOINT []

@@ -5,19 +5,16 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    expose:
-      - 8000
+    command: sh -c "./entrypoint.prod.sh && gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     volumes:
       # - static_volume:/code/static
       - static_volume:/code/staticfiles
       - media_volume:/code/media
-    env_file:
-      - .env
+    ports:
+      - "8000:8000"
     depends_on:
       - db
-      - redis
-      - celery
-      - celery-beat
+    restart: always
 
 
   db:
@@ -30,6 +27,8 @@ services:
       - POSTGRES_PASSWORD=${SQL_PASSWORD}
     env_file:
       - .env
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
@@ -48,29 +47,32 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    command: celery -A django_project worker --loglevel=info --concurrency=2 --max-tasks-per-child=500 --optimization=fair
+    entrypoint: ["/code/entrypoint.celery.sh"]
+    command: celery -A django_project worker --loglevel=info
     volumes:
       - .:/code
     env_file:
       - .env
     depends_on:
-      - redis
       - db
+      - redis
+    restart: always
     
 
   celery-beat:
     build:
       context: .
       dockerfile: Dockerfile.prod
+    entrypoint: ["/code/entrypoint.celery.sh"]
     command: celery -A django_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - .:/code
     env_file:
       - .env
     depends_on:
-      - redis
       - db
-      - celery
+      - redis
+    restart: always
 
   caddy:
     image: caddy:2
