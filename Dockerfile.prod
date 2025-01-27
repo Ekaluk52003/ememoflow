@@ -49,7 +49,7 @@ COPY . /code/
 # Copy entrypoint scripts and set executable permissions
 COPY entrypoint.prod.sh /code/entrypoint.prod.sh
 COPY entrypoint.celery.sh /code/entrypoint.celery.sh
-RUN chmod +x /code/*.sh
+RUN chmod +x /code/entrypoint.prod.sh /code/entrypoint.celery.sh
 
 # Expose port
 EXPOSE 8000
