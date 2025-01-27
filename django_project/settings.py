@@ -251,7 +251,15 @@ CSRF_TRUSTED_ORIGINS = ['https://www.wdc.smartflow.pw', 'https://wdc.smartflow.p
 
 # Celery Settings
 CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Asia/Bangkok')
-CELERY_BROKER_URL = f"redis://:{os.environ.get('REDIS_PASSWORD')}@redis:6379/0"
+
+
+
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+print("CELERY_PASSWORD", REDIS_PASSWORD)
+
+CELERY_BROKER_URL = f"redis://:{os.getenv('REDIS_PASSWORD')}@redis:6379/0"
+
+print(f"CELERY_BROKER_URL is: {CELERY_BROKER_URL}")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
