@@ -75,6 +75,7 @@ RUN chmod +x /code/entrypoint.prod.sh && \
     chmod +x /code/entrypoint.celery.sh && \
     chown -R ${USER}:${USER} /code
 
+USER ${USER}
 # Expose port
 EXPOSE 8000
 # Use shell form cmd
