@@ -1,38 +1,81 @@
-FROM python:3.12.2-slim-bookworm
+# Build stage
+FROM python:3.12.2-slim-bookworm AS builder
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DEBIAN_FRONTEND noninteractive
+# Set build-time environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /code
 
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fonts-thai-tlwg \
     build-essential \
-    python3-dev \
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    shared-mime-info \
-    netcat-traditional \
     libpq-dev \
-    nodejs \
-    npm \
-    cron \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /code/wheels -r requirements.txt
+
+# Final stage
+FROM python:3.12.2-slim-bookworm
+
+# Create non-root user
+ARG USER=appuser
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH="/home/${USER}/.local/bin:${PATH}"
+
+WORKDIR /code
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libharfbuzz0b \
+    # netcat-traditional \
     postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+    fontconfig \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get autoremove -y \
+    && mkdir -p /var/cache/fontconfig \
+    && chmod 777 /var/cache/fontconfig
 
-COPY ./requirements.txt .
+# Copy wheels from builder and install
+COPY --from=builder /code/wheels /wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir /wheels/* \
+    && rm -rf /wheels
 
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Copy application code
+COPY --chown=${USER}:${USER} . .
 
-COPY . .
+# Set proper permissions
+RUN chmod +x /code/entrypoint.sh && \
+    chown -R ${USER}:${USER} /code
 
-RUN chmod +x /code/entrypoint.sh \
-        && chown root:root /code/entrypoint.sh
-    
-    # Use shell form cmd
+# Switch to non-root user
+USER ${USER}
+
+# Use exec form for ENTRYPOINT
 ENTRYPOINT ["/bin/sh", "/code/entrypoint.sh"]

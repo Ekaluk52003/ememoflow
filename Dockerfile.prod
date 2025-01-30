@@ -1,55 +1,79 @@
-# Dockerfile.prod
-# Pull base image
-FROM python:3.12.1-slim-bookworm
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DEBIAN_FRONTEND noninteractive
+# Build stage
+FROM python:3.12.2-slim-bookworm AS builder
+
+# Set build-time environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /code
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    fonts-thai-tlwg \
-    fonts-noto-cjk \
-    fonts-noto-cjk-extra \
     build-essential \
-    python3-dev \
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    shared-mime-info \
-    netcat-traditional \
     libpq-dev \
-    cron \
-    wget \
-    gnupg \
-    && echo "deb http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && apt-get update \
-    && apt-get install -y postgresql-client-16 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Copy fonts
-RUN mkdir -p /code/static/fonts/
-COPY static/fonts/NotoSansThai-Regular.ttf /code/static/fonts/
-COPY static/fonts/NotoSansThai-Bold.ttf /code/static/fonts/
-
-# Update font cache
-RUN fc-cache -f -v
-
+# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
-    
-COPY . /code/
-    
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /code/wheels -r requirements.txt
 
-# Copy entrypoint scripts and set executable permissions
-COPY entrypoint.prod.sh /code/entrypoint.prod.sh
-COPY entrypoint.celery.sh /code/entrypoint.celery.sh
-RUN chmod +x /code/entrypoint.prod.sh /code/entrypoint.celery.sh
+# Final stage
+FROM python:3.12.2-slim-bookworm
+
+# Create non-root user
+ARG USER=appuser
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH="/home/${USER}/.local/bin:${PATH}"
+
+WORKDIR /code
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libharfbuzz0b \
+    # netcat-traditional \
+    postgresql-client \
+    fontconfig \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get autoremove -y \
+    && mkdir -p /var/cache/fontconfig \
+    && chmod 777 /var/cache/fontconfig
+
+# Copy wheels from builder and install
+COPY --from=builder /code/wheels /wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir /wheels/* \
+    && rm -rf /wheels
+
+# Copy application code
+COPY --chown=${USER}:${USER} . .
+
+# Set proper permissions
+RUN chmod +x /code/entrypoint.prod.sh && \
+    chmod +x /code/entrypoint.celery.sh && \
+    chown -R ${USER}:${USER} /code
 
 # Expose port
 EXPOSE 8000

@@ -43,7 +43,6 @@ INSTALLED_APPS = [
       'django_htmx',
       "crispy_tailwind",
       'dbbackup',
-      'django_crontab',
     # Local
     "accounts",
     "pages",
@@ -278,7 +277,7 @@ DBBACKUP_STORAGE_OPTIONS = {
     'default_acl': 'private',
     'location': 'backupdb'  
 }
-DBBACKUP_CLEANUP_KEEP = 10  # Keep last 10 backups
+DBBACKUP_CLEANUP_KEEP = 3  # Keep last 3 backups
 DBBACKUP_FILENAME_TEMPLATE = '{datetime}.{extension}'
 
 # Enable console output for dbbackup

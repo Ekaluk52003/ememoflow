@@ -147,7 +147,6 @@ class BackupManagementAdmin(admin.ModelAdmin):
         from botocore.config import Config
         from datetime import datetime
         
-        # Get list of files before backup
         s3 = boto3.client(
             's3',
             aws_access_key_id=settings.DBBACKUP_STORAGE_OPTIONS['access_key'],
@@ -158,30 +157,45 @@ class BackupManagementAdmin(admin.ModelAdmin):
         bucket = settings.DBBACKUP_STORAGE_OPTIONS['bucket_name']
         prefix = settings.DBBACKUP_STORAGE_OPTIONS['location']
         
-        # Get list of files before backup
-        response_before = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-        files_before = set()
-        if 'Contents' in response_before:
-            files_before = {obj['Key'] for obj in response_before['Contents']}
-        
-        # Create backup with clean option to keep only recent backups
+        # Create backup
         output = StringIO()
         call_command('dbbackup', '--clean', '--noinput', stdout=output, stderr=output)
         
-        # Get list of files after backup
+        # Get all backup files
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        if 'Contents' in response:
+            # Sort files by last modified time
+            backup_files = sorted(
+                response['Contents'],
+                key=lambda x: x['LastModified'],
+                reverse=True
+            )
+            
+            # Keep only the most recent files (based on DBBACKUP_CLEANUP_KEEP)
+            files_to_keep = settings.DBBACKUP_CLEANUP_KEEP
+            files_to_delete = backup_files[files_to_keep:]
+            
+            # Delete old files
+            for file in files_to_delete:
+                try:
+                    s3.delete_object(
+                        Bucket=bucket,
+                        Key=file['Key']
+                    )
+                except Exception as e:
+                    messages.warning(request, f'Failed to delete old backup {file["Key"]}: {str(e)}')
+        
+        # Get the latest backup file
         response_after = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-        files_after = set()
-        if 'Contents' in response_after:
-            files_after = {obj['Key'] for obj in response_after['Contents']}
-        
-        # Find new files
-        new_files = files_after - files_before
-        
-        if new_files:
-            new_file = list(new_files)[0]  # Get the first new file
-            messages.success(request, f'Backup created successfully: {os.path.basename(new_file)}')
+        if 'Contents' in response_after and response_after['Contents']:
+            latest_backup = sorted(
+                response_after['Contents'],
+                key=lambda x: x['LastModified'],
+                reverse=True
+            )[0]
+            messages.success(request, f'Backup created successfully: {os.path.basename(latest_backup["Key"])}')
         else:
-            messages.warning(request, 'Backup command executed, but no new backup file was found. Check S3 storage.')
+            messages.warning(request, 'Backup command executed, but no backup file was found.')
         
         return redirect('..')
 
