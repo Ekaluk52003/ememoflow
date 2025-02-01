@@ -69,7 +69,12 @@ class ApprovalWorkflow(models.Model):
     name = models.CharField(max_length=100)
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-    # allow_custom_approvers = models.BooleanField(default=False)
+    authorized_groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name='authorized_workflows',
+        help_text="Groups that have full access to documents in this workflow"
+    )
     # Reject email fields
     content_editor = models.BooleanField(default=False, help_text="Add content editor for document")
     send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection")
