@@ -1,5 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
+from django.db.models import Q, Exists, OuterRef
+from django.template.loader import render_to_string
+from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.db.models import Q
 from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
@@ -28,7 +34,7 @@ import traceback
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 import os
-from .utils import get_allowed_documents, get_allowed_document
+from .utils import get_allowed_documents, get_allowed_document, get_user_bu_groups
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -717,7 +723,20 @@ def resubmit_document(request, pk):
     for step in workflow.steps.all():
         potential_approvers = CustomUser.objects.none()  # Initialize with empty queryset
         if step.allow_custom_approver and step.approver_group:
-            potential_approvers = CustomUser.objects.filter(groups=step.approver_group)
+            # Get current user's BU groups
+            user_bu_groups = get_user_bu_groups(request.user)
+            
+            # Get all users in the approver group
+            approvers = CustomUser.objects.filter(groups=step.approver_group).distinct()
+            potential_approvers = []
+            
+            # Filter approvers who share any BU with current user
+            for approver in approvers:
+                approver_bu_groups = get_user_bu_groups(approver)
+                if any(bu in user_bu_groups for bu in approver_bu_groups):
+                    potential_approvers.append(approver)
+            
+            potential_approvers = CustomUser.objects.filter(id__in=[u.id for u in potential_approvers])
 
         if potential_approvers.exists():
             previous_approver = document.approvals.filter(step=step).first()
@@ -771,7 +790,7 @@ def withdraw_document(request, document_id):
                 context = {
                     'document': document,
                     'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
-                    'can_draw': document.can_withdraw(request.user),
+                    'can_draw' : document.can_withdraw(request.user),
                     'can_cancel': document.can_cancel(request.user),
                     'user_approval': None,  # Set to None as document is withdrawn
                     'can_approve': False,
@@ -1001,11 +1020,26 @@ def submit_document(request, workflow_id):
 
         steps_with_approvers = []
         for step in workflow.steps.all():
-            if step.allow_custom_approver and step.approver_group:
-                potential_approvers = list(CustomUser.objects.filter(groups=step.approver_group).values('id', 'username', 'first_name', 'last_name'))
-                for approver in potential_approvers:
-                    approver['full_name'] = f"{approver['first_name']} {approver['last_name']}".strip() or approver['username']
-
+            if step.allow_custom_approver and step.approver_group:         
+                
+                # Get current user's BU groups
+                user_bu_groups = get_user_bu_groups(request.user)                
+                # Get all users in the approver group
+                approvers = CustomUser.objects.filter(groups=step.approver_group).distinct()
+                potential_approvers = []
+                
+                # Filter approvers who share any BU with current user
+                for approver in approvers:
+                    approver_bu_groups = get_user_bu_groups(approver)
+                    if any(bu in user_bu_groups for bu in approver_bu_groups):
+                        potential_approvers.append({
+                            'id': approver.id,
+                            'username': approver.username,
+                            'first_name': approver.first_name,
+                            'last_name': approver.last_name,
+                            'full_name': approver.get_full_name() or approver.username
+                        })
+                
                 steps_with_approvers.append({
                     'step': step,
                     'potential_approvers': potential_approvers

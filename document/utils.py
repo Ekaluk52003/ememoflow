@@ -15,9 +15,7 @@ def get_user_bu_groups(user):
         elif group.name.startswith('BU') and not group.name.endswith('_Manager'):
             # Direct BU group membership
             bu_groups.add(group.name)
-    
-    print("User groups:", [g.name for g in all_groups])
-    print("BU groups found:", list(bu_groups))
+
     return bu_groups
 
 def is_bu_manager(user):
