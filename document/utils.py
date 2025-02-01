@@ -1,33 +1,55 @@
-
-from .models import Document, Approval
+from .models import Document, Approval, User
 from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render
 
+def get_user_bu_groups(user):
+    """Get all BU groups the user belongs to"""
+    all_groups = user.groups.all()
+    bu_groups = set()
+    
+    for group in all_groups:
+        if group.name.endswith('_Manager'):
+            # If user is BU1_Manager, add 'BU1' to their BUs
+            bu_name = group.name.replace('_Manager', '')
+            bu_groups.add(bu_name)
+        elif group.name.startswith('BU') and not group.name.endswith('_Manager'):
+            # Direct BU group membership
+            bu_groups.add(group.name)
+    
+    print("User groups:", [g.name for g in all_groups])
+    print("BU groups found:", list(bu_groups))
+    return bu_groups
+
+def is_bu_manager(user):
+    """Check if the user is a manager in any of their BUs"""
+    return user.groups.filter(name__endswith='_Manager').exists()
+
 def get_allowed_documents(user):
-    # Check if the user is in the "super user" group
+    # Check if the user is superuser
     if user.is_superuser:
         return Document.objects.all().order_by('-created_at')
 
+    # Get user's BU groups
+    bu_groups = get_user_bu_groups(user)
+    if not bu_groups:
+        # If user is not in any BU group, they can only see their submitted documents
+        return Document.objects.filter(submitted_by=user).order_by('-created_at')
 
-    is_super_user = user.groups.filter(name='super user').exists()
+    # Get all users who are either in these BU groups or are managers of these BUs
+    users_in_same_bus = User.objects.filter(
+        Q(groups__name__in=bu_groups) |  # Users in BU groups
+        Q(groups__name__in=[f"{bu}_Manager" for bu in bu_groups])  # Users who are managers
+    ).distinct()
+    
+    # Base queryset - documents submitted by users in the same BUs
+    documents = Document.objects.filter(submitted_by__in=users_in_same_bus)
 
-    # Base queryset
-    documents = Document.objects.all()
-
-    if not is_super_user:
-        # If not a superuser, filter documents where the user is an approver or the submitter
-        approver_documents = Approval.objects.filter(
-            document=OuterRef('pk'),
-            approver=user
-        )
-        documents = documents.filter(
-            Q(Exists(approver_documents)) |  # User is an approver
-            Q(submitted_by=user)  # User is the submitter
-        )
+    # If user is not a BU manager, they can only see their submitted documents
+    if not is_bu_manager(user):
+        documents = documents.filter(submitted_by=user)
 
     # Order the documents by creation date, most recent first
-    return documents.order_by('-created_at')
-
+    return documents.distinct().order_by('-created_at')
 
 def get_allowed_document(user, reference_id):
     allowed_documents = get_allowed_documents(user)
