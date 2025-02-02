@@ -4,7 +4,7 @@
 
 <div class="p-6 mt-6 bg-white rounded-xl">
         <!-- <a href="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary">Resubmit Document</a> -->
-        <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" class="btn btn-primary" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Resubmit Document</a>
+        <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Resubmit Document</a>
 
 
     {% endif %}
@@ -16,7 +16,7 @@
         hx-swap="outerHTML"
         style="display: inline;">
       {% csrf_token %}
-      <button type="submit" class="btn btn-warning">Withdraw Document</button>
+      <button type="submit" class="text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Withdraw Document</button>
   </form>
 
     </div>
@@ -26,7 +26,7 @@
     {% if can_cancel %}
         <form method="post" hx-post="{% url 'document_approval:cancel_document' document.pk %}" style="display: inline;">
             {% csrf_token %}
-            <button type="submit" class="btn btn-warning">Cancel Document</button>
+            <button type="submit" class="text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Cancel Document</button>
         </form>
     {% endif %}
 

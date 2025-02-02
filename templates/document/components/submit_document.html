@@ -2,8 +2,12 @@
 
 
     <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
-    <h3 class="mb-3">Workflow: {{ workflow.name }}</h3>
+   
 
+    <div class="flex flex-col items-start justify-between pb-6 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row mb-4">
+        <h1 class="text-2xl font-semibold whitespace-nowrap">Workflow: {{ workflow.name }}</h1>   
+      </div>
+    
 
     <form method="post" hx-post="{% url 'document_approval:submit_document' workflow.id %}" hx-target="#content-div"   enctype="multipart/form-data" hx-indicator=".progress">
         {% csrf_token %}
@@ -153,7 +157,8 @@
                 <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                        value="{{ field.value }}" {% if field.required %}{% endif %}>
             {% elif field.field_type == 'text' %}
-                <input type="text" class="w-full input input-bordered"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                <input type="text" class="border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:bg-white
+                 focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
 
 
                        {% if field.required %}{% endif %}>
@@ -208,7 +213,7 @@
                         @focus="focused = true"
                         @click.away="focused = false"
                         placeholder="Search approver..."
-                        class="p-2 pr-10 rounded-sm input input-bordered"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
                         :class="{ 'cursor-pointer': !isEditing }"
                     >
         
@@ -264,7 +269,7 @@
     {% endif %}
 
         <div class="flex mt-4 space-x-2">
-            <button type="submit" name="save_draft" value="1" class="mr-2 btn btn-secondary">Save Draft</button>
-            <button type="submit" class="btn btn-primary">Submit Document</button>
+            <button type="submit" name="save_draft" value="1" class="text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save Draft</button>
+            <button type="submit" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit Document</button>
         </div>
     </form>

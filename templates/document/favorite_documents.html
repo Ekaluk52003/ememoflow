@@ -1,11 +1,15 @@
 {% extends '_base.html' %}
 
 {% block content %}
-<h1>My Favorite Documents</h1>
+
+<div class="flex flex-col items-start justify-between pb-6 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row mb-4">
+    <h1 class="text-2xl font-semibold whitespace-nowrap">My Favorite Documents</h1>   
+  </div>
+
 
     {% for document, is_favorite in favorite_documents %}
-    <ul class="divide-y divide-gray-200">
-        <li>
+    <ul class="p-4 transition-shadow border shadow-sm rounded-xl cursor-pointer my-2">
+        <li class="my-2">
                 <a hx-get="{% url 'document_approval:document_detail'  document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
                     <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
                         <div class="flex items-center justify-between">
@@ -13,24 +17,23 @@
                                 {{ document.title }}
                             </p>
                             <div class="flex flex-shrink-0 ml-2">
-                                <p class="inline-flex px-2 text-xs font-semibold leading-5
-
-                                 {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-error text-white{% elif document.status == 'in_review' %}bg-primary text-white{% elif document.status == 'cancel' %}bg-base-300{% else %}bg-secondary text-white{% endif %} rounded-md">
+                                <p class="{% if document.status == 'approved' %}bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'rejected' %}bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'in_review' %}bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'cancel' %}bg-purple-100 text-purple-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% else %}bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% endif %}">
                                  {{ document.get_status_display }}
                                 </p>
                             </div>
                         </div>
                         <div class="mt-2">
 
-                                <p class="flex items-center font-light text-gray-500 text-md dark:text-gray-300">
+                            <p class="flex items-center font-medium text-md text-sky-500">
                                     <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
                                 </p>
                                 <div class="mt-2">
-                                    <small class="badge text-bg-light">Reference:{{document.document_reference}}</small>
-                                    <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
 
-                                    <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
-                                    <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Reference:{{document.document_reference}}</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Workflow: {{ document.workflow.name }}</span>
+    
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</span>
                                 </div>
                         </div>
                     </div>
@@ -45,7 +48,9 @@
 
     {% empty %}
 
-        <p class="mt-6 alert alert-info">You haven't favorited any documents yet..</p>
+
+
+        <button type="button" class="text-white bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">You haven't favorited any documents yet..</button>
     {% endfor %}
 </ul>
 {% endblock %}

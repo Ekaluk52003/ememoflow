@@ -2,8 +2,8 @@
 
     {% for document in documents %}
 
-        <ul class="divide-y divide-gray-200">
-            <li>
+        <ul class="p-4 transition-shadow border shadow-sm rounded-xl cursor-pointer my-2">
+            <li class="my-2">
                 <a hx-get="{% url 'document_approval:document_detail' document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
                     <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
                         <div class="flex items-center justify-between">
@@ -11,25 +11,23 @@
                                 {{ document.title }}
                             </p>
                             <div class="flex flex-shrink-0 ml-2">
-                                <p class="inline-flex px-2 text-xs font-semibold leading-5
-
-                                 {% if document.status == 'approved' %}bg-success{% elif document.status == 'rejected' %}bg-error text-white{% elif document.status == 'in_review' %}bg-primary text-white{% elif document.status == 'cancel' %}bg-base-300{% else %}bg-secondary text-white{% endif %} rounded-md">
+                                <p class="{% if document.status == 'approved' %}bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'rejected' %}bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'in_review' %}bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'cancel' %}bg-purple-100 text-purple-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% else %}bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% endif %}">
                                  {{ document.get_status_display }}
                                 </p>
                             </div>
                         </div>
                         <div class="mt-2">
 
-                                <p class="flex items-center font-light text-gray-500 text-md dark:text-gray-300">
-                                    <small>Current Step: {{ document.current_step.name|default:"N/A" }}</small>
+                                <p class="flex items-center font-medium text-md text-sky-500">
+                                   Current Step: {{ document.current_step.name|default:"N/A" }}
                                 </p>
                                 <div class="mt-2">
 
-                                    <small class="badge text-bg-light">Reference:{{document.document_reference}}</small>
-                                    <small class="badge text-bg-light">Workflow: {{ document.workflow.name }}</small>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Reference:{{document.document_reference}}</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Workflow: {{ document.workflow.name }}</span>
 
-                                    <small class="badge text-bg-light">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</small>
-                                    <small class="badge text-bg-light">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</small>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-md">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</span>
                                 </div>
 
 
