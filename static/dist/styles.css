@@ -1209,6 +1209,9 @@ video {
 .z-30 {
   z-index: 30;
 }
+.z-0 {
+  z-index: 0;
+}
 .m-1 {
   margin: 0.25rem;
 }
@@ -2336,6 +2339,10 @@ video {
     margin-left: 16rem;
   }
 
+  .sm\:mb-4 {
+    margin-bottom: 1rem;
+  }
+
   .sm\:hidden {
     display: none;
   }
@@ -2370,6 +2377,10 @@ video {
 
   .md\:mr-2 {
     margin-right: 0.5rem;
+  }
+
+  .md\:flex {
+    display: flex;
   }
 
   .md\:w-1\/2 {

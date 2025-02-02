@@ -169,7 +169,7 @@ document.addEventListener("alpine:init", () => {
           const wrapper = document.createElement('div');
           wrapper.style.position = 'sticky';
           wrapper.style.top = '0';
-          wrapper.style.zIndex = '1000';
+          wrapper.style.zIndex = '10';
           wrapper.style.backgroundColor = 'white';
           wrapper.style.width = '100%';
 
