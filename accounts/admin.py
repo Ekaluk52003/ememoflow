@@ -15,7 +15,11 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         (None, {'fields': ('job_title',)}),
     )
-    list_display = ['id','email', 'username','job_title', 'is_staff',]
+    list_display = ['id','email', 'username','job_title', 'is_staff', 'get_groups']
+    
+    def get_groups(self, obj):
+        return ", ".join([group.name for group in obj.groups.all()])
+    get_groups.short_description = 'Group'
 
 admin.site.register(CustomUser, CustomUserAdmin)
 
