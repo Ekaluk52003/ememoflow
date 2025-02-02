@@ -39,7 +39,7 @@
   <!-- Toast -->
   <div id="toasts"></div>
 
-  <nav class="w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+  <nav class="w-full bg-white border-b border-gray-200">
     <div class="px-3 py-3 lg:px-5 lg:pl-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center justify-start rtl:justify-end">
@@ -47,7 +47,7 @@
           <button 
             @click="isSidebarOpen = !isSidebarOpen" 
             type="button" 
-            class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+            class="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200">
             <span class="sr-only">Open sidebar</span>
             <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
@@ -64,7 +64,7 @@
                 {{ user.username }}
               </button>
               {% if user_bu_groups %}
-              <button class="text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 font-medium rounded-full text-sm px-2 py-2.5 text-center me-2 mb-2">         
+              <button class="text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 font-medium rounded-full text-sm px-2 py-2.5 text-center me-2 mb-2">         
                 {{ user_bu_groups }}         
               </button>
               {% endif %}
@@ -94,7 +94,7 @@
     x-transition:leave="transition-transform duration-300"
     x-transition:leave-start="translate-x-0"
     x-transition:leave-end="-translate-x-full"
-    class="fixed top-0 left-0 z-40 w-64 h-screen pt-20  bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
+    class="fixed top-0 left-0 z-40 w-64 h-screen pt-20  bg-white border-r border-gray-200 sm:translate-x-0"
     @click.away="if (window.innerWidth < 640) isSidebarOpen = false"
     aria-label="Sidebar">
 
@@ -106,32 +106,32 @@
           <path d="M5.382 17.082v-6.457a3.7 3.7 0 0 1 .45-1.761 3.733 3.733 0 0 1 1.238-1.34 3.915 3.915 0 0 1 3.433-.245c.176.03.347.084.508.161l5.753 2.856c.082.05.161.105.236.165a2.128 2.128 0 0 0-.953-1.455l-5.51-3.284c-1.74-.857-3.906-1.523-5.244-1.097a9.96 9.96 0 0 0-2.5 3.496 9.895 9.895 0 0 0 .283 8.368 9.973 9.973 0 0 0 2.73 3.322 17.161 17.161 0 0 1-.424-2.729Z"/>
           <path d="m19.102 16.163-.272.183c-2.557 1.74-4.169 2.64-4.698 2.935a4.083 4.083 0 0 1-2 .53 3.946 3.946 0 0 1-1.983-.535 3.788 3.788 0 0 1-1.36-1.361 3.752 3.752 0 0 1-.51-1.85 1.812 1.812 0 0 1-.043-.26V9.143c0-.024.009-.046.01-.07-.056.02-.11.043-.162.07a1.796 1.796 0 0 0-.787 1.516v6.377a10.67 10.67 0 0 0 1.113 4.27 10.11 10.11 0 0 0 8.505-.53 10.022 10.022 0 0 0 3.282-2.858 9.936 9.936 0 0 0 1.75-3.97 19.615 19.615 0 0 1-2.845 2.216Z"/>
         </svg>              
-        <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">WDC Smartflow</span>
+        <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap">WDC Smartflow</span>
       </div>     
     </a>
 
     {% if user.is_authenticated %}
-    <div class="h-full pb-4 overflow-y-auto bg-white dark:bg-gray-800 mt-4">
+    <div class="h-full pb-4 overflow-y-auto bg-white">
       <h2 class="px-4 text-sm">Menu</h2>
       <ul class="font-medium">
         <li>
-          <a href="{% url 'document_approval:documents_to_approve' %}" class="flex items-center p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if request.resolver_match.url_name == 'documents_to_approve' %}bg-gray-100 dark:bg-gray-700{% endif %}">                 
+          <a href="{% url 'document_approval:documents_to_approve' %}" class="flex items-center p-2 text-gray-900hover:bg-gray-100  group {% if request.resolver_match.url_name == 'documents_to_approve' %}bg-gray-100 {% endif %}">                 
             <span class="ms-3">My Tasks</span>
           </a>
         </li>         
         <li>
-          <a href="{% url 'document_approval:document_list' %}" class="flex items-center p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if request.resolver_match.url_name == 'document_list' %}bg-gray-100 dark:bg-gray-700{% endif %}">                 
+          <a href="{% url 'document_approval:document_list' %}" class="flex items-center p-2 text-gray-900  hover:bg-gray-100  group {% if request.resolver_match.url_name == 'document_list' %}bg-gray-100 {% endif %}">                 
             <span class="ms-3">All Documents</span>
           </a>
         </li> 
         <li>
-          <a href="{% url 'document_approval:favorite_documents' %}"  class="flex items-center p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if request.resolver_match.url_name == 'favorite_documents' %}bg-gray-100 dark:bg-gray-700{% endif %}">                 
+          <a href="{% url 'document_approval:favorite_documents' %}"  class="flex items-center p-2 text-gray-900hover:bg-gray-100  {% if request.resolver_match.url_name == 'favorite_documents' %}bg-gray-100 {% endif %}">                 
             <span class="ms-3">My Favorite</span>
           </a>
         </li> 
     
         <li>
-          <a href="{% url 'document_approval:workflow_list' %}"  class="flex items-center p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group {% if request.resolver_match.url_name == 'workflow_list' %}bg-gray-100 dark:bg-gray-700{% endif %}">                 
+          <a href="{% url 'document_approval:workflow_list' %}"  class="flex items-center p-2 text-gray-900hover:bg-gray-100 group {% if request.resolver_match.url_name == 'workflow_list' %}bg-gray-100{% endif %}">                 
             <span class="ms-3">New Document</span>
           </a>
         </li> 
@@ -147,7 +147,7 @@
           </li> 
         </ul>
         
-        <button class="flex items-center text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" type="button"> 
+        <button class="flex items-center text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2" type="button"> 
           <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
