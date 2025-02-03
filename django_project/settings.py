@@ -97,6 +97,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "document.context_processors.user_bu_groups",  # Add BU groups to context
+                "document.context_processors.pending_documents_count", # Add Pending count   to context
             ],
         },
     },

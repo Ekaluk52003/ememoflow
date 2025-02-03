@@ -8,3 +8,20 @@ def user_bu_groups(request):
             'user_bu_groups': ', '.join(sorted(bu_groups)) if bu_groups else ''
         }
     return {'user_bu_groups': ''}
+
+def pending_documents_count(request):
+    if not request.user.is_authenticated:
+        return {'pending_count': 0}
+        
+    from document.models import Document
+    from django.db.models import Q, F
+
+    count = Document.objects.filter(
+        Q(status='in_review', current_step__isnull=False,
+          approvals__step=F('current_step'),
+          approvals__approver=request.user,
+          approvals__is_approved__isnull=True) |
+        Q(submitted_by=request.user, status__in=['rejected', 'pending'])
+    ).distinct().count()
+
+    return {'pending_count': count}

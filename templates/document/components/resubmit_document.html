@@ -70,7 +70,7 @@
                         <div class="flex gap-2 py-2">
                             <input type="number"
                                 style="width: 80px;"
-                                class="input"
+                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
                                 :name="`product_id_{{ field.id }}[]`"
                                 x-model="product.id"
                                 placeholder="ID"
@@ -78,7 +78,7 @@
 
                             <input type="text"
                                 style="width: 150px;"
-                                class="input"
+                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
                                 :name="`product_code_{{ field.id }}[]`"
                                 x-model="product.code"
                                 placeholder="CODE"
@@ -86,7 +86,7 @@
 
                             <input type="text"
                                 style="width: 300px;"
-                                class="input"
+                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
                                     :name="`product_name_{{ field.id }}[]`"
                                 x-model="product.name"
                                 placeholder="Product Name"
