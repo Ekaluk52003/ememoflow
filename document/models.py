@@ -77,7 +77,7 @@ class ApprovalWorkflow(models.Model):
     )
     # Reject email fields
     content_editor = models.BooleanField(default=False, help_text="Add content editor for document")
-    send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection")
+    send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection for all steps")
     reject_email_subject = models.TextField(blank=True, help_text="Subject for rejection emails")
     reject_email_body = models.TextField(blank=True, help_text="Body template for rejection emails")
 
@@ -87,7 +87,7 @@ class ApprovalWorkflow(models.Model):
     withdraw_email_body = models.TextField(blank=True, help_text="Body template for withdrawal emails")
 
     # Email notification for all approve
-    send_approved_email = models.BooleanField(default=False)
+    send_approved_email = models.BooleanField(default=False, help_text="This email is sent to requestor when all approvers approve document")
     email_approved_subject = models.CharField(max_length=255, blank=True)
     email_approved_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
 
@@ -227,11 +227,11 @@ class ApprovalStep(models.Model):
     input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
     input_choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' input type")
     allowed_file_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated file extensions for 'file' input type")
-    requires_edit = models.BooleanField(default=False)
+    requires_edit = models.BooleanField(default=False, help_text="Enable approvers to edit field or upload file for particular step")
     editable_fields = models.ManyToManyField(DynamicField, blank=True, related_name='approval_steps')
 
     # Email notification fields
-    send_email = models.BooleanField(default=False)
+    send_email = models.BooleanField(default=False, help_text="When select, approvers will be notified by email for particular step")
     email_subject = models.CharField(max_length=255, blank=True)
     email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
     cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC for")
