@@ -13,7 +13,7 @@
                 <a hx-get="{% url 'document_approval:document_detail'  document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
                     <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
                         <div class="flex items-center justify-between">
-                            <p class="font-semibold text-gray-700 text-md dark:text-white md:truncate">
+                            <p class="font-semibold text-gray-700 text-md md:truncate">
                                 {{ document.title }}
                             </p>
                             <div class="flex flex-shrink-0 ml-2">
