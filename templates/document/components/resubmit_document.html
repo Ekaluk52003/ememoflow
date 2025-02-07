@@ -6,7 +6,35 @@
 <div><h3 class="text-lg font-medium leading-6 text-base-content">Document Ref:{{document.document_reference}}</h3>
     <p class="mt-1 max-w-2xl text-sm text-gray-500">Resubmit</p></div>
 <div>
-<form method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
+<form x-data="{
+    fieldValues: {},
+    initializeFieldValues() {
+        this.$nextTick(() => {
+            document.querySelectorAll('input[type=checkbox]').forEach(checkbox => {
+                const fieldId = checkbox.getAttribute('name')?.replace('dynamic_', '');
+                if (fieldId) {
+                    this.fieldValues[fieldId] = checkbox.checked;
+                }
+            });
+        });
+    },
+    updateFieldValue(event) {
+        const input = event.target;
+        const fieldId = input.getAttribute('name').replace('dynamic_', '');
+        const value = input.type === 'checkbox' ? input.checked : input.value;
+        this.fieldValues[fieldId] = value;
+    },
+     shouldShowApprover(isConditional, conditionFieldId) {
+        // If step is not conditional, always show it
+        if (!isConditional) {
+            return true;
+        }
+        // If step is conditional, check the condition field value
+        return this.fieldValues[conditionFieldId] === true;
+    }
+}" 
+x-init="initializeFieldValues()"
+method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
     {% csrf_token %}
     {{ form.title|as_crispy_field }}
     {% if workflow.content_editor %}
@@ -70,7 +98,7 @@
                         <div class="flex gap-2 py-2">
                             <input type="number"
                                 style="width: 80px;"
-                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                 :name="`product_id_{{ field.id }}[]`"
                                 x-model="product.id"
                                 placeholder="ID"
@@ -78,7 +106,7 @@
 
                             <input type="text"
                                 style="width: 150px;"
-                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                 :name="`product_code_{{ field.id }}[]`"
                                 x-model="product.code"
                                 placeholder="CODE"
@@ -86,7 +114,7 @@
 
                             <input type="text"
                                 style="width: 300px;"
-                                class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                     :name="`product_name_{{ field.id }}[]`"
                                 x-model="product.name"
                                 placeholder="Product Name"
@@ -121,7 +149,7 @@
 
     <div class="flex gap-4 justify-between items-center mt-4">
             <button type="button"
-            class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+            class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2"
                     @click="addProduct()">
                 Add Product
             </button>
@@ -165,18 +193,30 @@
                     <input type="date" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                            value="{{ field.value}}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'boolean' %}
-                    <div class="form-check">
-                        <input type="checkbox" class="checkbox checkbox-md" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                               {% if field.value == 'on' %}checked{% endif %} {% if field.required %}required{% endif %}>
-                        <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
-                    </div>
-                    {% elif field.field_type == 'choice' %}
-                    <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
-                        <option value="">Select an option</option>
-                        {% for choice in field.choices %}
-                            <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
-                        {% endfor %}
-                    </select>
+                   
+           
+            <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
+                <input type="checkbox" 
+                       name="dynamic_{{ field.id }}" 
+                       id="dynamic_{{ field.id }}" 
+                       class="sr-only peer" 
+                       @change="updateFieldValue($event); isChecked = !isChecked"
+                       {% if field.value == 'on' %}checked{% endif %} 
+                       {% if field.required %}required{% endif %}>
+                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                <span class="text-sm font-medium text-gray-900 ms-3 dark:text-gray-300" x-text="isChecked ? 'Yes' : 'No'"></span>
+            </label>
+            {% elif field.field_type == 'choice' %}
+            <select name="dynamic_{{ field.id }}" 
+                    class="w-full select select-bordered" 
+                    @change="updateFieldValue($event)"
+                    {% if field.required %}required{% endif %}>
+                <option value="">Select an option</option>
+                {% for choice in field.choices %}
+                    <option value="{{ choice }}">{{ choice }}</option>
+                {% endfor %}
+            </select>
+            
                 {% elif field.field_type == 'multiple_choice' %}
                     <div class="flex flex-col space-y-2">
                         {% for choice in field.choices %}
@@ -200,80 +240,106 @@
    <h3>Select Custom Approvers</h3>
    {% for step_info in steps_with_approvers %}
    <div class="mt-6 mb-6"
-   x-data="userSearch({{ step_info.potential_approvers_json|safe }})">
-  <div class="mb-2">
-      Choose approver for {{ step_info.step.name }} ({{ step_info.step.approver_group.name }})
-  </div>
-  <div class="relative">
-      <div class="flex relative items-center">
-          <input
-              type="text"
-              x-model="search"
-              :readonly="!isEditing"
-              @focus="focused = true"
-              @click.away="focused = false"
-              placeholder="Search approver..."
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-              :class="{ 'cursor-pointer': !isEditing }"
-          >
-          <button 
-              x-show="selected && !isEditing" 
-              @click.prevent="startEditing"
-              type="button"
-              class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
-          >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-          </button>
-      </div>
+   x-data="{
+    search: '',
+    selected: '',
+    focused: false,
+    isEditing: true,
+    filteredOptions: {{ step_info.potential_approvers_json|safe }},
+    
+    selectUser(option) {
+        this.selected = option.id;
+        this.search = option.full_name;
+        this.focused = false;
+        this.isEditing = false;
+    },
 
-      <select
-          name="approver_{{ step_info.step.id }}"
-          x-model="selected"
-          required
-          class="hidden"
-      >
-          <option value="">Select an approver</option>
-          <template x-for="option in filteredOptions" :key="option.id">
-              <option :value="option.id" x-text="option.full_name"></option>
-          </template>
-      </select>
+    startEditing() {
+        this.isEditing = true;
+        this.focused = true;
+        if (this.selected !== null) {
+            this.search = '';
+            this.selected = '';
+        }
+    },
+    
+    init() {
+        {% if step_info.previous_approver %}
+        this.selected = '{{ step_info.previous_approver.id }}';
+        this.search = '{{ step_info.previous_approver.get_full_name }}';
+        this.isEditing = false;
+        {% endif %}
+    }
+}"
 
-      <div
-          x-show="focused"
-          class="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-md border border-gray-300 shadow-lg"
-      >
-          <ul class="overflow-auto py-1 max-h-60 text-base">
-              <template x-if="filteredOptions.length === 0">
-                  <li class="px-3 py-2 text-gray-500">No users found</li>
-              </template>
-              <template x-for="option in filteredOptions" :key="option.id">
-                  <li
-                      @click="selectUser(option)"
-                      class="px-3 py-2 truncate cursor-pointer hover:bg-gray-100"
-                      :class="{ 'bg-gray-100': selected === option.id }"
-                  >
-                      <span x-text="option.full_name"></span>
-                  </li>
-              </template>
-          </ul>
-      </div>
-  </div>
-  <p x-show="!selected" class="mt-1 text-sm text-red-500">
-      Please select an approver
-  </p>
-</div>
-   {% endfor %}
+
+            x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
+            <div class="mb-2">
+                <span class="font-medium">{{ step_info.step.name }}</span>
+                <span class="text-gray-600">({{ step_info.step.approver_group.name }})</span>
+            </div>
+            <div class="relative">
+                <div class="flex relative items-center">
+                    <input type="text"
+                           x-model="search"
+                           :readonly="!isEditing"
+                           @focus="focused = true"
+                           @click.away="focused = false"
+                           placeholder="Search approver..."
+                           class="block p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                           :class="{ 'cursor-pointer': !isEditing }">
+        
+                    <button x-show="selected && !isEditing" 
+                            @click.prevent="startEditing"
+                            type="button"
+                            class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <select name="approver_{{ step_info.step.id }}"
+                        x-model="selected"
+                        class="hidden">
+                    <option value="">Select an approver</option>
+                    <template x-for="option in filteredOptions" :key="option.id">
+                        <option :value="option.id" x-text="option.full_name"></option>
+                    </template>
+                </select>
+
+                <div x-show="focused"
+                     class="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-md border border-gray-300 shadow-lg">
+                    <ul class="overflow-auto py-1 max-h-60 text-base">
+                        <template x-if="filteredOptions.length === 0">
+                            <li class="px-3 py-2 text-gray-500">No users found</li>
+                        </template>
+                        <template x-for="option in filteredOptions" :key="option.id">
+                            <li @click="selectUser(option)"
+                                class="px-3 py-2 truncate cursor-pointer hover:bg-gray-100"
+                                :class="{ 'bg-gray-100': selected === option.id }">
+                                <span x-text="option.full_name"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+            <!-- Only show error if section is visible -->
+            <p x-show="!selected" class="mt-1 text-sm text-red-500">
+                Please select an approver
+            </p>
+        </div>
+    {% endfor %}
+
 {% endif %}
 
 
 
 <div class="flex mt-4 space-x-2">
-    <button type="submit" name="save_draft" value="1" class="text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save Draft</button>
-    <button type="submit" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Resubmit Document</button>
+    <button type="submit" name="save_draft" value="1" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2">Save Draft</button>
+    <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">Resubmit Document</button>
 </div>
-</form>
+</x-data=>
 
 
 

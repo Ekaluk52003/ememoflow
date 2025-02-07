@@ -1,43 +1,59 @@
 {% load crispy_forms_tags %}
 
+<h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
 
-    <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
-   
+<div class="flex flex-col justify-between items-start pb-6 mb-4 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row">
+    <h1 class="text-2xl font-semibold whitespace-nowrap">Workflow: {{ workflow.name }}</h1>   
+</div>
 
-    <div class="flex flex-col items-start justify-between pb-6 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row mb-4">
-        <h1 class="text-2xl font-semibold whitespace-nowrap">Workflow: {{ workflow.name }}</h1>   
-      </div>
-    
+<!-- Main form with formHandler -->
+<form x-data="{
+    fieldValues: {},
+    updateFieldValue(event) {
+        const input = event.target;
+        const fieldId = input.getAttribute('name').replace('dynamic_', '');
+        const value = input.type === 'checkbox' ? input.checked : input.value;
+        this.fieldValues[fieldId] = value;
+    },
+    shouldShowApprover(isConditional, conditionFieldId) {
+        // If step is not conditional, always show it
+        if (!isConditional) {
+            return true;
+        }
+        // If step is conditional, check the condition field value
+        return this.fieldValues[conditionFieldId] === true;
+    }
+}"
+  method="post" 
+      hx-post="{% url 'document_approval:submit_document' workflow.id %}" 
+      hx-target="#content-div"   
+      enctype="multipart/form-data" 
+      hx-indicator=".progress">
+    {% csrf_token %}
 
-    <form method="post" hx-post="{% url 'document_approval:submit_document' workflow.id %}" hx-target="#content-div"   enctype="multipart/form-data" hx-indicator=".progress">
-        {% csrf_token %}
+    <div id="form-errors">
+        <!-- Errors will be displayed here -->
+    </div>
 
+    {{ form.title|as_crispy_field }}
 
-        <div id="form-errors">
-            <!-- Errors will be displayed here -->
-        </div>
+    {% if workflow.content_editor %}
+    {% include "document/components/editor.html" %}
+    {% endif %}
 
-        {{ form.title|as_crispy_field }}
+    <div class="flex flex-wrap -mx-2">
+        {% for field in prepared_fields %}
+        {% if field.name != 'Total Quantity' %}
+        <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
+            <label for="dynamic_{{ field.id }}" class="w-full max-xs">
+                <div class="label">
+                    <span class="label-text">{{ field.name }} {% if field.required %}
+                        <span class="font-bold text-red-500">*</span>
+                    {% endif %}</span>
+                </div>
+            </label>
 
-        {% if workflow.content_editor %}
-        {% include "document/components/editor.html" %}
-        {% endif %}
-
-        <div class="flex flex-wrap -mx-2">
-    {% for field in prepared_fields %}
-    {% if field.name != 'Total Quantity' %}
-
-    <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
-        <label for="dynamic_{{ field.id }}" class="w-full max-w-xs">
-            <div class="label" class="cursor-pointer label">
-                <span class="label-text">{{ field.name }} {% if field.required %}
-                    <span class="text-error">*</span>
-                {% endif %}</span>
-                 </div>
-        </label>
-
-   
-        {% if field.field_type == 'product_list' %}
+            {% if field.field_type == 'product_list' %}
         <div x-data="{
             products: {{ field.default_products|default:'[]'|safe }},
             addProduct() {
@@ -79,7 +95,7 @@
                                 <div class="flex gap-2">
                                     <input type="number"
                                            style="width: 80px;"
-                                           class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                            :name="'product_id_{{ field.id }}[]'"
                                            x-model="product.id"
                                            placeholder="ID"
@@ -87,7 +103,7 @@
 
                                     <input type="text"
                                            style="width: 150px;"
-                                           class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                            :name="'product_code_{{ field.id }}[]'"
                                            x-model="product.code"
                                            placeholder="CODE"
@@ -95,7 +111,7 @@
 
                                     <input type="text"
                                            style="width: 300px;"
-                                           class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                            :name="'product_name_{{ field.id }}[]'"
                                            x-model="product.name"
                                            placeholder="Product Name"
@@ -103,7 +119,7 @@
 
                                     <input type="number"
                                            style="width: 100px;"
-                                           class="border-2 border-gray-200 p-2 rounded-md focus:border-blue-500 focus:outline-none"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                            :name="'product_quantity_{{ field.id }}[]'"
                                            x-model="product.quantity"
                                            placeholder="Qty"
@@ -125,7 +141,7 @@
                 <!-- Actions section -->
                 <div class="flex gap-4 justify-between items-center mt-4">
                     <button type="button"
-                    class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+                    class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2"
                             @click="addProduct()">
                         Add Product
                     </button>
@@ -137,131 +153,143 @@
             </div>
         </div>
 
+        {% elif field.field_type == 'attachment' %}
+        {% if field.file %}
+            <p>Current file: {{ field.file.name }}</p>
+            <button type="button" class="mb-2 btn btn-danger btn-sm"
+                    hx-delete="{% url 'delete_attachment' field.id  %}"
+                    hx-target="#dynamic_{{ field.id }}-container"
+                    hx-swap="outerHTML">
+                Delete File
+            </button>
+        {% endif %}
+        <input type="file" class="w-full file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+               {% if field.required and not field.file %}{% endif %}>
 
-                {% elif field.field_type == 'attachment' %}
-                {% if field.file %}
-                    <p>Current file: {{ field.file.name }}</p>
-                    <button type="button" class="mb-2 btn btn-danger btn-sm"
-                            hx-delete="{% url 'delete_attachment' field.id  %}"
-                            hx-target="#dynamic_{{ field.id }}-container"
-                            hx-swap="outerHTML">
-                        Delete File
-                    </button>
-                {% endif %}
-                <input type="file" class="w-full file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       {% if field.required and not field.file %}{% endif %}>
+    {% elif field.field_type  == 'textarea' %}
+    <textarea name="dynamic_{{ field.id }}" class="block mt-1 w-full textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
 
-            {% elif field.field_type  == 'textarea' %}
-            <textarea name="dynamic_{{ field.id }}" class="block mt-1 w-full textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
-
-            {% elif field.field_type == 'number' %}
-                <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       value="{{ field.value }}" {% if field.required %}{% endif %}>
-            {% elif field.field_type == 'text' %}
-                <input type="text" class="border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:bg-white
-                 focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+    {% elif field.field_type == 'number' %}
+        <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+               value="{{ field.value }}" {% if field.required %}{% endif %}>
+    {% elif field.field_type == 'text' %}
+        <input type="text" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border focus:outline-none focus:bg-white focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
 
 
-                       {% if field.required %}{% endif %}>
-            {% elif field.field_type == 'date' %}
+               {% if field.required %}{% endif %}>
+    {% elif field.field_type == 'date' %}
 
-                <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 ps-10" placeholder="Select date"
-                       {% if field.required %}{% endif %}>
+        <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+        class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 ps-10" placeholder="Select date"
+               {% if field.required %}{% endif %}>
 
             {% elif field.field_type == 'boolean' %}
-            <div class="form-check">
-                <input type="checkbox" class="checkbox checkbox-md" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-                       {% if field.value == 'on' %}checked{% endif %} {% if field.required %}required{% endif %}>
-                <label class="form-check-label" for="dynamic_{{ field.id }}">{{ field.name }}</label>
+          
+           
+            <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
+                <input type="checkbox" 
+                       name="dynamic_{{ field.id }}" 
+                       id="dynamic_{{ field.id }}" 
+                       class="sr-only peer" 
+                       @change="updateFieldValue($event); isChecked = !isChecked"
+                       {% if field.value == 'on' %}checked{% endif %} 
+                       {% if field.required %}required{% endif %}>
+                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                <span class="text-sm font-medium text-gray-900 ms-3 dark:text-gray-300" x-text="isChecked ? 'Yes' : 'No'"></span>
+            </label>
+
+            {% elif field.field_type == 'choice' %}
+            <select name="dynamic_{{ field.id }}" 
+                    class="w-full select select-bordered" 
+                    @change="updateFieldValue($event)"
+                    {% if field.required %}required{% endif %}>
+                <option value="">Select an option</option>
+                {% for choice in field.choices %}
+                    <option value="{{ choice }}">{{ choice }}</option>
+                {% endfor %}
+            </select>
+
+            {% elif field.field_type == 'multiple_choice' %}
+            <div class="flex flex-col space-y-2">
+                {% for choice in field.choices %}
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox" >
+                        <span>{{ choice }}</span>
+                    </label>
+                {% endfor %}
             </div>
-                       {% elif field.field_type == 'choice' %}
-                       <select name="dynamic_{{ field.id }}" class="w-full select select-bordered" {% if field.required %}required{% endif %}>
-                           <option value="">Select an option</option>
-                           {% for choice in field.choices %}
-                               <option value="{{ choice }}">{{ choice }}</option>
-                           {% endfor %}
-                       </select>
-                       {% elif field.field_type == 'multiple_choice' %}
-                       <div class="flex flex-col space-y-2">
-                           {% for choice in field.choices %}
-                               <label class="flex items-center space-x-2">
-                                   <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox" >
-                                   <span>{{ choice }}</span>
-                               </label>
-                           {% endfor %}
-                       </div>
-                   {% endif %}
+
+            {% else %}
+            <!-- Other field types remain unchanged -->
+            <input type="{{ field.field_type }}" 
+                   class="w-full input input-bordered" 
+                   name="dynamic_{{ field.id }}" 
+                   id="dynamic_{{ field.id }}"
+                   value="{{ field.value }}" 
+                   {% if field.required %}required{% endif %}>
+            {% endif %}
         </div>
         {% endif %}
-    {% endfor %}
-</div>
+        {% endfor %}
+    </div>
 
-{% if steps_with_approvers %}
-    <h3>Select Approvers</h3>
+    {% if steps_with_approvers %}
+    <h3 class="mt-6 mb-4 text-lg font-medium">Select Approvers</h3>
     {% for step_info in steps_with_approvers %}
         <div class="mt-6 mb-6"
-             x-data="userSearch({{ step_info.potential_approvers}})">
+             x-data="userSearch({{ step_info.potential_approvers|safe }})"
+             x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
             <div class="mb-2">
-                Choose approver for {{ step_info.step.name }} ({{ step_info.step.approver_group.name }})
+                <span class="font-medium">{{ step_info.step.name }}</span>
+                <span class="text-gray-600">({{ step_info.step.approver_group.name }})</span>
             </div>
             <div class="relative">
                 <div class="flex relative items-center">
-                    <input
-                        type="text"
-                        x-model="search"
-                        :readonly="!isEditing"
-                        @focus="focused = true"
-                        @click.away="focused = false"
-                        placeholder="Search approver..."
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-                        :class="{ 'cursor-pointer': !isEditing }"
-                    >
+                    <input type="text"
+                           x-model="search"
+                           :readonly="!isEditing"
+                           @focus="focused = true"
+                           @click.away="focused = false"
+                           placeholder="Search approver..."
+                           class="block p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                           :class="{ 'cursor-pointer': !isEditing }">
         
-                    <button 
-                        x-show="selected && !isEditing" 
-                        @click.prevent="startEditing"
-                        type="button"
-                        class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    <button x-show="selected && !isEditing" 
+                            @click.prevent="startEditing"
+                            type="button"
+                            class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
                         </svg>
                     </button>
                 </div>
 
-                <select
-                    name="approver_{{ step_info.step.id }}"
-                    x-model="selected"
-                    required
-                    class="hidden"
-                >
+                <select name="approver_{{ step_info.step.id }}"
+                        x-model="selected"
+                        class="hidden">
                     <option value="">Select an approver</option>
                     <template x-for="option in filteredOptions" :key="option.id">
                         <option :value="option.id" x-text="option.full_name"></option>
                     </template>
                 </select>
 
-                <div
-                    x-show="focused"
-                    class="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-md border border-gray-300 shadow-lg"
-                >
+                <div x-show="focused"
+                     class="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-md border border-gray-300 shadow-lg">
                     <ul class="overflow-auto py-1 max-h-60 text-base">
                         <template x-if="filteredOptions.length === 0">
                             <li class="px-3 py-2 text-gray-500">No users found</li>
                         </template>
                         <template x-for="option in filteredOptions" :key="option.id">
-                            <li
-                                @click="selectUser(option)"
+                            <li @click="selectUser(option)"
                                 class="px-3 py-2 truncate cursor-pointer hover:bg-gray-100"
-                                :class="{ 'bg-gray-100': selected === option.id }"
-                            >
+                                :class="{ 'bg-gray-100': selected === option.id }">
                                 <span x-text="option.full_name"></span>
                             </li>
                         </template>
                     </ul>
                 </div>
             </div>
+            <!-- Only show error if section is visible -->
             <p x-show="!selected" class="mt-1 text-sm text-red-500">
                 Please select an approver
             </p>
@@ -269,8 +297,14 @@
     {% endfor %}
     {% endif %}
 
-        <div class="flex mt-4 space-x-2">
-            <button type="submit" name="save_draft" value="1" class="text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Save Draft</button>
-            <button type="submit" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit Document</button>
-        </div>
-    </form>
+    <div class="flex mt-4 space-x-2">
+        <button type="submit" name="save_draft" value="1" 
+                class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2">
+            Save Draft
+        </button>
+        <button type="submit" 
+                class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">
+            Submit Document
+        </button>
+    </div>
+</form>
