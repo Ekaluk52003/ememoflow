@@ -11,7 +11,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = bool(os.environ.get("DEBUG", default=0))
 
 
-print(f"DEBUG setting is: {DEBUG}")
+# print(f"DEBUG setting is: {DEBUG}")
 
 
 ALLOWED_HOSTS = [
