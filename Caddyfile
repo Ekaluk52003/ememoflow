@@ -1,8 +1,6 @@
 wdc.smartflow.pw {
     reverse_proxy web:8000
-    file_server /static/* {
-        root /code/staticfiles
-    }
+    
     file_server /media/* {
         root /code/media
     }
