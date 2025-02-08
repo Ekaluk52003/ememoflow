@@ -1,7 +1,21 @@
-wdc.smartflow.pw {
-    reverse_proxy web:8000
-    
-    file_server /media/* {
-        root /code/media
+{$DOMAIN} {
+    # Static files
+    handle /static/* {
+        uri strip_prefix /static
+        root * /code/staticfiles
+        file_server
     }
+
+    # Media files
+    handle /media/* {
+        uri strip_prefix /media
+        root * /code/media
+        file_server
+    }
+
+    # Reverse proxy
+    handle {
+        reverse_proxy web:8000
+    }
+
 }

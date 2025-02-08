@@ -7,7 +7,6 @@ services:
         dockerfile: Dockerfile.prod
     command: sh -c "./entrypoint.prod.sh && gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     volumes:
-      # - static_volume:/code/static
       - static_volume:/code/staticfiles
       - media_volume:/code/media
     ports:
@@ -84,6 +83,11 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+      - static_volume:/code/staticfiles
+      - media_volume:/code/media    
+    environment:
+      - DOMAIN=${DOMAIN}
+
     depends_on:
       - web
 
