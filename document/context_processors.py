@@ -25,3 +25,12 @@ def pending_documents_count(request):
     ).distinct().count()
 
     return {'pending_count': count}
+
+def workflows_list(request):
+    """Add available workflows to template context"""
+    if request.user.is_authenticated:
+        from document.models import ApprovalWorkflow
+        workflows = ApprovalWorkflow.objects.all()
+        print(workflows)
+        return {'workflows': workflows}
+    return {'workflows': []}

@@ -19,9 +19,11 @@ urlpatterns = [
     path('delete-attachment/<int:field_id>/<int:document_id>', views.delete_attachment, name='delete_attachment'),
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('favorite-documents/', views.favorite_documents, name='favorite_documents'),
+    path('notifications/stream/', views.notification_stream, name='notification_stream'),
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
     path('view-file/<int:field_value_id>/', views.view_file, name='view_file'),
     path('view-editor-image/<int:image_id>/', views.view_editor_image, name='view_editor_image'),
+    
 
 ]
 

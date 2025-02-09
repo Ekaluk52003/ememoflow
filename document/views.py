@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponseRedirect, HttpResponse, StreamingHttpResponse
 from django.db.models import Q, Exists, OuterRef
 from django.template.loader import render_to_string
 from django.contrib import messages
@@ -31,6 +31,7 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
 import traceback
+import redis
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 import os
@@ -1172,3 +1173,24 @@ def view_editor_image(request, image_id):
         return HttpResponseRedirect(signed_url)
     except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")
+    
+
+@login_required
+def notification_stream(request):
+    def event_stream():
+        redis_client = redis.Redis.from_url(settings.CELERY_BROKER_URL)
+        pubsub = redis_client.pubsub()
+        pubsub.subscribe(f'user_{request.user.id}')
+        
+        try:
+            for message in pubsub.listen():
+                if message['type'] == 'message':
+                    data = json.loads(message['data'].decode('utf-8'))
+                    yield f"data: {json.dumps(data)}\n\n"
+        except Exception:
+            pubsub.close()
+    
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response

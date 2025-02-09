@@ -1,7 +1,3 @@
 [x-cloak] {
   display: none !important;
 }
-
-html {
-  @apply text-gray-800
-}
