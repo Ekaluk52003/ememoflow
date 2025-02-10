@@ -107,9 +107,131 @@
 
 <!-- Replace the existing notification menu with this -->
 
-<div x-data="notificationSystem()" 
-     x-init="initNotifications()"
-     class="relative">
+<div x-data="{ 
+  isOpen: false,
+  notifications: [],
+  notificationCount: 0,
+  soundEnabled: localStorage.getItem('soundEnabled') !== 'false',
+  notificationSound: new Audio('/static/sounds/notification.mp3'),
+  ws: null,
+  connectionStatus: 'disconnected',
+  
+  initWebSocket() {
+      this.connectWebSocket();
+      
+      // Reconnect when tab becomes visible
+      document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && !this.ws) {
+              this.connectWebSocket();
+          }
+      });
+  },
+  
+  connectWebSocket() {
+      const userId = '{{ request.user.id }}';
+      this.ws = new WebSocket(`ws://${window.location.hostname}:8001/ws/${userId}`);
+      
+      this.ws.onopen = () => {
+          this.connectionStatus = 'connected';
+          console.log('WebSocket connected');
+      };
+      
+      this.ws.onmessage = (event) => {
+          try {
+              const data = JSON.parse(event.data);
+              
+              if (data.type === 'notification') {
+                  this.notifications.unshift(data);
+                  this.notificationCount = this.notifications.length;
+                  this.playNotificationSound();
+                  this.saveNotifications();
+              }
+          } catch (error) {
+              console.error('Error processing message:', error);
+          }
+      };
+      
+      this.ws.onclose = () => {
+          this.connectionStatus = 'disconnected';
+          console.log('WebSocket disconnected');
+          
+          // Attempt to reconnect after 5 seconds
+          setTimeout(() => {
+              if (document.visibilityState === 'visible') {
+                  this.connectWebSocket();
+              }
+          }, 5000);
+      };
+  },
+  
+  formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+      });
+  },
+  
+  saveNotifications() {
+      try {
+          localStorage.setItem('notifications', JSON.stringify(this.notifications));
+          localStorage.setItem('soundEnabled', this.soundEnabled);
+      } catch (error) {
+          console.error('Error saving notifications:', error);
+          if (error.name === 'QuotaExceededError') {
+              this.notifications = this.notifications.slice(-50);
+              this.saveNotifications();
+          }
+      }
+  },
+  
+  loadNotifications() {
+      try {
+          const stored = localStorage.getItem('notifications');
+          if (stored) {
+              this.notifications = JSON.parse(stored);
+              this.notificationCount = this.notifications.length;
+          }
+      } catch (error) {
+          console.error('Error loading notifications:', error);
+          this.notifications = [];
+          this.notificationCount = 0;
+      }
+  },
+  
+  playNotificationSound() {
+      if (!this.soundEnabled) return;
+      try {
+          this.notificationSound.currentTime = 0;
+          this.notificationSound.play().catch(error => {
+              console.warn('Could not play notification sound:', error);
+          });
+      } catch (error) {
+          console.error('Error playing sound:', error);
+      }
+  },
+  
+  toggleSound() {
+      this.soundEnabled = !this.soundEnabled;
+      localStorage.setItem('soundEnabled', this.soundEnabled);
+  },
+  
+  handleNotificationClick(index) {
+      const notification = this.notifications[index];
+      if (notification && notification.url) {
+          this.notifications.splice(index, 1);
+          this.notificationCount = this.notifications.length;
+          this.saveNotifications();
+          window.location.href = notification.url;
+      }
+  }
+}" 
+x-init="initWebSocket(); loadNotifications()"
+class="relative">
+   
     
     <a @click="isOpen = !isOpen" 
        class="flex items-center justify-between px-4 py-2 text-gray-100 hover:bg-gray-700 cursor-pointer">

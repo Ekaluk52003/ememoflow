@@ -13,9 +13,9 @@
         file_server
     }
 
-    # SSE specific configuration
-    handle /document/notifications/stream/* {
-        reverse_proxy web:8000
+    # WebSocket proxy
+    handle /ws/* {
+        reverse_proxy web:8001
     }
 
     # Default reverse proxy

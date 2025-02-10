@@ -291,48 +291,10 @@ AWS_S3_FILE_OVERWRITE = False  # Avoid overwriting files
 AWS_QUERYSTRING_EXPIRE = 30
 
 DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
-ASGI_APPLICATION = 'django_project.asgi.application'# Logging Configuration
 
-# Redis connection timeout settings
-REDIS_TIMEOUT = 20  # seconds
-REDIS_CONNECT_TIMEOUT = 30  # seconds
+# Redis settings for WebSocket
+REDIS_NOTIFICATIONS_CHANNEL = "notifications"
+REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@redis:6379/0"
 
-# Redis connection pool settings
-REDIS_CONNECTION_POOL_SETTINGS = {
-    'max_connections': 10,
-    'timeout': 20,
-    'retry_on_timeout': True,
-    'health_check_interval': 30,
-}
-
-# Stream settings
-SSE_PING_INTERVAL = 20  # seconds
-SSE_RETRY_TIMEOUT = 30  # seconds
-
-# Logging configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'document': {  # Your app name
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    },
-}
+# WebSocket settings
+WS_PORT = 8001  # Port for WebSocket server

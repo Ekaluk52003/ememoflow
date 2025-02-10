@@ -5,12 +5,13 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    command: daphne -b 0.0.0.0 -p 8000 --proxy-headers --access-log - --ping-interval 20 --ping-timeout 30 django_project.asgi:application
+    command: sh -c "./entrypoint.prod.sh && (python websocket_server.py & gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120)"
     volumes:
       - static_volume:/code/staticfiles
       - media_volume:/code/media
     ports:
       - "8000:8000"
+      - "8001:8001"  # WebSocket port
     depends_on:
       - db
     env_file:
