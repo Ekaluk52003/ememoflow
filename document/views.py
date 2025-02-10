@@ -39,6 +39,9 @@ from .utils import get_allowed_documents, get_allowed_document, get_user_bu_grou
 from urllib.parse import urlparse
 from urllib.request import urlopen
 import time
+import asyncio
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -1174,38 +1177,63 @@ def view_editor_image(request, image_id):
     except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")
     
+@login_required
+@require_http_methods(["GET"])
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    return HttpResponse("OK")
 
 @login_required
 def notification_stream(request):
     def event_stream():
         redis_client = redis.Redis.from_url(settings.CELERY_BROKER_URL)
         pubsub = redis_client.pubsub()
-        pubsub.subscribe(f'user_{request.user.id}')
+        channel = f'user_{request.user.id}'
         
         try:
-            # Send an initial keep-alive message
-            yield 'data: {"type":"ping"}\n\n'
+            pubsub.subscribe(channel)
+            # Send initial connection message
+            yield 'data: {"type":"connection","status":"connected"}\n\n'
             
-            for message in pubsub.listen():
-                if message['type'] == 'message':
-                    data = json.loads(message['data'].decode('utf-8'))
-                    yield f"data: {json.dumps(data)}\n\n"
-                
-                # Send keep-alive every 30 seconds
-                yield 'data: {"type":"ping"}\n\n'
-                time.sleep(30)
-                
+            while True:
+                try:
+                    message = pubsub.get_message(
+                        timeout=settings.SSE_RETRY_TIMEOUT
+                    )
+                    
+                    if message and message['type'] == 'message':
+                        data = json.loads(message['data'].decode('utf-8'))
+                        yield f'data: {json.dumps(data)}\n\n'
+                    else:
+                        # Send ping to keep connection alive
+                        yield 'data: {"type":"ping"}\n\n'
+                        
+                except redis.TimeoutError:
+                    # Send ping on timeout
+                    yield 'data: {"type":"ping"}\n\n'
+                    continue
+                except Exception as e:
+                    logger.error(f"SSE Error: {str(e)}")
+                    yield f'data: {{"type":"error","message":"{str(e)}"}}\n\n'
+                    break
+                    
         except Exception as e:
-            # Log the error if needed
-            print(f"SSE Error: {str(e)}")
+            logger.error(f"Redis connection error: {str(e)}")
+            yield f'data: {{"type":"error","message":"Connection error"}}\n\n'
         finally:
-            pubsub.unsubscribe()
-            pubsub.close()
+            try:
+                pubsub.unsubscribe(channel)
+                pubsub.close()
+            except:
+                pass
     
     response = StreamingHttpResponse(
-        event_stream(), 
+        event_stream(),
         content_type='text/event-stream'
     )
+    
+    # Important headers for SSE
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
+    response['Connection'] = 'keep-alive'
     return response

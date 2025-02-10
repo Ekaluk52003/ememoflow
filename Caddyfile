@@ -13,20 +13,35 @@
         file_server
     }
 
-     # SSE specific configuration
+    # SSE specific configuration
     handle /document/notifications/stream/* {
         reverse_proxy web:8000 {
             transport http {
-                keepalive 60s
-                keepalive_idle_conns 100
+                keepalive_idle 300s
+                keepalive_interval 60s
+                keepalive_retries 5
+                max_conns_per_host 0
             }
+            health_uri /health/
+            health_interval 30s
+            health_timeout 10s
+            buffer_requests off
             flush_interval -1
         }
     }
 
-    # Reverse proxy
+    # Default reverse proxy
     handle {
-        reverse_proxy web:8000
+        reverse_proxy web:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up Host {host}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
 
+    log {
+        output stdout
+        format json
+        level INFO
+    }
 }

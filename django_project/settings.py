@@ -286,3 +286,40 @@ AWS_S3_FILE_OVERWRITE = False  # Avoid overwriting files
 AWS_QUERYSTRING_EXPIRE = 30
 
 DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
+ASGI_APPLICATION = 'django_project.asgi.application'# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'daphne': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# SSE Configuration
+SSE_PING_INTERVAL = 25  # seconds
+SSE_RETRY_TIMEOUT = 30  # seconds
