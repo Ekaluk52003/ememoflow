@@ -1177,11 +1177,18 @@ def view_editor_image(request, image_id):
     except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")
     
-@login_required
-@require_http_methods(["GET"])
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt  # Since this is just a health check
 def health_check(request):
-    """Health check endpoint for monitoring"""
-    return HttpResponse("OK")
+    """Simple health check endpoint"""
+    return HttpResponse(
+        "OK",
+        content_type="text/plain",
+        status=200,
+    )
+    
 
 @login_required
 def notification_stream(request):

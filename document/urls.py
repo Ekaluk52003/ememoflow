@@ -23,7 +23,7 @@ urlpatterns = [
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
     path('view-file/<int:field_value_id>/', views.view_file, name='view_file'),
     path('view-editor-image/<int:image_id>/', views.view_editor_image, name='view_editor_image'),
-    
+    path('health/', views.health_check, name='health_check'),
 
 ]
 

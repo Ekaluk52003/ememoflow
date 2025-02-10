@@ -19,8 +19,13 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
     "127.0.0.1",
     "wdc.smartflow.pw",
+     "web",  # Add this for internal Docker communication
+    "web:8000",  # Add this for internal Docker communication
 ]
 
+# Add these settings for better proxy handling
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
