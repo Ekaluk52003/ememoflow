@@ -136,20 +136,17 @@
           console.log('WebSocket connected');
       };
       
-      this.ws.onmessage = (event) => {
-          try {
-              const data = JSON.parse(event.data);
-              
-              if (data.type === 'notification') {
-                  this.notifications.unshift(data);
-                  this.notificationCount = this.notifications.length;
-                  this.playNotificationSound();
-                  this.saveNotifications();
-              }
-          } catch (error) {
-              console.error('Error processing message:', error);
-          }
-      };
+      connectWebSocket() {
+        const userId = '{{ request.user.id }}';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/${userId}`;
+        
+        this.ws = new WebSocket(wsUrl);
+        
+        this.ws.onopen = () => {
+            this.connectionStatus = 'connected';
+            console.log('WebSocket connected');
+        };
       
       this.ws.onclose = () => {
           this.connectionStatus = 'disconnected';
