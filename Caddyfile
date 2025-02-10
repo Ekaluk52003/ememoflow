@@ -13,6 +13,17 @@
         file_server
     }
 
+     # SSE specific configuration
+    handle /document/notifications/stream/* {
+        reverse_proxy web:8000 {
+            transport http {
+                keepalive 60s
+                keepalive_idle_conns 100
+            }
+            flush_interval -1
+        }
+    }
+
     # Reverse proxy
     handle {
         reverse_proxy web:8000

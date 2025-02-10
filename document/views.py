@@ -38,7 +38,7 @@ import os
 from .utils import get_allowed_documents, get_allowed_document, get_user_bu_groups
 from urllib.parse import urlparse
 from urllib.request import urlopen
-
+import time
 
 
 @login_required
@@ -1183,14 +1183,29 @@ def notification_stream(request):
         pubsub.subscribe(f'user_{request.user.id}')
         
         try:
+            # Send an initial keep-alive message
+            yield 'data: {"type":"ping"}\n\n'
+            
             for message in pubsub.listen():
                 if message['type'] == 'message':
                     data = json.loads(message['data'].decode('utf-8'))
                     yield f"data: {json.dumps(data)}\n\n"
-        except Exception:
+                
+                # Send keep-alive every 30 seconds
+                yield 'data: {"type":"ping"}\n\n'
+                time.sleep(30)
+                
+        except Exception as e:
+            # Log the error if needed
+            print(f"SSE Error: {str(e)}")
+        finally:
+            pubsub.unsubscribe()
             pubsub.close()
     
-    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response = StreamingHttpResponse(
+        event_stream(), 
+        content_type='text/event-stream'
+    )
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
     return response

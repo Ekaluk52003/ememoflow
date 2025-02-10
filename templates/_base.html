@@ -169,17 +169,31 @@
   },
 
   initSSE() {
-      this.loadNotifications();  // Load stored notifications on init
-      
-      const eventSource = new EventSource('{% url "document_approval:notification_stream" %}');
-      eventSource.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          this.notifications.unshift(data);
-          this.notificationCount = this.notifications.length;
-          this.saveNotifications();
-          this.playNotificationSound();
-      }
-  }
+    this.loadNotifications();
+    
+    const connect = () => {
+        const eventSource = new EventSource('{% url "document_approval:notification_stream" %}');
+        
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'ping') {
+                return; // Ignore ping messages
+            }
+            this.notifications.unshift(data);
+            this.notificationCount = this.notifications.length;
+            this.saveNotifications();
+            this.playNotificationSound();
+        };
+
+        eventSource.onerror = (error) => {
+            console.log('SSE Error:', error);
+            eventSource.close();
+            // Attempt to reconnect after 5 seconds
+            setTimeout(connect, 5000);
+        };
+    };
+    connect();
+}
 }" 
 x-init="initSSE()"
 class="relative">
