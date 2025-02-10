@@ -15,29 +15,16 @@
 
     # SSE specific configuration
     handle /document/notifications/stream/* {
-        reverse_proxy web:8000 {
-            header X-Forwarded-Host {host}
-            header X-Forwarded-Proto {scheme}
-            header X-Real-IP {remote_host}
-            health_path /health/
-            health_interval 30s
-            health_timeout 10s
-        }
+        reverse_proxy web:8000
     }
 
     # Default reverse proxy
     handle {
-        reverse_proxy web:8000 {
-            header X-Forwarded-Host {host}
-            header X-Forwarded-Proto {scheme}
-            header X-Real-IP {remote_host}
-        }
+        reverse_proxy web:8000
     }
 
-    # Logging
     log {
         output stdout
         format json
-        level INFO
     }
 }
