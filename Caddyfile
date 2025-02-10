@@ -16,29 +16,34 @@
     # SSE specific configuration
     handle /document/notifications/stream/* {
         reverse_proxy web:8000 {
-            transport http {
-                keepalive_idle 300s
-                keepalive_interval 60s
-                keepalive_retries 5
-                max_conns_per_host 0
-            }
-            health_uri /health/
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Real-IP {remote_host}
+            header_up Host {host}
+            
+            # Disable buffering for SSE
+            flush_interval -1
+            buffer_requests off
+            buffer_responses off
+            
+            # Health checks
+            health_path /health/
             health_interval 30s
             health_timeout 10s
-            buffer_requests off
-            flush_interval -1
         }
     }
 
     # Default reverse proxy
     handle {
         reverse_proxy web:8000 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
             header_up X-Real-IP {remote_host}
             header_up Host {host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
+    # Logging
     log {
         output stdout
         format json
