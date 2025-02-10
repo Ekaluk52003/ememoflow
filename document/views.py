@@ -1193,54 +1193,57 @@ def health_check(request):
 @login_required
 def notification_stream(request):
     def event_stream():
-        redis_client = redis.Redis.from_url(settings.CELERY_BROKER_URL)
-        pubsub = redis_client.pubsub()
-        channel = f'user_{request.user.id}'
-        
+        redis_client = None
+        pubsub = None
         try:
+            redis_client = redis.Redis.from_url(settings.CELERY_BROKER_URL)
+            pubsub = redis_client.pubsub(ignore_subscribe_messages=True)
+            channel = f'user_{request.user.id}'
             pubsub.subscribe(channel)
+
             # Send initial connection message
             yield 'data: {"type":"connection","status":"connected"}\n\n'
-            
+
             while True:
                 try:
-                    message = pubsub.get_message(
-                        timeout=settings.SSE_RETRY_TIMEOUT
-                    )
-                    
+                    message = pubsub.get_message(timeout=20)
                     if message and message['type'] == 'message':
                         data = json.loads(message['data'].decode('utf-8'))
                         yield f'data: {json.dumps(data)}\n\n'
                     else:
-                        # Send ping to keep connection alive
+                        # Send keepalive ping
                         yield 'data: {"type":"ping"}\n\n'
-                        
                 except redis.TimeoutError:
-                    # Send ping on timeout
+                    # Send keepalive on timeout
                     yield 'data: {"type":"ping"}\n\n'
                     continue
                 except Exception as e:
-                    logger.error(f"SSE Error: {str(e)}")
+                    logger.error(f"SSE stream error: {str(e)}")
                     yield f'data: {{"type":"error","message":"{str(e)}"}}\n\n'
                     break
-                    
+
         except Exception as e:
-            logger.error(f"Redis connection error: {str(e)}")
+            logger.error(f"SSE connection error: {str(e)}")
             yield f'data: {{"type":"error","message":"Connection error"}}\n\n'
         finally:
-            try:
-                pubsub.unsubscribe(channel)
-                pubsub.close()
-            except:
-                pass
-    
+            if pubsub:
+                try:
+                    pubsub.unsubscribe()
+                    pubsub.close()
+                except:
+                    pass
+            if redis_client:
+                try:
+                    redis_client.close()
+                except:
+                    pass
+
     response = StreamingHttpResponse(
         event_stream(),
         content_type='text/event-stream'
     )
-    
-    # Important headers for SSE
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
     response['Connection'] = 'keep-alive'
     return response
+  

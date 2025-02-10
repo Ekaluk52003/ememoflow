@@ -5,7 +5,7 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    command: sh -c "./entrypoint.prod.sh && daphne -b 0.0.0.0 -p 8000 --proxy-headers django_project.asgi:application"
+    command: daphne -b 0.0.0.0 -p 8000 --proxy-headers --access-log - --ping-interval 20 --ping-timeout 30 django_project.asgi:application
     volumes:
       - static_volume:/code/staticfiles
       - media_volume:/code/media
