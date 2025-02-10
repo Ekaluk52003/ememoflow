@@ -252,9 +252,9 @@
   }
 }" 
 x-init="initWebSocket(); loadNotifications()"
-class="relative">
-    <a @click="isOpen = !isOpen" 
-       class="flex items-center justify-between px-4 py-2 text-gray-100 hover:bg-gray-700 transition-colors duration-200 rounded-md cursor-pointer">
+class="relative inline-block">
+    <button @click="isOpen = !isOpen" 
+            class="flex items-center justify-between px-4 py-2 text-gray-100 hover:bg-gray-700 transition-colors duration-200 rounded-md">
         <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -269,7 +269,7 @@ class="relative">
                   x-text="getConnectionStatusText()">
             </span>
         </div>
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 ml-2">
             <template x-if="notificationCount > 0">
                 <span class="flex items-center justify-center w-6 h-6 text-sm font-semibold text-blue-800 bg-blue-100 rounded-full transition-all duration-300 transform hover:scale-110" 
                       x-text="notificationCount">
@@ -284,7 +284,7 @@ class="relative">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
         </div>
-    </a>
+    </button>
 
     <!-- Notification Panel -->
     <div x-show="isOpen" 
@@ -296,7 +296,7 @@ class="relative">
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="transform opacity-100 scale-100"
          x-transition:leave-end="transform opacity-0 scale-95"
-         class="absolute right-0 w-96 mt-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+         class="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
         
         <!-- Header -->
         <div class="px-4 py-3 border-b border-gray-200">
@@ -324,7 +324,7 @@ class="relative">
         </div>
 
         <!-- Notification List -->
-        <div class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+        <div class="max-h-[calc(100vh-200px)] overflow-y-auto divide-y divide-gray-100">
             <template x-if="notifications.length === 0">
                 <div class="px-4 py-6 text-sm text-gray-500 text-center">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -338,9 +338,9 @@ class="relative">
                 <div class="relative group hover:bg-gray-50 transition duration-150">
                     <div @click="handleNotificationClick(index)"
                          class="px-4 py-3 cursor-pointer">
-                        <div class="flex justify-between items-start">
-                            <p class="text-sm font-medium text-gray-900 line-clamp-2" x-text="notification.message"></p>
-                            <span class="ml-2 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">Action Required</span>
+                        <div class="flex justify-between items-start space-x-2">
+                            <p class="text-sm font-medium text-gray-900 flex-grow" x-text="notification.message"></p>
+                            <span class="shrink-0 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">New</span>
                         </div>
                         <div class="mt-1 flex items-center text-xs text-gray-500">
                             <span class="font-medium" x-text="notification.workflow_name"></span>

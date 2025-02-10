@@ -3,6 +3,7 @@ import redis
 import json
 from django.urls import reverse
 from django.utils import timezone
+from django.conf import settings
 
 def send_approval_notification(document, approver):
     """Send an approval notification via Redis pub/sub"""
