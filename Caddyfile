@@ -15,7 +15,11 @@
 
     # WebSocket proxy
     handle /ws/* {
-        reverse_proxy ws://web:8001
+        reverse_proxy http://web:8001 {
+            transport http {
+                keepalive 30s
+            }
+        }
     }
 
     # Default reverse proxy
