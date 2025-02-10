@@ -16,17 +16,8 @@
     # SSE specific configuration
     handle /document/notifications/stream/* {
         reverse_proxy web:8000 {
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-            header_up X-Real-IP {remote_host}
             header_up Host {host}
-            
-            # Disable buffering for SSE
-            flush_interval -1
-            buffer_requests off
-            buffer_responses off
-            
-            # Health checks
+            header_up X-Real-IP {remote_host}
             health_path /health/
             health_interval 30s
             health_timeout 10s
@@ -36,10 +27,8 @@
     # Default reverse proxy
     handle {
         reverse_proxy web:8000 {
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-            header_up X-Real-IP {remote_host}
             header_up Host {host}
+            header_up X-Real-IP {remote_host}
         }
     }
 
