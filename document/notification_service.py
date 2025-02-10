@@ -8,7 +8,7 @@ from django.conf import settings
 def send_approval_notification(document, approver):
     """Send an approval notification via Redis pub/sub"""
     try:
-        redis_client = redis.Redis.from_url(settings.CELERY_BROKER_URL)
+        redis_client = redis.Redis.from_url(settings.REDIS_URL)
         
         notification = {
             'message': f"Document #{document.document_reference} - {document.title}",

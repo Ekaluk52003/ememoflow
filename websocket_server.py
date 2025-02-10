@@ -2,6 +2,13 @@ import asyncio
 import websockets
 import json
 import redis.asyncio as redis
+import os
+import django
+
+# Set up Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_project.settings')
+django.setup()
+
 from django.conf import settings
 
 # Store active connections
@@ -67,7 +74,7 @@ async def handler(websocket, path):
 
 async def main():
     """Start the WebSocket server."""
-    redis_client = redis.from_url(settings.CELERY_BROKER_URL)
+    redis_client = redis.from_url(settings.REDIS_URL)
     
     try:
         # Start Redis listener
