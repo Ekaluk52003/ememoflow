@@ -294,7 +294,7 @@ DEFAULT_FILE_STORAGE = 'django_project.storage_backends.CustomS3Storage'
 
 # Redis settings for WebSocket
 REDIS_NOTIFICATIONS_CHANNEL = "notifications"
-REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@redis:6379/0"
+REDIS_URL = f"redis://:{os.getenv('REDIS_PASSWORD')}@redis:6379/0"
 
 # WebSocket settings
 WS_PORT = 8001  # Port for WebSocket server
