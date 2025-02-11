@@ -4,11 +4,12 @@ services:
   web:
     build:
       context: .
-    command: python manage.py runserver 0.0.0.0:${DJANGO_PORT}
+    command: sh -c "python websocket_server.py & python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
     ports:
-      - "${DJANGO_PORT}:${DJANGO_PORT}"
+      - "8000:8000"
+      - "8001:8001"
     env_file:
       - .env
     depends_on:
@@ -52,7 +53,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    
     command:
       - /bin/sh
       - -c

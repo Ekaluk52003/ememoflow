@@ -130,7 +130,10 @@
   connectWebSocket() {
       const userId = '{{ request.user.id }}';
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/${userId}`;
+      const isDevelopment = window.location.port === '8000';
+      const wsUrl = isDevelopment 
+          ? `${wsProtocol}//127.0.0.1:8001/ws/${userId}`  // Development: direct to WebSocket port
+          : `${wsProtocol}//${window.location.host}/ws/${userId}`;  // Production: through Caddy
       
       this.ws = new WebSocket(wsUrl);
       
@@ -290,33 +293,33 @@ class="relative inline-block">
     <div x-show="isOpen" 
          x-cloak
          @click.away="isOpen = false"
-         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter="transition ease-out duration-100"
          x-transition:enter-start="transform opacity-0 scale-95"
          x-transition:enter-end="transform opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave="transition ease-in duration-75"
          x-transition:leave-start="transform opacity-100 scale-100"
          x-transition:leave-end="transform opacity-0 scale-95"
-         class="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+         class="mt-2 w-64 origin-top-right rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
         
         <!-- Header -->
-        <div class="px-4 py-3 border-b border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-700">
             <div class="flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Notifications</h3>
+                <h3 class="text-sm font-semibold text-gray-100">Notifications</h3>
                 <div class="flex items-center space-x-4">
                     <button @click="toggleSound()" 
-                            class="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                            class="text-gray-400 hover:text-gray-100 transition-colors duration-200"
                             :title="soundEnabled ? 'Mute notifications' : 'Unmute notifications'">
-                        <svg x-show="soundEnabled" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg x-show="soundEnabled" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                         </svg>
-                        <svg x-show="!soundEnabled" class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg x-show="!soundEnabled" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                         </svg>
                     </button>
                     <button x-show="notifications.length > 0"
                             @click="clearAll()"
-                            class="text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200">
+                            class="text-xs text-gray-400 hover:text-gray-100 transition-colors duration-200">
                         Clear all
                     </button>
                 </div>
@@ -324,25 +327,23 @@ class="relative inline-block">
         </div>
 
         <!-- Notification List -->
-        <div class="max-h-[calc(100vh-200px)] overflow-y-auto divide-y divide-gray-100">
+        <div class="max-h-[calc(100vh-200px)] overflow-y-auto">
             <template x-if="notifications.length === 0">
-                <div class="px-4 py-6 text-sm text-gray-500 text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                    <p class="mt-2">No new notifications</p>
+                <div class="px-2 py-4 text-sm text-gray-400">
+              
+                    <p>No new notifications</p>
                 </div>
             </template>
 
             <template x-for="(notification, index) in notifications" :key="notification.timestamp">
-                <div class="relative group hover:bg-gray-50 transition duration-150">
+                <div class="relative group">
                     <div @click="handleNotificationClick(index)"
-                         class="px-4 py-3 cursor-pointer">
+                         class="block px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 cursor-pointer">
                         <div class="flex justify-between items-start space-x-2">
-                            <p class="text-sm font-medium text-gray-900 flex-grow" x-text="notification.message"></p>
-                            <span class="shrink-0 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full">New</span>
+                            <p class="font-medium flex-grow" x-text="notification.message"></p>
+                            <span class="shrink-0 px-1.5 py-0.5 text-xs font-medium text-blue-200 bg-blue-900 rounded-full">New</span>
                         </div>
-                        <div class="mt-1 flex items-center text-xs text-gray-500">
+                        <div class="mt-0.5 flex items-center text-xs text-gray-400">
                             <span class="font-medium" x-text="notification.workflow_name"></span>
                             <span class="mx-1">•</span>
                             <span x-text="formatTimestamp(notification.timestamp)"></span>
@@ -351,7 +352,7 @@ class="relative inline-block">
                     
                     <!-- Delete Button -->
                     <button @click.stop="removeNotification(index)"
-                            class="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+                            class="absolute top-2 right-2 p-1 text-gray-500 hover:text-gray-300 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -425,7 +426,7 @@ class="relative inline-block">
         {% if user_bu_groups %}
         <div class="flex items-center text-gray-700">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           <span class="font-medium">{{ user_bu_groups }}</span>
         </div>
