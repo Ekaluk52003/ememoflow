@@ -1,11 +1,12 @@
 {% if documents %}
 
-    {% for document in documents %}
+   
 
-        <ul class="p-4 transition-shadow cursor-pointer my-2">
-            <li class="my-2">
+        <ul class="p-4 transition-shadow cursor-pointer">
+            {% for document in documents %}
+            <li class="shadow-sm my-">
                 <a hx-get="{% url 'document_approval:document_detail' document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
-                    <div class="px-4 py-4  bg-white sm:px-6">
+                    <div class="px-4 py-4 bg-white sm:px-6 my-4">
                         <div class="flex items-center justify-between">
                             <p class="font-semibold text-gray-700 text-md md:truncate">
                                 {{ document.title }}
@@ -35,14 +36,12 @@
                     </div>
                 </a>
             </li>
-
-
+            {% endfor %}
 
 
 
         </ul>
 
-    {% endfor %}
 
 
     <!-- Pagination -->

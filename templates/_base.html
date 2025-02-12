@@ -254,40 +254,44 @@
       }
   }
 }" 
-x-init="initWebSocket(); loadNotifications()"
-class="relative inline-block">
+x-init="initWebSocket(); loadNotifications()">
     <button @click="isOpen = !isOpen" 
-            class="flex items-center justify-between px-4 py-2 text-gray-100 hover:bg-gray-700 transition-colors duration-200 rounded-md">
+            class="flex items-center justify-between px-4 py-2 text-gray-100 hover:bg-gray-700 w-full">
         <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          <div class="relative rounded-lg">
+            <svg class="w-6 h-6 mr-2 text-teal-600 animate-wiggle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21">
+                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.585 15.5H5.415A1.65 1.65 0 0 1 4 13a10.526 10.526 0 0 0 1.5-5.415V6.5a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v1.085c0 1.907.518 3.78 1.5 5.415a1.65 1.65 0 0 1-1.415 2.5zm1.915-11c-.267-.934-.6-1.6-1-2s-1.066-.733-2-1m-10.912 3c.209-.934.512-1.6.912-2s1.096-.733 2.088-1M13 17c-.667 1-1.5 1.5-2.5 1.5S8.667 18 8 17" />
             </svg>
-            <span class="font-medium">Notifications</span>
-            <span x-show="connectionStatus !== 'connected'" 
-                  class="ml-2 text-xs font-medium px-2 py-0.5 rounded-full"
-                  :class="{
-                      'bg-yellow-100 text-yellow-800': connectionStatus === 'disconnected',
-                      'bg-red-100 text-red-800': connectionStatus === 'error'
-                  }"
-                  x-text="getConnectionStatusText()">
-            </span>
+            <!-- badge -->
+            <template x-if="notificationCount > 0">
+              <div class="flex items-center justify-center h-4 w-4 bg-teal-500 rounded-full text-center text-white text-xs absolute -top-2 right-0.5">
+                <div class="absolute top-0 start-0 rounded-full -z-10 animate-ping bg-teal-200 w-full h-full"></div><span x-text="notificationCount"></span>
+              </div>
+          </template>        
+         
+        </div>
+            Notifications           
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" :class="{'rotate-180': isOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+      </svg>
+   </svg>
+  </button>
+        <div>
+          <span x-show="connectionStatus !== 'connected'" 
+          class="ml-2 text-xs font-medium px-2 py-0.5 rounded-full"
+          :class="{
+              'bg-yellow-100 text-yellow-800': connectionStatus === 'disconnected',
+              'bg-red-100 text-red-800': connectionStatus === 'error'
+          }"
+          x-text="getConnectionStatusText()">
+          </span>
         </div>
         <div class="flex items-center space-x-2 ml-2">
-            <template x-if="notificationCount > 0">
-                <span class="flex items-center justify-center w-6 h-6 text-sm font-semibold text-blue-800 bg-blue-100 rounded-full transition-all duration-300 transform hover:scale-110" 
-                      x-text="notificationCount">
-                </span>
-            </template>
-            <svg xmlns="http://www.w3.org/2000/svg" 
-                 class="h-4 w-4 transition-transform duration-200" 
-                 :class="{'rotate-180': isOpen}" 
-                 fill="none" 
-                 viewBox="0 0 24 24" 
-                 stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+             
         </div>
-    </button>
+    
 
     <!-- Notification Panel -->
     <div x-show="isOpen" 
@@ -299,7 +303,7 @@ class="relative inline-block">
          x-transition:leave="transition ease-in duration-75"
          x-transition:leave-start="transform opacity-100 scale-100"
          x-transition:leave-end="transform opacity-0 scale-95"
-         class="mt-2 w-64 origin-top-right rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+         class="mt-2 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
         
         <!-- Header -->
         <div class="px-4 py-3 border-b border-gray-700">
@@ -394,6 +398,19 @@ class="relative inline-block">
                     Logout
                 </a>
                 {% endif %}
+
+                {% if request.user.is_superuser %}
+                <div class="fixed bottom-0 left-0 w-64 p-4">
+                    <div class="bg-gray-900 rounded-lg p-4 text-center">
+                        <h3 class="text-xl font-semibold text-white mb-2">Admin Panel</h3>
+                  
+                        <a href="{% url 'admin:index' %}" 
+                           class="flex items-center justify-center rounded-md bg-blue-600 p-2 text-white">
+                            Access Now
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </nav>
         </div>
     </div>
@@ -413,7 +430,9 @@ class="relative inline-block">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <h1 class="text-2xl font-semibold text-gray-900 ml-2">{{ page_title|default:"SmartFlow" }}</h1>
+        <a href="{% url 'home' %}" class="flex items-center">
+          <h1 class="text-2xl font-semibold text-gray-900 ml-2">{{ page_title|default:"SmartFlow" }}</h1>
+        </a>
       </div>
       {% if request.user.is_authenticated %}
       <div class="flex items-center space-x-4">
