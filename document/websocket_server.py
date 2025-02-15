@@ -19,7 +19,7 @@ class NotificationServer:
 
     async def connect_redis(self):
         if not self.redis:
-            self.redis = await redis.from_url(settings.CELERY_BROKER_URL)
+            self.redis = await redis.from_url(settings.REDIS_URL)
         return self.redis
 
     async def handle_client(self, websocket, path):

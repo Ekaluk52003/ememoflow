@@ -22,6 +22,9 @@ urlpatterns = [
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
     path('view-file/<int:field_value_id>/', views.view_file, name='view_file'),
     path('view-editor-image/<int:image_id>/', views.view_editor_image, name='view_editor_image'),
+    path('notifications/load/', views.load_notifications, name='load_notifications'),
+    path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
+    path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
 
 ]
-

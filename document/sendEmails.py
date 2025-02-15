@@ -5,6 +5,7 @@ from django.conf import settings
 import logging
 from django.template import Template, Context, TemplateSyntaxError
 from django.urls import reverse
+from .notification_service import send_approval_notification
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,15 @@ def send_templated_email(subject_template, body_template, context_dict, recipien
 
         # Send the email
         msg.send()
+        
+        # Send notification if requested and we have the necessary context
+        if 'document' in context_dict and len(recipient_list) > 0:
+            from accounts.models import CustomUser
+            document = context_dict['document']
+            # Get the user from the first recipient email
+            user = CustomUser.objects.filter(email=recipient_list[0]).first()
+            if user:
+                send_approval_notification(document, user)
 
         return True
     except Exception as e:

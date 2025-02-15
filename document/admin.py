@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue, DynamicField, PDFTemplate, ReportConfiguration, ReferenceID
 from django.core.exceptions import ValidationError
+from .notification_models import Notification
 
 @admin.register(PDFTemplate)
 class PDFTemplateAdmin(admin.ModelAdmin):
@@ -99,6 +100,13 @@ class ApprovalAdmin(admin.ModelAdmin):
             return ('document', 'step', 'approver', 'created_at')
         return ()
 
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'message', 'workflow_name', 'timestamp', 'is_read')
+    list_filter = ('user', 'workflow_name', 'timestamp', 'is_read')
+    search_fields = ('message', 'workflow_name', 'user__username')
+    ordering = ('-timestamp',)
+    readonly_fields = ('user', 'message', 'document', 'workflow_name', 'url', 'timestamp')
 
 @admin.register(ReferenceID)
 class ReferenceIDAdmin(admin.ModelAdmin):

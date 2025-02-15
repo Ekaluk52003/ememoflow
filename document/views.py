@@ -1141,6 +1141,111 @@ def view_file(request, field_value_id):
         # Handle errors in generating the signed URL
         return HttpResponseForbidden(f"Error generating URL: {e}")
 
+from django.http import JsonResponse
+from .notification_models import Notification
+
+@login_required
+def load_notifications(request):
+    """Load notifications and return both notifications and unread count"""
+    # Get the latest notifications
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by('-timestamp')[:10]
+    
+    # Get unread count from database with debug info
+    unread_notifications = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    )
+    unread_count = unread_notifications.count()    
+  
+    
+    # Prepare notification data
+    notification_data = [{
+        'id': n.id,
+        'message': n.message,
+        'workflow_name': n.workflow_name,
+        'url': n.url,
+        'timestamp': n.timestamp.isoformat(),
+        'is_read': n.is_read
+    } for n in notifications]    
+
+    return JsonResponse({
+        'notifications': notification_data,
+        'unread_count': unread_count
+    })
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id):
+    """Mark a notification as read and return updated counts"""
+    try:
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        
+        # Get updated unread count
+        unread_count = Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).count()
+        
+        return JsonResponse({
+            'status': 'success',
+            'unread_count': unread_count
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+@login_required
+@require_POST
+def delete_notification(request, notification_id):
+    """Delete a single notification"""
+    try:
+        notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+        notification.delete()
+        
+        # Get updated unread count
+        unread_count = Notification.objects.filter(
+            user=request.user,
+            is_read=False
+        ).count()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Notification deleted',
+            'unread_count': unread_count
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+@login_required
+@require_POST
+def clear_all_notifications(request):
+    """Delete all notifications for the current user"""
+    try:
+        # Delete all notifications for the user
+        deleted_count = Notification.objects.filter(
+            user=request.user
+        ).delete()[0]
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Deleted {deleted_count} notifications',
+            'deleted_count': deleted_count
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
 @login_required
 def view_editor_image(request, image_id):
     """
@@ -1176,4 +1281,3 @@ def view_editor_image(request, image_id):
         return HttpResponseRedirect(signed_url)
     except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")
-    

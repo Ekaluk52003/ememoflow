@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
-from .notification_service import send_approval_notification
 from django_project.storage_backends import CustomS3Storage
 custom_storage = CustomS3Storage()
 
@@ -502,8 +501,7 @@ class Document(models.Model):
                         approver=custom_approvers[step.id]
                     )
                     approvals_created.append(approval)
-                     # Send notification to custom approver
-                    send_approval_notification(self, custom_approvers[step.id])
+              
                 else:
                     for approver in step.approvers.all():
                         approval = Approval.objects.create(
@@ -512,8 +510,7 @@ class Document(models.Model):
                             approver=approver
                         )
                         approvals_created.append(approval)
-                        # Send notification to each approver
-                        send_approval_notification(self, approver)
+                  
 
                 # If this step has conditions and they're met, store it
                 if step.is_conditional:
