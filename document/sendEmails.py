@@ -10,84 +10,47 @@ from .notification_service import send_approval_notification
 logger = logging.getLogger(__name__)
 
 
-def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None, attachments=None):
-    try:
-        from django.urls import reverse
-        from django.template import Template, Context
-        from django.conf import settings
-        
-        # Create base context with request for url handling
-        context_dict = context_dict.copy()
-        
-        # Add document_url tag to the template if document exists
-        if 'document' in context_dict:
-            document = context_dict['document']
-            host = settings.ALLOWED_HOSTS[3] if settings.ALLOWED_HOSTS else 'localhost:8000'
-            document_url = reverse('document_approval:document_detail', args=[document.document_reference])
-            full_url = f"https://{host}{document_url}"
-            # Add the URL as a clickable link, only replace the template tag
-            html_link = f'<a href="{full_url}">{full_url}</a>'
-            body_template = body_template.replace('{{document_url}}', html_link)
-        
-        context = Context(context_dict)
-
-        # Render subject
-        subject = Template(subject_template).render(context)
-        # Remove newlines and tags from subject
-        subject = strip_tags(''.join(subject.splitlines()))[:255]
-
-        # Convert Windows-style line endings to Unix-style
-        body_template = body_template.replace('\r\n', '\n')
-        
-        # Convert line breaks to HTML breaks before rendering
-        body_template = body_template.replace('\n', '<br>\n')
-        
-        # Render body
-        html_content = Template(body_template).render(context)
-        
-        # For plain text, convert <br> back to newlines, convert HTML link to plain URL, and strip other HTML
-        text_content = html_content
-        text_content = text_content.replace('<br>', '\n')
-        
-        # Extract URLs from HTML links for plain text version
-        import re
-        def replace_link_with_url(match):
-            url = match.group(1)
-            return url
-        text_content = re.sub(r'<a href="([^"]+)">[^<]+</a>', replace_link_with_url, text_content)
-        text_content = strip_tags(text_content)
-
-        # Create email message
-        msg = EmailMultiAlternatives(
-            subject,
-            text_content,
-            settings.DEFAULT_FROM_EMAIL,
+def send_templated_email(subject_template, body_template, context_dict, recipient_list, cc_list=None, attachments=None, async_mode=True):
+    """
+    Send a templated email with optional attachments
+    Args:
+        subject_template: Template string for email subject
+        body_template: Template string for email body
+        context_dict: Dictionary of context variables for template rendering
+        recipient_list: List of recipient email addresses
+        cc_list: Optional list of CC email addresses
+        attachments: Optional list of attachments (filename, content, mimetype)
+        async_mode: If True, sends email asynchronously using Celery. If False, sends synchronously.
+    Returns:
+        If async_mode=True: Celery AsyncResult
+        If async_mode=False: bool indicating success/failure
+    """
+    from document.tasks import send_templated_email_task, _serialize_context
+    
+    # Serialize context data for Celery
+    serialized_context = _serialize_context(context_dict)
+    
+    if async_mode:
+        # Use Celery task for asynchronous processing
+        return send_templated_email_task.delay(
+            subject_template,
+            body_template,
+            serialized_context,
             recipient_list,
-            cc=cc_list if cc_list else None,
+            cc_list,
+            attachments
         )
-        msg.attach_alternative(html_content, "text/html")
-
-        # Add attachment if present
-        if attachments:
-            filename, content, mimetype = attachments[0]  # We only have one attachment
-            msg.attach(filename, content, mimetype)
-
-        # Send the email
-        msg.send()
-        
-        # Send notification if requested and we have the necessary context
-        if 'document' in context_dict and len(recipient_list) > 0:
-            from accounts.models import CustomUser
-            document = context_dict['document']
-            # Get the user from the first recipient email
-            user = CustomUser.objects.filter(email=recipient_list[0]).first()
-            if user:
-                send_approval_notification(document, user)
-
-        return True
-    except Exception as e:
-        logger.error(f"Error sending email: {str(e)}")
-        return False
+    
+    # Call the task function directly for synchronous processing
+    result = send_templated_email_task(
+        subject_template,
+        body_template,
+        serialized_context,
+        recipient_list,
+        cc_list,
+        attachments
+    )
+    return result.get('status') == 'success'
 
 
 def send_reject_email(document):
@@ -142,35 +105,47 @@ def send_withdraw_email(document):
         cc_list
     )
 
-
+#for sending email when document is approved
 def send_approved_email(document):
-    workflow = document.workflow
-    if not workflow.send_approved_email:
-        return False
-
-    context = {
-        'document': document,
-        'submitted_by': document.submitted_by,
-        'workflow': workflow,
-    }
-    recipient_list = [document.submitted_by.email]
-    cc_list = workflow.get_cc_list()
-
-    # Generate PDF attachment
-    pdf_file = generate_email_pdf(document)
-    attachments = None
-    if pdf_file:
-        filename = f"document_{document.document_reference}_report.pdf"
-        attachments = [(filename, pdf_file.getvalue(), 'application/pdf')]
-
-    return send_templated_email(
-        workflow.email_approved_subject,
-        workflow.email_approved_body_template,
-        context,
-        recipient_list,
-        cc_list,
-        attachments=attachments
+    """
+    Send approved email with PDF attachment using Celery tasks
+    Args:
+        document: Document instance
+    Returns:
+        Celery chain result
+    """
+    from celery import chain
+    from document.tasks import (
+        generate_pdf_task,
+        send_approved_email_with_pdf_task,
+        send_approval_notification_task
     )
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        workflow = document.workflow
+        if not workflow.send_approved_email:
+            # If approved email is disabled, only send approval notifications
+            return send_approval_notification_task.delay(None, document.id)
+
+        # Create a chain of tasks:
+        # 1. Generate PDF
+        # 2. Send approved email with the generated PDF
+        # 3. Send approval notifications
+        task_chain = chain(
+            generate_pdf_task.s(document.id),
+            send_approved_email_with_pdf_task.s(document.id),
+            send_approval_notification_task.s(document.id)
+        )
+        
+        # Execute the chain
+        return task_chain()
+        
+    except Exception as e:
+        logger.error(f"Error initiating approved email chain: {str(e)}")
+        raise
 
 
 # notify to approver for up coming document to approve
@@ -219,7 +194,14 @@ def send_approval_email(approval):
         )
 
 
-def generate_email_pdf(document):
+def _generate_pdf_content(document):
+    """
+    Internal function to generate PDF content
+    Args:
+        document: Document instance
+    Returns:
+        BytesIO: PDF content or None if generation fails
+    """
     from document.views import generate_pdf_report
     from django.http import HttpResponse
     from io import BytesIO
@@ -258,3 +240,22 @@ def generate_email_pdf(document):
     except Exception as e:
         print(f"Error generating PDF: {str(e)}")
         return None
+
+def generate_email_pdf(document, async_mode=True):
+    """
+    Generate PDF for a document, with option for synchronous or asynchronous processing
+    Args:
+        document: Document instance to generate PDF for
+        async_mode: If True, uses Celery task for async processing. If False, generates PDF synchronously
+    Returns:
+        If async_mode=True: Celery AsyncResult object
+        If async_mode=False: BytesIO object containing PDF or None if generation fails
+    """
+    from document.tasks import generate_pdf_task
+
+    if async_mode:
+        # Use Celery task for asynchronous processing
+        return generate_pdf_task.delay(document.id)
+
+    # Generate PDF synchronously
+    return _generate_pdf_content(document)
