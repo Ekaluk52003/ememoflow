@@ -21,7 +21,6 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from .tasks import upload_file_task
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
@@ -587,6 +586,7 @@ def resubmit_document(request, pk):
 
         form = DocumentSubmissionForm(request.POST, instance=document)
         errors = {}
+        dynamic_field_values = []  # Initialize the list here
         total_quantity = 0
 
         # Validate form fields
@@ -645,18 +645,27 @@ def resubmit_document(request, pk):
 
             elif field.field_type == 'attachment':
                 file = request.FILES.get(f'dynamic_{field.id}')
-                existing_value = DynamicFieldValue.objects.filter(document=document, field=field).first()
-                if field.required and not file and not (existing_value and existing_value.file):
-                    errors[field.name] = ["Attachment is required."]
-                elif file:
+                if file:
                     try:
-                        DynamicFieldValue.objects.update_or_create(
-                            document=document,
+                        field.validate_file(file)
+                        
+                        # Create DynamicFieldValue without file
+                        field_value = DynamicFieldValue(
                             field=field,
-                            defaults={'file': file}
+                            document=None  # Will be set after document is saved
                         )
-                    except Exception as e:
-                        errors[field.name] = [f"Error uploading file: {str(e)}"]
+                        
+                        # Read file content
+                        file_content = file.read()
+                        
+                        # Store the file info for async upload
+                        dynamic_field_values.append((field_value, file_content, file.name))
+                        
+                    except ValidationError as e:
+                        errors[field.name] = [str(e)]
+                elif is_required_for_submission:
+                    errors[field.name] = ["This field is required"]
+
 
 
             elif field.field_type == 'multiple_choice':
@@ -691,6 +700,40 @@ def resubmit_document(request, pk):
 
         if not errors:
             document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
+            # Save all the DynamicFieldValue objects and start async uploads
+            from .tasks import upload_file_to_s3_task
+            
+            # Track upload tasks
+            upload_tasks = []
+            
+            for field_value_data in dynamic_field_values:
+                if isinstance(field_value_data, tuple):
+                    # This is a file field
+                    field_value, file_content, filename = field_value_data
+                    field_value, created = DynamicFieldValue.objects.update_or_create(
+                        document=document,
+                        field=field_value.field,
+                        defaults={'file': None}  # Clear existing file before upload
+                    )
+                    
+                    # Start async upload task
+                    task = upload_file_to_s3_task.delay(field_value.id, file_content, filename)
+                    upload_tasks.append(task)
+                else:
+                    # Regular field value
+                    DynamicFieldValue.objects.update_or_create(
+                        document=document,
+                        field=field_value_data.field,
+                        defaults={
+                            'value': field_value_data.value,
+                            'json_value': field_value_data.json_value
+                        }
+                    )
+            
+            # Store task IDs in session for status checking
+            if upload_tasks:
+                request.session['upload_tasks'] = [task.id for task in upload_tasks]
+                
             custom_approvers = {}
             for step in workflow.steps.all():
                 if step.allow_custom_approver:
@@ -774,6 +817,7 @@ def resubmit_document(request, pk):
     return render(request, 'document/resubmit_document_full.html', context)
 
 
+
 @login_required
 def withdraw_document(request, document_id):
     document = get_object_or_404(Document, pk=document_id)
@@ -814,7 +858,7 @@ def withdraw_document(request, document_id):
 
             if request.htmx:
                 return HttpResponse(
-                    '<div class="text-red-500 mb-2">You don\'t have permission to withdraw this document.</div>',
+                    '<div class="mb-2 text-red-500">You don\'t have permission to withdraw this document.</div>',
                     status=200
                 )
             else:
@@ -931,10 +975,19 @@ def submit_document(request, workflow_id):
                 if file:
                     try:
                         field.validate_file(file)
-                        dynamic_field_values.append(DynamicFieldValue(
+                        
+                        # Create DynamicFieldValue without file
+                        field_value = DynamicFieldValue(
                             field=field,
-                            file=file
-                        ))
+                            document=None  # Will be set after document is created
+                        )
+                        
+                        # Read file content
+                        file_content = file.read()
+                        
+                        # Store the file info for async upload
+                        dynamic_field_values.append((field_value, file_content, file.name))
+                        
                     except ValidationError as e:
                         errors[field.name] = [str(e)]
                 elif is_required_for_submission:
@@ -984,10 +1037,30 @@ def submit_document(request, workflow_id):
         document.workflow = workflow
         document.save()
 
-        # Save all the DynamicFieldValue objects
-        for dynamic_field_value in dynamic_field_values:
-            dynamic_field_value.document = document
-            dynamic_field_value.save()
+        # Save all the DynamicFieldValue objects and start async uploads
+        from .tasks import upload_file_to_s3_task
+        
+        # Track upload tasks
+        upload_tasks = []
+        
+        for field_value_data in dynamic_field_values:
+            if isinstance(field_value_data, tuple):
+                # This is a file field
+                field_value, file_content, filename = field_value_data
+                field_value.document = document
+                field_value.save()
+                
+                # Start async upload task
+                task = upload_file_to_s3_task.delay(field_value.id, file_content, filename)
+                upload_tasks.append(task)
+            else:
+                # Regular field value
+                field_value_data.document = document
+                field_value_data.save()
+        
+        # Store task IDs in session for status checking
+        if upload_tasks:
+            request.session['upload_tasks'] = [task.id for task in upload_tasks]
 
         custom_approvers = {}
         for step in workflow.steps.all():
@@ -1284,3 +1357,43 @@ def view_editor_image(request, image_id):
         return HttpResponseRedirect(signed_url)
     except Exception as e:
         return HttpResponseForbidden(f"Error generating URL: {e}")
+
+@login_required
+def check_upload_status(request):
+    """Check the status of file uploads"""
+    from celery.result import AsyncResult
+    
+    task_ids = request.session.get('upload_tasks', [])
+    if not task_ids:
+        return JsonResponse({
+            'status': 'complete',
+            'message': 'No uploads in progress'
+        })
+    
+    # Check each task
+    results = []
+    all_complete = True
+    
+    for task_id in task_ids:
+        result = AsyncResult(task_id)
+        if result.ready():
+            task_result = result.get()
+            results.append({
+                'status': task_result['status'],
+                'message': task_result['message']
+            })
+        else:
+            all_complete = False
+            results.append({
+                'status': 'in_progress',
+                'message': 'Upload in progress...'
+            })
+    
+    # Clear session if all complete
+    if all_complete:
+        del request.session['upload_tasks']
+    
+    return JsonResponse({
+        'status': 'complete' if all_complete else 'in_progress',
+        'uploads': results
+    })

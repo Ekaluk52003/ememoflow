@@ -382,11 +382,9 @@ class EditorImage(models.Model):
 
     def has_access(self, user):
         """Check if user has access to this image"""
-        return (user.is_superuser or 
-                user.groups.filter(name='super user').exists() or
-                self.document.submitted_by == user or
-                self.document.approvals.filter(approver=user).exists())
-
+        from .utils import get_allowed_document
+        document = get_allowed_document(user, self.document.document_reference)
+        return document is not None and not isinstance(document, HttpResponse)
 
 class Document(models.Model):
     STATUS_CHOICES = [
@@ -592,7 +590,7 @@ class Document(models.Model):
 
     def can_cancel(self, user):
         return (
-            self.status == 'pending' and
+            self.status == 'pending' or self.status == 'rejected' and
             self.submitted_by == user
         )
 
@@ -645,12 +643,15 @@ class Document(models.Model):
          #allow to withdraw for all next cycle if is_approved is null in next cycle
         if self.status != 'in_review' or self.approvals.filter(is_approved__isnull=False, created_at__gt=self.last_submitted_at).exists():
             raise ValidationError("This document cannot be withdrawn.")
-        #send email before change systus
+        
+        #send email before changing status
+        send_withdraw_email(self)
         
         self.status = 'pending'
         self.current_step = None
         self.save()
-        send_withdraw_email(self)
+        # Delete only the approvals from the current review cycle
+        self.approvals.filter(created_at__gt=self.last_submitted_at).delete()
 
 
        # Delete only the approvals from the current review cycle
@@ -676,7 +677,6 @@ class Document(models.Model):
             return None
         current_approval = self.approvals.filter(step=self.current_step, is_approved__isnull=True).first()
         return current_approval.approver if current_approval else None
-
 
     def get_rejector(self):
         # Find the most recent rejection
@@ -777,6 +777,12 @@ class DynamicFieldValue(models.Model):
                 defaults={'value': value or ''}
             )
 
+    def has_access(self, user):
+        """Check if user has access to this field value"""
+        from .utils import get_allowed_document
+        document = get_allowed_document(user, self.document.document_reference)
+        return document is not None and not isinstance(document, HttpResponse)
+
     class Meta:
         unique_together = ('document', 'field')
 
@@ -802,10 +808,3 @@ class DynamicFieldValue(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
-
-    def has_access(self, user):
-        """
-        Check if the user has access to view this file.        """
-
-        document = get_allowed_document(user, self.document.document_reference)
-        return document is not None and not isinstance(document, HttpResponse)

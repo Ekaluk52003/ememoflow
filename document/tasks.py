@@ -40,6 +40,12 @@ def _serialize_context(context_dict):
     if 'approver' in serialized:
         serialized['approver_id'] = serialized['approver'].id
         del serialized['approver']
+    if 'rejector' in serialized:
+        serialized['rejector_id'] = serialized['rejector'].id
+        del serialized['rejector']
+    if 'withdrawer' in serialized:
+        serialized['withdrawer_id'] = serialized['withdrawer'].id
+        del serialized['withdrawer']
     return serialized
 
 @app.task(name='document.tasks.generate_pdf_task')
@@ -211,15 +217,6 @@ def send_approval_notification_task(email_result, document_id):
         logger.error(f"Error sending approval notifications: {str(e)}")
         raise
 
-@app.task
-def upload_file_task(document_id, field_id, file_path):
-    from django.core.files import File
-    with open(file_path, 'rb') as file:
-        DynamicFieldValue.objects.create(
-            document_id=document_id,
-            field_id=field_id,
-            file=File(file)
-        )
 
 @app.task
 def test_task(message="Hello, this is a test of the Celery task system!"):
@@ -267,6 +264,10 @@ def send_templated_email_task(subject_template, body_template, context_dict, rec
             context['step'] = ApprovalStep.objects.get(id=context['step_id'])
         if 'approver_id' in context:
             context['approver'] = CustomUser.objects.get(id=context['approver_id'])
+        if 'rejector_id' in context:
+            context['rejector'] = CustomUser.objects.get(id=context['rejector_id'])
+        if 'withdrawer_id' in context:
+            context['withdrawer'] = CustomUser.objects.get(id=context['withdrawer_id'])
         
         # Add document_url tag to the template if document exists
         if 'document' in context:
@@ -341,4 +342,48 @@ def send_templated_email_task(subject_template, body_template, context_dict, rec
         return {
             'status': 'error',
             'message': f'Error sending email: {str(e)}'
+        }
+
+@app.task(name='document.tasks.upload_file_to_s3_task')
+def upload_file_to_s3_task(field_value_id, file_content, filename):
+    """
+    Celery task to upload a file directly to S3
+    Args:
+        field_value_id: ID of the DynamicFieldValue to update
+        file_content: Binary content of the file
+        filename: Original filename
+    """
+    try:
+        from django_project.storage_backends import CustomS3Storage
+        from django.core.files.base import ContentFile
+        
+        # Get the field value
+        field_value = DynamicFieldValue.objects.get(id=field_value_id)
+        
+        # Get storage instance
+        storage = CustomS3Storage()
+        
+        # Create a ContentFile from the file content
+        content = ContentFile(file_content, name=filename)
+        
+        # Generate the path and save using storage backend
+        file_path = storage.generate_path(field_value, filename)
+        saved_name = storage.save(file_path, content)
+        
+        # Update the field value with the saved path
+        field_value.file.name = saved_name
+        field_value.save()
+        
+        return {
+            'status': 'success',
+            'message': f'File uploaded successfully: {filename}',
+            'field_value_id': field_value_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error uploading file for field value {field_value_id}: {str(e)}")
+        return {
+            'status': 'error',
+            'message': f'Error uploading file: {str(e)}',
+            'field_value_id': field_value_id
         }
