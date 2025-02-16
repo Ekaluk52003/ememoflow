@@ -840,7 +840,7 @@ def withdraw_document(request, document_id):
                     'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
                     'can_draw' : document.can_withdraw(request.user),
                     'can_cancel': document.can_cancel(request.user),
-                    'user_approval': None,  # Set to None as document is withdrawn
+                    'user_approval': None,   # might not need
                     'can_approve': False,
                 }
                 status_html = render_to_string('partials/document_status.html', context, request=request)
@@ -850,6 +850,7 @@ def withdraw_document(request, document_id):
                     status_html +
                     '<div id="document-actions" hx-swap-oob="true">' + actions_html + '</div>'
                      '<div id="approval-form" hx-swap-oob="true">' + approval_form_html + '</div>'
+                     '<div id="user-approvals" hx-swap-oob="true"></div>' # remove approval step 
                 )
             else:
                 return redirect('document_approval:document_detail', reference_id=document.document_reference)
