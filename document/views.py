@@ -813,7 +813,10 @@ def withdraw_document(request, document_id):
             messages.error(request, "You don't have permission to withdraw this document.")
 
             if request.htmx:
-                return HttpResponse("Permission denied", status=403)
+                return HttpResponse(
+                    '<div class="text-red-500 mb-2">You don\'t have permission to withdraw this document.</div>',
+                    status=200
+                )
             else:
                 return redirect('document_approval:document_detail', reference_id=document.document_reference)
 

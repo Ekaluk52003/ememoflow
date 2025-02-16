@@ -11,14 +11,32 @@
 
     {% if can_draw %}
     <div class="p-6 mt-6 bg-white rounded-xl">
+        <style>
+            .htmx-indicator{
+                display:none;
+            }
+            .htmx-request .htmx-indicator{
+                display:inline-block;
+            }
+            .htmx-request.htmx-indicator{
+                display:inline-block;
+            }
+        </style>
         <form hx-post="{% url 'document_approval:withdraw_document' document_id=document.pk %}"
-        hx-target="#document-status"
+        hx-target="this"
         hx-swap="outerHTML"
-        style="display: inline;">
+        hx-indicator="#withdraw-indicator">
       {% csrf_token %}
+      {% if error_message %}
+      <div class="text-red-500 mb-2">{{ error_message }}</div>
+      {% endif %}
+      <div id="withdraw-indicator" class="htmx-indicator">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
       <button type="submit" class="text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Withdraw Document</button>
-  </form>
-
+        </form>
     </div>
 
     {% endif %}
