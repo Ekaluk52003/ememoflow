@@ -2,7 +2,7 @@
     {% if can_resubmit %}
 
 
-<div class="flex p-6 mt-6 bg-white rounded-xl">
+<div class="flex p-6 mt-6 bg-white">
     
         <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Resubmit Document</a>
 
