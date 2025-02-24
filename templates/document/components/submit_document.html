@@ -156,24 +156,24 @@
         {% elif field.field_type == 'attachment' %}
         {% if field.file %}
             <p>Current file: {{ field.file.name }}</p>
-            <button type="button" class="mb-2 btn btn-danger btn-sm"
+            <button type="button" class="text-sm overflow-clip border rounded-radius border-outline bg-surface-alt/50 text-on-surface file:mr-4 file:border-none file:bg-surface-alt file:px-4 file:py-2 file:font-medium file:text-on-surface-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-75"
                     hx-delete="{% url 'delete_attachment' field.id  %}"
                     hx-target="#dynamic_{{ field.id }}-container"
                     hx-swap="outerHTML">
                 Delete File
             </button>
         {% endif %}
-        <input type="file" class="w-full file-input file-input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+        <input type="file" class="text-sm overflow-clip border rounded-radius border-outline bg-surface-alt/50 text-on-surface file:mr-4 file:border-none file:bg-surface-alt file:px-4 file:py-2 file:font-medium file:text-on-surface-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-75" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                {% if field.required and not field.file %}{% endif %}>
 
     {% elif field.field_type  == 'textarea' %}
     <textarea name="dynamic_{{ field.id }}" class="block mt-1 w-full textarea textarea-bordered" rows="{{ field.textarea_rows }}"></textarea>
 
     {% elif field.field_type == 'number' %}
-        <input type="number" class="w-full input input-bordered" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+        <input type="number" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                value="{{ field.value }}" {% if field.required %}{% endif %}>
     {% elif field.field_type == 'text' %}
-        <input type="text" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border focus:outline-none focus:bg-white focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+        <input type="text" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
 
 
                {% if field.required %}{% endif %}>
@@ -222,7 +222,7 @@
             {% else %}
             <!-- Other field types remain unchanged -->
             <input type="{{ field.field_type }}" 
-                   class="w-full input input-bordered" 
+                   class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" 
                    name="dynamic_{{ field.id }}" 
                    id="dynamic_{{ field.id }}"
                    value="{{ field.value }}" 
@@ -251,7 +251,7 @@
                            @focus="focused = true"
                            @click.away="focused = false"
                            placeholder="Search approver..."
-                           class="block p-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                           class="px-2 py-2 leading-tight text-gray-700 rounded border-2 eading-tight focus:outline-none focus:bg-white focus:border-blue-500"
                            :class="{ 'cursor-pointer': !isEditing }">
         
                     <button x-show="selected && !isEditing" 

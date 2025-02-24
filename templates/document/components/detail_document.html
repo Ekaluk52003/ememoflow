@@ -67,14 +67,14 @@
                         {% elif value.field_type == 'attachment' %}
                             {% if value.file_url %}
                                  {% if value.is_image %}
-                                     <div class="w-10">
+                                     <div class="w-full">
                                         <img src="{{ value.file_url }}" alt="Attachment"class="rounded-lg">
-                                        <div class="badge"> <a href="{{ value.file_url }}"  target="_blank">
+                                        <div class="px-2.5 py-0.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-sm me-2"> <a href="{{ value.file_url }}"  target="_blank">
                                             {{ value.original_file_name }}</a></div>
                                      </div>
                                   {% else %}
                                   <div class="mt-2">
-                                        <div class="p-4 text-lg badge badge-lg"> <a href="{{ value.file_url }}"  target="_blank">
+                                        <div class="px-2.5 py-0.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-sm me-2"> <a href="{{ value.file_url }}"  target="_blank">
                                             File:{{ value.original_file_name }}</a>
                                         </div>
                                   </div>
@@ -176,11 +176,11 @@
                 <textarea name="dynamic_{{ editable_field.id }}" class="block mt-1 w-full textarea textarea-bordered" rows="{{ editable_field.textarea_rows }}"></textarea>
 
                 {% elif editable_field.field_type == 'text' %}
-                    <input type="text" name="dynamic_{{ editable_field.id }}" class="w-full input input-bordered"  >
+                    <input type="text" name="dynamic_{{ editable_field.id }}" class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"  >
                 {% elif editable_field.field_type == 'number' %}
-                    <input type="number" name="dynamic_{{ editable_field.id }}"class="w-full input input-bordered">
+                    <input type="number" name="dynamic_{{ editable_field.id }}"class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500">
                 {% elif editable_field.field_type == 'date' %}
-                    <input type="date" name="dynamic_{{ editable_field.id }}"class="w-full input input-bordered" >
+                    <input type="date" name="dynamic_{{ editable_field.id }}"class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" >
                 {% elif editable_field.field_type == 'boolean' %}
                     <input type="checkbox" name="dynamic_{{ editable_field.id }}" class="mt-1">
                 {% endif %}

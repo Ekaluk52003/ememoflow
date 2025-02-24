@@ -63,6 +63,7 @@ def send_reject_email(document):
     rejector = document.get_rejector()
     context = {
         'document': document,
+        'submitted_by': document.submitted_by,
         'rejector': rejector,
         'workflow': workflow,
     }
@@ -79,23 +80,30 @@ def send_reject_email(document):
 
 
 def send_withdraw_email(document):
+    print('send email withdraw')
     workflow = document.workflow
     if not workflow.send_withdraw_email:
+        logger.info(f"Withdraw email sending is disabled for document {document.id}")
         return False
 
     current_approver = document.get_current_approver()
     if not current_approver:
-      
+        logger.info(f"No current approver found for document {document.id}")
         return False
 
+    logger.info(f"Sending withdraw email for document {document.id} to approver {current_approver.email}")
+    
     context = {
         'document': document,
         'withdrawer': document.submitted_by,
         'workflow': workflow,
         'approver': current_approver,
     }
+
     recipient_list = [current_approver.email]
     cc_list = workflow.get_cc_list()
+
+    logger.info(f"Using email templates - Subject: {workflow.withdraw_email_subject}, Body: {workflow.withdraw_email_body}")
 
     return send_templated_email(
         workflow.withdraw_email_subject,
@@ -104,6 +112,7 @@ def send_withdraw_email(document):
         recipient_list,
         cc_list
     )
+
 
 #for sending email when document is approved
 def send_approved_email(document):
