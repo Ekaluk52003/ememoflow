@@ -191,7 +191,7 @@ def generate_pdf_report(request, reference_id, template_id):
         is_approved=True
     ).select_related('approver')
     
-    approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}".strip() 
+    approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}{' (' + approval.approver.job_title + ')' if approval.approver.job_title else ''}".strip() 
                      for approval in approved_users]
     context_data['approver_names'] = ", ".join(approver_names)
     

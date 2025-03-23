@@ -5,7 +5,7 @@
 <div class="bg-white p-4 rounded shadow">
     <h2 class="text-xl">{{ document.title }}</h2>
     <p class="mt-2">Content: {{ document.content }}</p>
-    <p class="mt-2">Current Step: {{ document.current_step.name }}</p>
+    <p class="mt-2">Step: {{ document.current_step.name }}</p>
     <form  class="mt-4 space-y-4">
         {% csrf_token %}
         <div>

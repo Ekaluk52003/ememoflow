@@ -6,3 +6,11 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def get_full_name(self):
+        """
+        Return the first_name plus the last_name, with a space in between.
+        If both fields are empty, return the username instead.
+        """
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        return full_name if full_name else self.username
