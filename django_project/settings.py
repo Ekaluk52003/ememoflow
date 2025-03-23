@@ -46,6 +46,9 @@ INSTALLED_APPS = [
       'django_htmx',
       "crispy_tailwind",
       'dbbackup',
+      'import_export',
+      'hijack',
+      'hijack.contrib.admin',
     # Local
     "accounts",
     "pages",
@@ -75,6 +78,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",  # django-allauth
     "django_htmx.middleware.HtmxMiddleware",  # django-htmx
     "document.middleware.msgMiddleware", # toast
+    'hijack.middleware.HijackUserMiddleware',  # django-hijack
 ]
 
 if DEBUG:
@@ -298,3 +302,11 @@ REDIS_URL = f"redis://:{os.getenv('REDIS_PASSWORD')}@redis:6379/0"
 
 # WebSocket settings
 WS_PORT = 8001  # Port for WebSocket server
+
+# Django Hijack Settings
+HIJACK_LOGIN_REDIRECT_URL = '/'  # Where to redirect after hijacking a user
+HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user/'  # Where to redirect after releasing a user
+HIJACK_DISPLAY_WARNING = True  # Display a warning when you're logged in as another user
+HIJACK_ALLOW_GET_REQUESTS = False  # Allow GET requests for hijacking (easier for admin integration)
+HIJACK_USE_BOOTSTRAP = False  # We're using Tailwind, not Bootstrap
+HIJACK_INSERT_BEFORE = None  # Disable automatic injection of notification

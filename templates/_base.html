@@ -14,10 +14,12 @@
 
   {% block css %}
   <link href="{% static 'dist/styles.css' %}" rel="stylesheet">
+  <link href="{% static 'css/hijack.css' %}" rel="stylesheet">
   {% endblock %}
 </head>
 
-<body  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<body  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if request.user.is_hijacked %} class="hijacked"{% endif %}>
+     
      <!-- Toast -->
      <div id="toasts"></div>
 
@@ -56,9 +58,10 @@
           <!-- Fixed Header -->
           <div class="sticky top-0 z-10 bg-white shadow-lg">
             {% include "nav_header.html" %}      
-          </div>      
+          </div>     
           <!-- Scrollable Main Content -->
-           <div class="p-6" id="content-div" hx-history-elt>
+           <div class="p-6" id="content-div" hx-history-elt> 
+                   
             {% block content %}{% endblock content %}
             </div>
           </div>

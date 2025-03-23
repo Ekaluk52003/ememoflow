@@ -8,6 +8,7 @@ urlpatterns = [
     path("document/", include("document.urls")),
     path("accounts/", include("allauth.urls")),
     path("", include("pages.urls")),
+    path('hijack/', include('hijack.urls')),
 ]
 
 if settings.DEBUG:

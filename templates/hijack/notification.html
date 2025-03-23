@@ -1,0 +1,25 @@
+{% load i18n static %}
+
+<div class="w-full bg-yellow-500 text-black text-center font-bold">
+    <div class="container mx-auto flex items-center justify-center">
+        <div class="flex-grow">
+            {% blocktrans trimmed with user=request.user %}
+                You are currently working on behalf of <em>{{ user }}</em>.
+            {% endblocktrans %}
+        </div>
+        <div class="flex items-center">
+            <form action="{% url 'hijack:release' %}" method="POST" class="inline-block ml-4">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    {% trans 'Stop Impersonating' %}
+                </button>
+            </form>
+            <button onclick="this.parentNode.parentNode.parentNode.style.display = 'none';" type="button" class="ml-2 text-gray-800 hover:text-gray-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
