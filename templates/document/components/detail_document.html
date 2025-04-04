@@ -48,26 +48,28 @@
 
                 <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">{{ value.name }}:
                         {% if value.field_type == 'product_list' %}
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>ลำดับ</th>
-                                        <th>รหัสสินค้า</th>
-                                        <th>รายการ</th>
-                                        <th>จำนวน (แผ่น)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for product in value.value %}
+                            <div class="overflow-x-auto my-4 shadow-md sm:rounded-lg">
+                                <table class="w-full text-sm text-left text-gray-700">
+                                    <thead class="text-xs text-white uppercase bg-blue-600">
                                         <tr>
-                                            <td>{{ product.id }}</td>
-                                            <td>{{ product.code }}</td>
-                                            <td>{{ product.name }}</td>
-                                            <td>{{ product.quantity }}</td>
+                                            <th scope="col" class="px-6 py-3">ลำดับ</th>
+                                            <th scope="col" class="px-6 py-3">รหัสสินค้า</th>
+                                            <th scope="col" class="px-6 py-3">รายการ</th>
+                                            <th scope="col" class="px-6 py-3">จำนวน (แผ่น)</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for product in value.value %}
+                                            <tr class="bg-white border-b hover:bg-gray-50">
+                                                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ product.id }}</td>
+                                                <td class="px-6 py-4">{{ product.code }}</td>
+                                                <td class="px-6 py-4">{{ product.name }}</td>
+                                                <td class="px-6 py-4 text-center">{{ product.quantity }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         {% elif value.field_type == 'attachment' %}
                             {% if value.file_url %}
                                  {% if value.is_image %}
