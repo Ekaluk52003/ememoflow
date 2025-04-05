@@ -28,6 +28,23 @@ class GroupsWidget(ManyToManyWidget):
         if value:
             return value
         return None
+        
+    def get_group_ids(self, value):
+        """Convert comma-separated group names to group IDs"""
+        if not value or not isinstance(value, str):
+            return []
+            
+        group_names = [name.strip() for name in value.split(',') if name.strip()]
+        group_ids = []
+        
+        for group_name in group_names:
+            try:
+                group = Group.objects.get(name=group_name)
+                group_ids.append(group.id)
+            except Group.DoesNotExist:
+                pass
+                
+        return group_ids
 
 class CustomBooleanWidget(BooleanWidget):
     """Custom widget to display boolean values as TRUE or FALSE"""
@@ -45,7 +62,7 @@ class CustomUserResource(resources.ModelResource):
     # Define fields including groups as a dehydrated field
     password = Field(column_name='password')
     verify_email = Field(column_name='verify_email', widget=CustomBooleanWidget())
-    groups = fields.Field(column_name='groups')
+    groups = fields.Field(column_name='groups', widget=GroupsWidget(Group, 'name'))
     is_staff = Field(attribute='is_staff', column_name='is_staff', widget=CustomBooleanWidget())
     is_superuser = Field(attribute='is_superuser', column_name='is_superuser', widget=CustomBooleanWidget())
     is_active = Field(attribute='is_active', column_name='is_active', widget=CustomBooleanWidget())
@@ -118,10 +135,13 @@ class CustomUserResource(resources.ModelResource):
 
     def import_field(self, field, obj, data, is_m2m=False, **kwargs):
         """
-        Override import_field to skip the groups field during initial import
+        Override import_field to handle the groups field specially
         """
         if field.column_name == 'groups':
-            # Skip processing groups field here, we'll handle it in after_import_row
+            # Store the groups data for processing in after_import_row
+            key = f"{data.get('username')}:{data.get('email')}"
+            if 'groups' in data:
+                self._groups_data[key] = data.get('groups', '')
             return
         super().import_field(field, obj, data, is_m2m, **kwargs)
 
@@ -194,23 +214,34 @@ class CustomUserResource(resources.ModelResource):
             key = f"{user.username}:{user.email}"
             if key in self._groups_data and self._groups_data[key]:
                 try:
-                    groups_str = self._groups_data[key]
-                    groups_to_add = []
+                    groups_str = self._groups_data[key]                    
+                    
+                    # Split by comma and process each group name directly
                     group_names = [name.strip() for name in groups_str.split(',') if name.strip()]
+                    groups_to_add = []
                     
                     for group_name in group_names:
                         try:
                             group = Group.objects.get(name=group_name)
-                            groups_to_add.append(group)
+                            groups_to_add.append(group)                            
                         except Group.DoesNotExist:
-                            pass
+                            print(f"Group not found: {group_name}")
+                            continue
                     
-                    # Clear and add groups
+                    # Clear existing groups
                     user.groups.clear()
-                    for group in groups_to_add:
-                        user.groups.add(group)
+                    
+                    # Add each group directly
+                    if groups_to_add:
+                        for group in groups_to_add:
+                            user.groups.add(group)
+                        print(f"Added {len(groups_to_add)} groups to {user.username}")
+                    else:
+                        print(f"No valid groups found for {user.username}")
                 except Exception as e:
-                    row_result.errors.append(f"Error setting groups: {str(e)}")
+                    error_msg = f"Error setting groups: {str(e)}"
+                    print(error_msg)
+                    row_result.errors.append(error_msg)
                     
             # Handle email verification
             verify_email = row.get('verify_email', True)
@@ -264,7 +295,9 @@ class CustomUserResource(resources.ModelResource):
         # Fallback to getting groups from the object if available
         if obj.pk and hasattr(obj, 'groups') and obj.groups is not None:
             try:
-                return ",".join([g.name for g in obj.groups.all()])
+                groups = obj.groups.all()
+                if groups:
+                    return ",".join([g.name for g in groups])
             except (AttributeError, TypeError):
                 pass
         return ""
