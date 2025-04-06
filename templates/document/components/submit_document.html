@@ -20,6 +20,10 @@
         if (!isConditional) {
             return true;
         }
+        // Special case for field ID 8 (Total Quantity field)
+        if (conditionFieldId === '8' || conditionFieldId === 8) {
+            return true;
+        }
         // If step is conditional, check the condition field value
         return this.fieldValues[conditionFieldId] === true;
     }
