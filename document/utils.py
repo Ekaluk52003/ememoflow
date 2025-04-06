@@ -23,8 +23,8 @@ def is_bu_manager(user):
     return user.groups.filter(name__endswith='_Manager').exists()
 
 def get_allowed_documents(user):
-    # Check if the user is superuser
-    if user.is_superuser:
+    # Check if the user is superuser or in Director group
+    if user.is_superuser or user.groups.filter(name='Director').exists():
         return Document.objects.all().order_by('-created_at')
     
     # Get documents where the workflow has authorized groups that include the user's groups
