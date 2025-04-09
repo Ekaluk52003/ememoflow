@@ -39,8 +39,8 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
 
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):
-    list_display = ('workflow', 'name', 'order', 'is_conditional', 'requires_edit', 'move_to_next')
-    list_filter = ('workflow', 'is_conditional', 'requires_edit')
+    list_display = ('workflow', 'name', 'order', 'approval_mode', 'is_conditional', 'requires_edit', 'move_to_next')
+    list_filter = ('workflow', 'approval_mode', 'is_conditional', 'requires_edit')
     filter_horizontal = ('approvers', 'editable_fields')
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):

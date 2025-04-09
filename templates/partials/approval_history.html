@@ -6,17 +6,20 @@
 
 <ul class="mb-4 list-group">
     {% for approval in ordered_approvals %}
-        <li class="list-group-item {% if approval.step == document.current_step and approval.is_approved is None  %}{% endif %} {% if approval.is_approved == False   %} list-group-item-secondary list-group-item-danger{% endif %} {% if approval.is_approved == True%}list-group-item-success {% endif %}">
+        <!-- DEBUG: is_approved={{ approval.is_approved }}, status={{ approval.status }}, comment={{ approval.comment }} -->
+        <li class="list-group-item {% if approval.comment == 'Automatically cancelled - another approver has approved this document' %} list-group-item-secondary {% elif approval.is_approved == False %} list-group-item-danger {% elif approval.is_approved == True %} list-group-item-success {% endif %}">
             <div class="d-flex w-100 justify-content-between">
                 <h5 class="mb-1">{{ approval.step.name }} - {{ approval.approver.username }}</h5>
 
                 <span></span>
                 {% if approval.is_approved == True %}
                     <span class="badge bg-success">Approved</span>
+                {% elif approval.comment == 'Automatically cancelled - another approver has approved this document' or approval.status == 'cancelled' %}
+                    <span class="badge bg-secondary">Cancelled</span>
                 {% elif approval.is_approved == False %}
                     <span class="badge bg-danger">Rejected</span>
-                {% else %}
-                    <span class="bg-blue-200 badge">Pending</span>
+                {% else %}   
+                    <span class="bg-blue-200 badge">Pending</span>   
                 {% endif %}
             </div>
             {% if approval.comment %}
@@ -46,9 +49,9 @@
     </div>
     <div class="mb-3">
         <label for="comment" class="form-label">Comment:</label>
-        <textarea class="block w-full px-0 text-sm text-gray-800 bg-white border-0 focus:ring-0" name="comment" id="comment" rows="3"></textarea>
+        <textarea class="block px-0 w-full text-sm text-gray-800 bg-white border-0 focus:ring-0" name="comment" id="comment" rows="3"></textarea>
     </div>
 
-    <button type="submit" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">Submit Approval</button>
+    <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">Submit Approval</button>
 </form>
 {% endif %}

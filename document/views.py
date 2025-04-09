@@ -636,10 +636,12 @@ def resubmit_document(request, pk):
                 if field_errors:
                     errors[field.name] = field_errors
             elif field.name == 'Total Quantity':
+                # Get the value from the form directly instead of calculating it
+                total_qty_value = request.POST.get(f'dynamic_{field.id}', '0')
                 DynamicFieldValue.objects.update_or_create(
                     document=document,
                     field=field,
-                    defaults={'value': str(total_quantity)}
+                    defaults={'value': total_qty_value}
                 )
 
 
@@ -966,9 +968,15 @@ def submit_document(request, workflow_id):
                     errors[field.name] = field_errors
 
             elif field.name == 'Total Quantity':
+                # Try to get the value from the form first
+                form_total = request.POST.get(f'dynamic_{field.id}')
+                
+                # If not provided in the form, use the calculated total
+                final_total = form_total if form_total else str(total_quantity)
+                
                 dynamic_field_values.append(DynamicFieldValue(
                     field=field,
-                    value=str(total_quantity)
+                    value=final_total
                 ))
 
             elif field.field_type == 'attachment':

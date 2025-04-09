@@ -153,6 +153,11 @@
                     <div class="text-lg text-gray-600">
                         Total Quantity: <span x-ref="totalQuantity" class="font-bold">0</span>
                     </div>
+                    {% for field in workflow.dynamic_fields.all %}
+                        {% if field.name == 'Total Quantity' %}
+                            <input type="hidden" name="dynamic_{{ field.id }}" :value="products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0)">
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
         </div>

@@ -202,6 +202,12 @@ class ApprovalStep(models.Model):
     approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
     allow_custom_approver = models.BooleanField(default=False)
     approver_group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
+    approval_mode = models.CharField(
+        max_length=10,
+        choices=[('all', 'All Approvers Required'), ('any', 'Any Approver Sufficient')],
+        default='all',
+        help_text='Determines whether all approvers must approve or any single approver is sufficient'
+    )
     # approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
 
     # Fields for conditional logic
@@ -547,6 +553,11 @@ class Document(models.Model):
 
 
         approval.is_approved = is_approved
+        # Set the status field based on the is_approved value
+        if is_approved:
+            approval.status = 'approved'
+        elif is_approved is False:  # Explicitly rejected
+            approval.status = 'rejected'
         approval.comment = comment
         approval.recorded_at = timezone.now()
 
@@ -576,7 +587,32 @@ class Document(models.Model):
 
 
         if is_approved:
-            self.move_to_next_step(approval)
+            # Check if we should move to the next step based on approval mode
+            current_step = self.current_step
+            
+            if current_step.approval_mode == 'any':
+                # If 'any approver' mode, we can move to the next step immediately
+                # Cancel all other pending approvals for this step
+                other_pending_approvals = self.approvals.filter(
+                    step=current_step,
+                    is_approved__isnull=True
+                ).exclude(pk=approval.pk)
+                
+                # Delete other pending approvals instead of marking them as cancelled
+                other_pending_approvals.delete()
+                
+                # Move to the next step
+                self.move_to_next_step(approval)
+            else:  # 'all' mode (default)
+                # Check if all approvers have approved
+                pending_approvals = self.approvals.filter(
+                    step=current_step,
+                    is_approved__isnull=True
+                ).exists()
+                
+                # If no pending approvals remain, move to the next step
+                if not pending_approvals:
+                    self.move_to_next_step(approval)
         else:
             self.reject()
         return approval
@@ -720,10 +756,18 @@ class Favorite(models.Model):
         unique_together = ('user', 'document')
 
 class Approval(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled')
+    )
+    
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')
     step = models.ForeignKey(ApprovalStep, on_delete=models.CASCADE)
     approver = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     is_approved = models.BooleanField(null=True, default=None)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     comment = models.TextField(blank=True)
     user_input = models.TextField(blank=True)
     uploaded_file = models.FileField(upload_to=user_directory_path, blank=True, null=True)

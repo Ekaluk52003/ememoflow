@@ -161,6 +161,11 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             <div class="text-lg text-gray-600">
                 Total Quantity: <span x-text="calculateTotal()" class="font-bold"></span>
             </div>
+            {% for field in workflow.dynamic_fields.all %}
+                {% if field.name == 'Total Quantity' %}
+                    <input type="hidden" name="dynamic_{{ field.id }}" :value="calculateTotal()">
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
 
