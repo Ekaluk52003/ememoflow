@@ -96,6 +96,8 @@ def prepare_dynamic_fields(document):
 
         if dynamic_value.field.field_type == 'product_list':
             prepared_value['value'] = dynamic_value.json_value
+        elif dynamic_value.field.field_type == 'table_list':
+            prepared_value['value'] = dynamic_value.json_value
         elif dynamic_value.field.field_type == 'attachment':
             prepared_value['value'] = dynamic_value.file.url if dynamic_value.file else 'No file'
 
@@ -211,6 +213,22 @@ def generate_pdf_report(request, reference_id, template_id):
             prepared_value['value'] = products
             prepared_value['products'] = products
             prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
+        elif value.field.field_type == 'table_list':
+            # Get the column order from the field
+            columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
+            
+            # Prepare the rows with ordered columns
+            ordered_rows = []
+            for row in (value.json_value or []):
+                # Create a new row with columns in the correct order
+                ordered_row = []
+                for col in columns:
+                    ordered_row.append((col, row.get(col, '')))
+                ordered_rows.append(ordered_row)
+            
+            prepared_value['value'] = ordered_rows
+            prepared_value['columns'] = columns
+            prepared_value['field'] = value.field  # Make sure field is available in template
         elif value.field.field_type == 'attachment' and value.file:
             file_url = reverse('document_approval:view_file', args=[value.id])
             full_filename = value.file.name.split('/')[-1]
@@ -391,6 +409,22 @@ def document_detail(request, reference_id):
                 prepared_value['value'] = products
                 prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
                 prepared_value['products'] = products  # Add this for template compatibility
+            elif value.field.field_type == 'table_list':
+                # Get the column order from the field
+                columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
+                
+                # Prepare the rows with ordered columns
+                ordered_rows = []
+                for row in (value.json_value or []):
+                    # Create a new row with columns in the correct order
+                    ordered_row = []
+                    for col in columns:
+                        ordered_row.append((col, row.get(col, '')))
+                    ordered_rows.append(ordered_row)
+                
+                prepared_value['value'] = ordered_rows
+                prepared_value['columns'] = columns
+                prepared_value['field'] = value.field  # Make sure field is available in template
             elif value.field.field_type == 'attachment' and value.file:
                file_url = reverse('document_approval:view_file', args=[value.id])
                full_file_name = os.path.basename(value.file.name)
@@ -559,6 +593,9 @@ def resubmit_document(request, pk):
         field_value = document.dynamic_values.filter(field=field).first()
         if field.field_type == 'product_list':
             field_data['products'] = field_value.json_value if field_value else []
+        elif field.field_type == 'table_list':
+            field_data['table_columns'] = field.table_columns
+            field_data['rows'] = field_value.json_value if field_value else []
         elif field.field_type == 'attachment' and field_value and field_value.file:
             file_url = reverse('document_approval:view_file', args=[field_value.id])
             full_file_name = os.path.basename(field_value.file.name)
@@ -598,7 +635,58 @@ def resubmit_document(request, pk):
             field_key = f'dynamic_{field.id}'
             is_required_for_submission = field.required and field not in editable_fields
 
-            if field.field_type == 'product_list':
+            if field.field_type == 'table_list':
+                # Get the column names from the field in the correct order
+                columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
+                
+                # Initialize data structure for rows
+                rows = []
+                field_errors = []
+                
+                # Determine the number of rows by checking the first column's data
+                if columns:
+                    first_col = columns[0].strip()
+                    row_count = len(request.POST.getlist(f'table_{field.id}_{first_col}[]'))
+                    
+                    # Process each row
+                    for row_idx in range(row_count):
+                        # Create a list of tuples to preserve column order
+                        row_items = []
+                        row_has_data = False
+                        
+                        # Process each column in this row in the specified order
+                        for col in columns:
+                            col_name = col.strip()
+                            col_values = request.POST.getlist(f'table_{field.id}_{col_name}[]')
+                            
+                            if row_idx < len(col_values):
+                                col_value = col_values[row_idx]
+                                row_items.append((col_name, col_value))
+                                if col_value.strip():
+                                    row_has_data = True
+                            else:
+                                row_items.append((col_name, ''))
+                        
+                        # Only add rows that have at least some data
+                        if row_has_data:
+                            # Convert the list of tuples to a dictionary while preserving order
+                            row_data = {}
+                            for col_name, col_value in row_items:
+                                row_data[col_name] = col_value
+                            rows.append(row_data)
+                
+                if rows:
+                    dynamic_field_values.append(DynamicFieldValue(
+                        field=field,
+                        json_value=rows
+                    ))
+                elif is_required_for_submission:
+                    field_errors.append("At least one row is required")
+                
+                if field_errors:
+                    errors[field.name] = field_errors
+                    
+            elif field.field_type == 'product_list':
                 product_ids = request.POST.getlist(f'product_id_{field.id}[]')
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
@@ -913,6 +1001,8 @@ def submit_document(request, workflow_id):
             field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
         elif field.field_type == 'product_list':
             field_data['default_products'] = [{'id':'','code':'','name': '', 'quantity': ''} for _ in range(2)]
+        elif field.field_type == 'table_list':
+            field_data['table_columns'] = field.table_columns
         prepared_fields.append(field_data)
 
     if request.method == 'POST':
@@ -930,7 +1020,58 @@ def submit_document(request, workflow_id):
             field_key = f'dynamic_{field.id}'
             is_required_for_submission = field.required and field not in editable_fields
 
-            if field.field_type == 'product_list':
+            if field.field_type == 'table_list':
+                # Get the column names from the field in the correct order
+                columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
+                
+                # Initialize data structure for rows
+                rows = []
+                field_errors = []
+                
+                # Determine the number of rows by checking the first column's data
+                if columns:
+                    first_col = columns[0].strip()
+                    row_count = len(request.POST.getlist(f'table_{field.id}_{first_col}[]'))
+                    
+                    # Process each row
+                    for row_idx in range(row_count):
+                        # Create a list of tuples to preserve column order
+                        row_items = []
+                        row_has_data = False
+                        
+                        # Process each column in this row in the specified order
+                        for col in columns:
+                            col_name = col.strip()
+                            col_values = request.POST.getlist(f'table_{field.id}_{col_name}[]')
+                            
+                            if row_idx < len(col_values):
+                                col_value = col_values[row_idx]
+                                row_items.append((col_name, col_value))
+                                if col_value.strip():
+                                    row_has_data = True
+                            else:
+                                row_items.append((col_name, ''))
+                        
+                        # Only add rows that have at least some data
+                        if row_has_data:
+                            # Convert the list of tuples to a dictionary while preserving order
+                            row_data = {}
+                            for col_name, col_value in row_items:
+                                row_data[col_name] = col_value
+                            rows.append(row_data)
+                
+                if rows:
+                    dynamic_field_values.append(DynamicFieldValue(
+                        field=field,
+                        json_value=rows
+                    ))
+                elif is_required_for_submission:
+                    field_errors.append("At least one row is required")
+                
+                if field_errors:
+                    errors[field.name] = field_errors
+                    
+            elif field.field_type == 'product_list':
                 product_ids = request.POST.getlist(f'product_id_{field.id}[]')
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')

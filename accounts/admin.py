@@ -347,7 +347,7 @@ class CustomUserAdmin(ImportExportModelAdmin, UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         (None, {'fields': ('job_title',)}),
     )
-    list_display = ['id','email', 'username','job_title', 'is_staff', 'get_groups']
+    list_display = ['id','email', 'username','job_title', 'is_staff', 'is_active', 'get_groups']
     
     def get_groups(self, obj):
         if obj and obj.pk and hasattr(obj, 'groups') and obj.groups is not None:

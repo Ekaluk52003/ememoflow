@@ -1397,6 +1397,9 @@ video {
 .w-2 {
   width: 0.5rem;
 }
+.w-24 {
+  width: 6rem;
+}
 .w-3\.5 {
   width: 0.875rem;
 }

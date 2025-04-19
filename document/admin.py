@@ -39,7 +39,7 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
 
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):
-    list_display = ('workflow', 'name', 'order', 'approval_mode', 'is_conditional', 'requires_edit', 'move_to_next')
+    list_display = ('workflow', 'name', 'order', 'approval_mode', 'allow_custom_approver', 'is_conditional', 'requires_edit', 'move_to_next')
     list_filter = ('workflow', 'approval_mode', 'is_conditional', 'requires_edit')
     filter_horizontal = ('approvers', 'editable_fields')
 

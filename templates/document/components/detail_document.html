@@ -47,7 +47,32 @@
                 {% for value in prepared_values %}
 
                 <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">{{ value.name }}:
-                        {% if value.field_type == 'product_list' %}
+                        {% if value.field.field_type == 'table_list' %}
+                            <div class="overflow-x-auto my-4 shadow-md sm:rounded-lg">
+                                <table class="w-full text-sm text-left text-gray-700">
+                                    <thead class="text-xs text-white uppercase bg-blue-600">
+                                        <tr>
+                                            {% for column in value.columns %}
+                                                <th scope="col" class="px-6 py-3">{{ column }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in value.value %}
+                                            <tr class="bg-white border-b hover:bg-gray-50">
+                                                {% for column_name, column_value in row %}
+                                                    <td class="px-6 py-4">{{ column_value }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% empty %}
+                                            <tr class="bg-white border-b">
+                                                <td colspan="{{ value.columns|length }}" class="px-6 py-4 text-center">No data available</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% elif value.field_type == 'product_list' %}
                             <div class="overflow-x-auto my-4 shadow-md sm:rounded-lg">
                                 <table class="w-full text-sm text-left text-gray-700">
                                     <thead class="text-xs text-white uppercase bg-blue-600">

@@ -110,6 +110,7 @@ class DynamicField(models.Model):
         ('multiple_choice', 'Multiple Choice'),
         ('attachment', 'File Attachment'),
         ('product_list', 'Product List'),
+        ('table_list', 'Table List'),
     )
 
     WIDTH_CHOICES = (
@@ -138,6 +139,7 @@ class DynamicField(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(20)]
     )
     input_width = models.CharField(max_length=4, choices=WIDTH_CHOICES, default='full', help_text="Width of the input field")
+    table_columns = models.TextField(blank=True, help_text="Pipe-separated column names for 'table_list' field type (e.g., 'item|name|qty|invoice|reason|credit')")
 
     class Meta:
         ordering = ['order']
