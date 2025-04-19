@@ -44,6 +44,17 @@
             <!-- Step content -->
             <div class="pt-2">
               <h2 class="text-lg font-medium text-gray-800 mb-3">{{ step.order }}. {{ step.name }}</h2>
+
+              {% if step.requires_edit %}
+              <div class="mb-3">
+                <div class="inline-flex items-center px-3 py-1 rounded bg-orange-100 text-orange-800 border border-orange-200">
+                  <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <span class="font-medium">Requires Edit</span>
+                </div>
+              </div>
+              {% endif %}
               
               <!-- Flex layout for card content -->
               <div class="flex flex-wrap">
