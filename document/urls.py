@@ -8,7 +8,6 @@ app_name = 'document_approval'  # This sets the application namespace
 urlpatterns = [
 
     path('', views.document_list, name='document_list'),
-    path('workflows/', views.workflow_list, name='workflow_list'),
     path('<int:reference_id>/', views.document_detail, name='document_detail'),
     path('submit/<int:workflow_id>/', views.submit_document, name='submit_document'),
     path('<int:pk>/resubmit/', views.resubmit_document, name='resubmit_document'),
@@ -26,5 +25,6 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
     path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
+    path('workflow/<int:workflow_id>/steps/', views.workflow_steps, name='workflow_steps'),
 
 ]

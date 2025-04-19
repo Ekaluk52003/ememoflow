@@ -308,15 +308,6 @@ def generate_pdf_report(request, reference_id, template_id):
 
 
 @login_required
-def workflow_list(request):
-    workflows = ApprovalWorkflow.objects.all()
-
-    if request.htmx:
-         return render(request, 'document/components/workflow_list.html', {'workflows': workflows})
-
-    return render(request, 'document/workflow_list_full.html', {'workflows': workflows})
-
-@login_required
 def document_list(request):
     user = request.user
     search_query = request.GET.get('search', '')
@@ -1546,4 +1537,15 @@ def check_upload_status(request):
     return JsonResponse({
         'status': 'complete' if all_complete else 'in_progress',
         'uploads': results
+    })
+
+@login_required
+def workflow_steps(request, workflow_id):
+    """Display workflow steps with connecting dot lines"""
+    workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
+    steps = workflow.steps.all().order_by('order')
+    
+    return render(request, 'document/workflow_steps.html', {
+        'workflow': workflow,
+        'steps': steps
     })
