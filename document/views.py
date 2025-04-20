@@ -483,6 +483,10 @@ def document_detail(request, reference_id):
             errors = {}
             is_approved = request.POST.get('is_approved') == 'true'
             comment = request.POST.get('comment', '')
+            
+            # Ensure newlines in comments are properly preserved as \n
+            if comment:
+                comment = comment.replace('\r\n', '\n').replace('\r', '\n')
 
             edited_values = {}
             uploaded_files = {}
@@ -911,6 +915,10 @@ def resubmit_document(request, pk):
                         # For boolean fields, the value is only present in POST data if checked
                         if field.field_type == 'boolean':
                             value = 'on' if value else ''
+                        # Special handling for textarea fields to preserve newlines
+                        elif field.field_type == 'textarea' and value:
+                            # Ensure newlines are preserved as \n in the database
+                            value = value.replace('\r\n', '\n').replace('\r', '\n')
                         DynamicFieldValue.objects.update_or_create(
                             document=document,
                             field=field,
@@ -1295,6 +1303,10 @@ def submit_document(request, workflow_id):
                         # For boolean fields, the value is only present in POST data if checked
                         if field.field_type == 'boolean':
                             value = 'on' if value else ''
+                        # Special handling for textarea fields to preserve newlines
+                        elif field.field_type == 'textarea' and value:
+                            # Ensure newlines are preserved as \n in the database
+                            value = value.replace('\r\n', '\n').replace('\r', '\n')
                         dynamic_field_values.append(DynamicFieldValue(
                             field=field,
                             value=value

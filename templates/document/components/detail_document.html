@@ -116,6 +116,8 @@
                             {% endif %}
                         {% elif value.field_type == 'boolean' %}
                             <p>{% if value.value %}Yes{% else %}No{% endif %}</p>
+                        {% elif value.field_type == 'textarea' %}
+                            <span class="font-bold text-primary text-md">{{ value.value|linebreaks }}</span></h5>
                         {% else %}
                         <span class="font-bold text-primary text-md">{{ value.value }}</span></h5>
                         {% endif %}
@@ -141,7 +143,7 @@
                                 <p class="mt-1 text-sm text-blue-600"><small>{{ approval.on_behalf_of.job_title }}</small></p>
                                 {% endif %}
                                 {% if approval.comment %}
-                                <p class="mt-2 text-sm text-gray-600"><small>Comment: {{ approval.comment }}</small></p>
+                                <div class="mt-2 text-sm text-gray-600"><small>Comment: {{ approval.comment|linebreaks }}</small></div>
                                 {% endif %}
                                 {% if approval.recorded_at %}
                                 <p class="mt-2 text-sm text-gray-600"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>

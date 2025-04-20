@@ -269,7 +269,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             {% elif field.field_type == 'text' %}
                     <input type="text" class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                     {% elif field.field_type  == 'textarea' %}
-                    <textarea name="dynamic_{{ field.id }}" class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
+                    <textarea name="dynamic_{{ field.id }}" class="block mt-1 w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
                 {% elif field.field_type == 'number' %}
                     <input type="number" class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'date' %}
