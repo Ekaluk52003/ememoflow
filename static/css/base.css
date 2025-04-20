@@ -1,3 +1,83 @@
 [x-cloak] {
   display: none !important;
 }
+
+/* Table column width settings - specific to field ID 52 */
+/* Direct column targeting for table 52 */
+#table-list-field-52 table td:nth-of-type(1),
+#table-list-field-52 table th:nth-of-type(1) {
+    width: 80px !important;
+    max-width: 80px !important;
+    min-width: 80px !important;
+}
+
+#table-list-field-52 table td:nth-of-type(2),
+#table-list-field-52 table th:nth-of-type(2) {
+    width: 200px !important;
+    max-width: 200px !important;
+    min-width: 200px !important;
+}
+
+#table-list-field-52 table td:nth-of-type(3),
+#table-list-field-52 table th:nth-of-type(3) {
+    width: 80px !important;
+    max-width: 80px !important;
+    min-width: 80px !important;
+}
+
+#table-list-field-52 table td:nth-of-type(4),
+#table-list-field-52 table th:nth-of-type(4),
+#table-list-field-52 table td:nth-of-type(5),
+#table-list-field-52 table th:nth-of-type(5) {
+    width: 200px !important;
+    max-width: 200px !important;
+    min-width: 200px !important;
+}
+
+/* Make sure table layout is fixed for consistent column widths */
+#table-list-field-52 table {
+    table-layout: fixed;
+    min-width: 800px; /* Ensure table has minimum width to trigger scrolling */
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* Force column widths with additional specificity */
+#table-list-field-52 table tr td:first-of-type,
+#table-list-field-52 table tr th:first-of-type {
+    width: 80px !important;
+    max-width: 80px !important;
+    min-width: 80px !important;
+}
+
+/* Ensure inputs don't overflow their cells */
+#table-list-field-52 input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Container for horizontal scrolling */
+#table-list-field-52 .table-list-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Improve scrollbar appearance */
+#table-list-field-52 .table-list-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+#table-list-field-52 .table-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#table-list-field-52 .table-list-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#table-list-field-52 .table-list-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

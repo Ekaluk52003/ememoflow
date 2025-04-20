@@ -58,7 +58,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
 
         {% if field.field_type == 'table_list' %}
-        <div x-data="{
+        <div id="table-list-field-{{ field.id }}" x-data="{
             rows: {{ field.rows|default:'[]'|safe }},
             columns: '{{ field.table_columns }}'.split('|').filter(col => col.trim() !== ''),
             addRow() {
@@ -81,14 +81,14 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             <!-- Main container with relative positioning -->
             <div class="relative w-full">
                 <!-- Fixed width container that forces horizontal scroll -->
-                <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
-                    <div class="min-w-[800px]" style="width: fit-content;"> <!-- Content with minimum width -->
+                <div class="overflow-x-auto relative">
+                    <div class="table-list-container"> <!-- Content with minimum width -->
                         <!-- Table structure -->
-                        <table class="w-full">
+                        <table class="w-full" style="table-layout: fixed; min-width: 800px;">
                             <thead>
                                 <tr>
-                                    <template x-for="column in columns" :key="column">
-                                        <th class="text-sm font-medium text-gray-600 text-left p-2" style="width: 150px;" x-text="column.trim()"></th>
+                                    <template x-for="(column, colIndex) in columns" :key="column">
+                                        <th class="text-sm font-medium text-gray-600 text-left p-2" :style="colIndex === 0 || colIndex === 2 ? 'width: 80px; min-width: 80px; max-width: 80px;' : (colIndex === 1 || colIndex === 3 || colIndex === 4 ? 'width: 200px; min-width: 200px; max-width: 200px;' : '')" x-text="column.trim()"></th>
                                     </template>
                                     <th class="w-24"></th>
                                 </tr>
@@ -97,7 +97,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                 <template x-for="(row, rowIndex) in rows" :key="rowIndex">
                                     <tr>
                                         <template x-for="(column, colIndex) in columns" :key="colIndex">
-                                            <td class="p-1">
+                                            <td class="p-1" :style="colIndex === 0 || colIndex === 2 ? 'width: 80px; min-width: 80px; max-width: 80px;' : (colIndex === 1 || colIndex === 3 || colIndex === 4 ? 'width: 200px; min-width: 200px; max-width: 200px;' : '')">
                                                 <input type="text"
                                                        class="w-full p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
                                                        :name="'table_' + '{{ field.id }}' + '_' + column.trim() + '[]'"
