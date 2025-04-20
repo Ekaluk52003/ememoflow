@@ -24,6 +24,17 @@
                             <p class="{% if document.status == 'approved' %}bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'rejected' %}bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'in_review' %}bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'cancel' %}bg-purple-100 text-purple-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% else %}bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% endif %}">
                              {{ document.get_status_display }}
                             </p>
+                            {% if document.status == 'in_review' and document.approvals.all %}
+                                {% for approval in document.approvals.all %}
+                                    {% if approval.step == document.current_step and approval.is_approved is None %}
+                                        {% if approval.approver == request.user %}
+                                            <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm">Awaiting your approval</span>
+                                        {% elif approval.approver.id in authorized_approvers %}
+                                            <span class="bg-purple-100 text-purple-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm">Approve on behalf of {{ approval.approver.username }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
                         </div>
                     </div>
                     <div class="mt-2">

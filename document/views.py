@@ -8,7 +8,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.db.models import Q
-from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite
+from django.utils import timezone
+from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite, Approval
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
 from django.contrib import messages
@@ -26,6 +27,7 @@ from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from django_htmx.http import retarget
 import logging
+from .utils_authorization import is_authorized_approver, get_authorized_approvers
 from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
@@ -191,11 +193,28 @@ def generate_pdf_report(request, reference_id, template_id):
     # Get users who have approved
     approved_users = document.approvals.filter(
         is_approved=True
-    ).select_related('approver')
+    ).select_related('approver', 'on_behalf_of')
     
-    approver_names = [f"{approval.approver.first_name} {approval.approver.last_name}{' (' + approval.approver.job_title + ')' if approval.approver.job_title else ''}".strip() 
-                     for approval in approved_users]
+    approver_names = []
+    for approval in approved_users:
+        if approval.on_behalf_of:
+            # Use on_behalf_of user if available
+            name = f"{approval.on_behalf_of.first_name} {approval.on_behalf_of.last_name}"
+            if approval.on_behalf_of.job_title:
+                name += f" ({approval.on_behalf_of.job_title})"
+            approver_names.append(name.strip())
+        else:
+            # Use original approver if no delegation
+            name = f"{approval.approver.first_name} {approval.approver.last_name}"
+            if approval.approver.job_title:
+                name += f" ({approval.approver.job_title})"
+            approver_names.append(name.strip())
+    
     context_data['approver_names'] = ", ".join(approver_names)
+    
+    # Add on_behalf_of information if available
+    if hasattr(document, 'on_behalf_of') and document.on_behalf_of:
+        context_data['on_behalf_of'] = document.on_behalf_of
     
     # Prepare dynamic fields with file URLs
     prepared_values = []
@@ -388,7 +407,28 @@ def document_detail(request, reference_id):
         # document = get_object_or_404(Document, document_reference=reference_id)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
         dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
+        
+        # Check if user is directly an approver
         user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
+        
+        # Check if user is authorized to approve on behalf of someone else
+        authorized_for = None
+        on_behalf_of = None
+        if not user_approval and document.current_step:
+            # Get all users that the current user is authorized to approve for
+            authorized_approver_ids = get_authorized_approvers(request.user)
+            
+            # Check if any of those users are approvers for this document's current step
+            if authorized_approver_ids:
+                authorized_approval = document.approvals.filter(
+                    approver_id__in=authorized_approver_ids,
+                    step=document.current_step,
+                    is_approved__isnull=True
+                ).first()
+                
+                if authorized_approval:
+                    user_approval = authorized_approval
+                    on_behalf_of = authorized_approval.approver
         prepared_values = []
         for value in dynamic_values:
             prepared_value = {
@@ -501,14 +541,99 @@ def document_detail(request, reference_id):
                 return HttpResponse(html, headers={'HX-Retarget': '#form-errors'})
 
             try:
-                document.handle_approval(
-                    user=request.user,
-                    is_approved=is_approved,
-                    comment=comment,
-                    edited_values=edited_values,
-                    uploaded_files=uploaded_files
-                )
-                messages.success(request, "Thank you for reviewing the document")
+                # Check if the user is approving on behalf of someone else
+                is_authorized, original_approver = is_authorized_approver(document, request.user)
+                
+                if is_authorized:
+                    # If user is authorized, use the original approver's approval record
+                    approver = original_approver if original_approver else request.user
+                    
+                    
+                    # When approving on behalf of someone else, we need to handle it differently
+                    if original_approver:
+                        # Get the approval for the original approver
+                        approval = document.approvals.get(
+                            approver=original_approver, 
+                            step=document.current_step, 
+                            is_approved__isnull=True
+                        )
+                        
+                        # Set approval fields directly
+                        approval.is_approved = is_approved
+                        approval.status = 'approved' if is_approved else 'rejected'
+                        approval.comment = comment
+                        approval.recorded_at = timezone.now()
+                        approval.on_behalf_of = request.user  # Set the user who performed the approval on behalf
+                        approval.save()
+                        
+                        # Process any edited values if required
+                        if document.current_step.requires_edit:
+                            for field in document.current_step.editable_fields.all():
+                                field_name = f'dynamic_{field.id}'
+                                if field.field_type == 'attachment' and field_name in uploaded_files:
+                                    file = uploaded_files[field_name]
+                                    try:
+                                        field.validate_file(file)
+                                        DynamicFieldValue.objects.update_or_create(
+                                            document=document,
+                                            field=field,
+                                            defaults={'file': file}
+                                        )
+                                    except ValidationError as ve:
+                                        raise ValidationError(f"Error with {field.name}: {ve}")
+                                elif field_name in edited_values:
+                                    DynamicFieldValue.objects.update_or_create(
+                                        document=document,
+                                        field=field,
+                                        defaults={'value': edited_values[field_name]}
+                                    )
+                        
+                        # Handle workflow progression
+                        if is_approved:
+                            # Check if we should move to the next step based on approval mode
+                            current_step = document.current_step
+                            
+                            if current_step.approval_mode == 'any':
+                                # Cancel all other pending approvals for this step
+                                other_pending_approvals = document.approvals.filter(
+                                    step=current_step,
+                                    is_approved__isnull=True
+                                ).exclude(pk=approval.pk)
+                                
+                                # Delete other pending approvals
+                                other_pending_approvals.delete()
+                                
+                                # Move to the next step
+                                document.move_to_next_step(approval)
+                            else:  # 'all' mode (default)
+                                # Check if all approvers have approved
+                                pending_approvals = document.approvals.filter(
+                                    step=current_step,
+                                    is_approved__isnull=True
+                                ).exists()
+                                
+                                # If no pending approvals remain, move to the next step
+                                if not pending_approvals:
+                                    document.move_to_next_step(approval)
+                        else:
+                            document.reject()
+                    else:
+                        # Standard approval by the assigned approver
+                        document.handle_approval(
+                            user=request.user,
+                            is_approved=is_approved,
+                            comment=comment,
+                            edited_values=edited_values,
+                            uploaded_files=uploaded_files
+                        )
+                    
+                    if original_approver:
+                        messages.success(request, f"Thank you for reviewing the document on behalf of {original_approver.get_full_name() or original_approver.username}")
+                    else:
+                        messages.success(request, "Thank you for reviewing the document")
+                else:
+                    messages.error(request, "You are not authorized to approve this document")
+                    return redirect('document_approval:document_detail', reference_id=document.document_reference)
 
                 if request.htmx:
                     response = render(request, 'partials/submit_success.html', {'document': document})
@@ -535,6 +660,19 @@ def document_detail(request, reference_id):
         editable_fields = user_approval.step.editable_fields.all() if user_approval and user_approval.step.requires_edit else []
 
         ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
+        # Get authorized users that the current user can approve on behalf of
+        authorized_approvers = []
+        if document.status == 'in_review' and document.current_step:
+            authorized_approver_ids = get_authorized_approvers(request.user)
+            if authorized_approver_ids:
+                # Get approvers for current step that the user is authorized to act for
+                authorized_approvals = document.approvals.filter(
+                    approver_id__in=authorized_approver_ids,
+                    step=document.current_step,
+                    is_approved__isnull=True
+                ).select_related('approver')
+                authorized_approvers = [approval.approver for approval in authorized_approvals]
+        
         context = {
             'document': document,
             'prepared_values': prepared_values,
@@ -544,8 +682,10 @@ def document_detail(request, reference_id):
             'can_draw' : document.can_withdraw(request.user),
             'can_cancel' : document.can_cancel(request.user),
             'is_favorite': is_favorite,
-            'ordered_approvals':ordered_approvals,
+            'ordered_approvals': ordered_approvals,
             'editable_fields': editable_fields,
+            'authorized_approvers': authorized_approvers,
+            'on_behalf_of': on_behalf_of,
         }
 
         if request.htmx:
@@ -1284,6 +1424,8 @@ from django.db import models
 
 @login_required
 def documents_to_approve_to_resubmit(request):
+    from .utils_authorization import get_authorized_approvers
+    
     # Documents waiting for current user's approval
     documents_to_approve = Document.objects.filter(
         status='in_review',
@@ -1292,6 +1434,25 @@ def documents_to_approve_to_resubmit(request):
         approvals__approver=request.user,  # User is the approver
         approvals__is_approved__isnull=True  # Approval is pending
     )
+    
+    # Get list of users who have authorized this user to approve on their behalf
+    authorized_approvers = get_authorized_approvers(request.user)
+    
+    # Documents waiting for approval by users who have authorized the current user
+    authorized_documents = Document.objects.none()
+    if authorized_approvers:
+        # Get the document IDs directly from approvals
+        approval_document_ids = Approval.objects.filter(
+            document__status='in_review',
+            document__current_step__isnull=False,
+            step=models.F('document__current_step'),
+            approver_id__in=authorized_approvers,
+            is_approved__isnull=True
+        ).values_list('document_id', flat=True).distinct()
+        
+        # Then get the documents by ID
+        if approval_document_ids:
+            authorized_documents = Document.objects.filter(id__in=approval_document_ids)
 
     # Documents rejected that the user can resubmit
     documents_reject = Document.objects.filter(
@@ -1305,11 +1466,12 @@ def documents_to_approve_to_resubmit(request):
         status='pending'
     )
 
-    # Combine both querysets and order by newest first
-    documents = (documents_to_approve | documents_reject | documents_to_resubmit).distinct().order_by('-updated_at')
+    # Combine all querysets and order by newest first
+    documents = (documents_to_approve | authorized_documents | documents_reject | documents_to_resubmit).distinct().order_by('-updated_at')
 
     context = {
         'documents': documents,
+        'authorized_approvers': authorized_approvers,  # Pass to template for UI indication
     }
     return render(request, 'document/documents_to_action.html', context)
 

@@ -8,7 +8,7 @@ from import_export.fields import Field
 from import_export.widgets import ManyToManyWidget, BooleanWidget, ForeignKeyWidget
 from import_export.results import RowResult
 from allauth.account.models import EmailAddress
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.db import transaction
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
@@ -70,6 +70,8 @@ class CustomUserResource(resources.ModelResource):
     # Store raw values for preview
     _raw_data = {}
     _groups_data = {}
+    # Cache for email verification status
+    _email_verification_cache = {}
     
     class Meta:
         model = CustomUser
@@ -314,14 +316,21 @@ class CustomUserResource(resources.ModelResource):
             
         # If we have a saved object, check if it has a verified email
         if obj.pk:
+            # Check if we have cached the verification status
+            if obj.pk in self._email_verification_cache:
+                return self._email_verification_cache[obj.pk]
+                
             try:
                 email_verified = EmailAddress.objects.filter(
                     user=obj, 
                     email=obj.email, 
                     verified=True
                 ).exists()
-                return "TRUE" if email_verified else "FALSE"
-            except:
+                result = "TRUE" if email_verified else "FALSE"
+                # Cache the result
+                self._email_verification_cache[obj.pk] = result
+                return result
+            except Exception:
                 pass
                 
         return "TRUE"  # Default value
@@ -348,9 +357,16 @@ class CustomUserAdmin(ImportExportModelAdmin, UserAdmin):
         (None, {'fields': ('job_title',)}),
     )
     list_display = ['id','email', 'username','job_title', 'is_staff', 'is_active', 'get_groups']
+    list_per_page = 20  # Reduce number of items per page to improve performance
+    
+    def get_queryset(self, request):
+        # Optimize queryset by prefetching related groups
+        # Use select_related for ForeignKey relationships
+        return super().get_queryset(request).prefetch_related('groups')
     
     def get_groups(self, obj):
-        if obj and obj.pk and hasattr(obj, 'groups') and obj.groups is not None:
+        if obj and hasattr(obj, 'groups'):
+            # This will use the prefetched groups instead of making a new query
             return ", ".join([g.name for g in obj.groups.all()])
         return ""
     get_groups.short_description = 'Group'

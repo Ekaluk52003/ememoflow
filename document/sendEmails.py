@@ -178,13 +178,46 @@ def send_approval_email(approval):
 
         # Get CC list
         cc_list = approval.step.get_cc_list()
-
+        
+        # Get list of recipients (primary approver + authorized users)
+        recipients = [approval.approver.email]
+        
+        # Add authorized users who can approve on behalf of this approver
+        from .models_authorization import ApprovalAuthorization
+        from django.utils import timezone
+        
+        now = timezone.now()
+        authorized_users = ApprovalAuthorization.objects.filter(
+            authorizer=approval.approver,
+            valid_from__lte=now,
+            valid_until__gte=now,
+            is_active=True
+        )
+        
+        # Create a serializable list of authorized user info
+        authorized_user_info = []
+        
+        for auth in authorized_users:
+            if auth.authorized_user.email and auth.authorized_user.email not in recipients:
+                recipients.append(auth.authorized_user.email)
+                # Add serializable user info (not the actual User object)
+                authorized_user_info.append({
+                    'id': auth.authorized_user.id,
+                    'username': auth.authorized_user.username,
+                    'email': auth.authorized_user.email,
+                    'full_name': auth.authorized_user.get_full_name() or auth.authorized_user.username
+                })
+        
+        # Only add to context if we have authorized users
+        if authorized_user_info:
+            context_dict['authorized_users'] = authorized_user_info
+        
         # Send email using the common function
         success = send_templated_email(
             subject_template,
             body_template,
             context_dict,
-            [approval.approver.email],
+            recipients,
             cc_list
         )
 

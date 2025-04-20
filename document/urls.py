@@ -1,7 +1,7 @@
-from django.urls import path,include
+from django.urls import path, include
 from . import views
 from django.conf import settings
-
+from . import views_authorization
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -25,6 +25,20 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
     path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
-    path('workflow/<int:workflow_id>/steps/', views.workflow_steps, name='workflow_steps'),
+    path('workflow/<int:workflow_id>/steps/', views.workflow_steps, name='workflow_steps'),  
+    # Authorization URLs
+   
+
+
+    path('authorizations/', views_authorization.authorization_list, name='authorization_list'),
+    path('authorizations/create/', views_authorization.create_authorization, name='create_authorization'),
+    # Alternative direct authorization path
+    path('authorizations/direct-create/', views_authorization.direct_create_authorization, name='direct_create_authorization'),
+    path('authorizations/<int:pk>/delete/', views_authorization.delete_authorization, name='delete_authorization'),
+    path('authorizations/<int:pk>/toggle/', views_authorization.toggle_authorization, name='toggle_authorization'),
+    
+    # API endpoints
+    path('api/users/', views_authorization.api_users, name='api_users'),
+
 
 ]

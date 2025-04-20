@@ -47,7 +47,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                Workflows
+                New Document
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" :class="{'rotate-180': isOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -62,7 +62,7 @@
              x-transition:leave="transition ease-in duration-75"
              x-transition:leave-start="transform opacity-100 scale-100"
              x-transition:leave-end="transform opacity-0 scale-95"
-             class="bg-gray-800 rounded-md shadow-lg border border-gray-600 w-56 mt-1"
+             class="bg-gray-800 rounded-md shadow-lg border border-gray-600 mt-1"
              >
             <div class="py-1">
                 {% for workflow in workflows %}
@@ -86,7 +86,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                Workflow Steps
+                Diagram
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" :class="{'rotate-180': isOpen}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -101,13 +101,13 @@
              x-transition:leave="transition ease-in duration-75"
              x-transition:leave-start="transform opacity-100 scale-100"
              x-transition:leave-end="transform opacity-0 scale-95"
-             class="bg-gray-800 rounded-md shadow-lg border border-gray-600 w-56 mt-1"
+             class="bg-gray-800 rounded-md shadow-lg border border-gray-600 mt-1"
              >
             <div class="py-1">
                 {% for workflow in workflows %}
                 <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
                    class="flex items-center px-8 py-2 text-gray-100 hover:bg-gray-700">
-                    {{ workflow.name }}
+                    {{ workflow.name }} Flow
                 </a>
                 {% empty %}
                 <div class="px-8 py-2 text-sm text-gray-100">
@@ -131,7 +131,8 @@
         </svg>
         Favorite Documents
     </a>
-
+    
+    
     {% load static %}
     <script>
         const NOTIFICATION_SOUND_URL = '{% static "sounds/notification.mp3" %}';
@@ -487,6 +488,13 @@
         Sign Up
     </a>
     {% else %}
+    <a href="{% url 'document_approval:authorization_list' %}" class="flex items-center px-4 py-2 text-gray-100 {% if request.resolver_match.url_name == 'authorization_list' %}bg-gray-700{% endif %} hover:bg-gray-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        มอบอำนาจให้ user อื่น
+    </a>
+
     <a href="{% url 'account_change_password' %}" class="flex items-center px-4 py-2 text-gray-100 {% if request.resolver_match.url_name == 'account_change_password' %}bg-gray-700{% endif %} hover:bg-gray-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />

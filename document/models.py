@@ -240,7 +240,7 @@ class ApprovalStep(models.Model):
     # Email notification fields
     send_email = models.BooleanField(default=False, help_text="When select, approvers will be notified by email for particular step")
     email_subject = models.CharField(max_length=255, blank=True)
-    email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
+    email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, {step} as placeholders. For authorized users, use {% if authorized_users %}...{% for user in authorized_users %}{{ user.full_name }}{% endfor %}...{% endif %}")
     cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC for")
 
 
@@ -768,6 +768,8 @@ class Approval(models.Model):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='approvals')
     step = models.ForeignKey(ApprovalStep, on_delete=models.CASCADE)
     approver = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    on_behalf_of = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='delegated_approvals', null=True, blank=True,
+                                    help_text="If this approval was done on behalf of another user, this field indicates who")
     is_approved = models.BooleanField(null=True, default=None)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     comment = models.TextField(blank=True)

@@ -1,11 +1,12 @@
 from .utils import get_user_bu_groups
 
 def user_bu_groups(request):
-    """Add user's BU groups to template context"""
+    """Add user's groups to template context"""
     if request.user.is_authenticated:
-        bu_groups = get_user_bu_groups(request.user)
+        # Get all user groups instead of just BU groups
+        user_groups = [group.name for group in request.user.groups.all()]
         return {
-            'user_bu_groups': ', '.join(sorted(bu_groups)) if bu_groups else ''
+            'user_bu_groups': ', '.join(sorted(user_groups)) if user_groups else ''
         }
     return {'user_bu_groups': ''}
 
@@ -28,9 +29,10 @@ def pending_documents_count(request):
 
 def workflows_list(request):
     """Add available workflows to template context"""
-    if request.user.is_authenticated:
+    # Skip loading workflows for admin pages to improve performance
+    if request.user.is_authenticated and not request.path.startswith('/admin/'):
         from document.models import ApprovalWorkflow
-        workflows = ApprovalWorkflow.objects.all()
-        print(workflows)
+        # Cache the workflows to avoid repeated queries
+        workflows = ApprovalWorkflow.objects.select_related('created_by').all()
         return {'workflows': workflows}
     return {'workflows': []}

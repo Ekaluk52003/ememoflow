@@ -1,0 +1,36 @@
+{% extends '_base.html' %}
+
+{% block title %}Delete Authorization{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h1 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h1>
+            
+            <p class="mb-4 text-gray-700">
+                Are you sure you want to delete the authorization for 
+                <strong>{{ authorization.authorized_user.get_full_name|default:authorization.authorized_user.username }}</strong>?
+            </p>
+            
+            <div class="bg-gray-50 p-4 rounded mb-4">
+                <p class="text-sm text-gray-700"><strong>Valid from:</strong> {{ authorization.valid_from|date:"Y-m-d H:i" }}</p>
+                <p class="text-sm text-gray-700"><strong>Valid until:</strong> {{ authorization.valid_until|date:"Y-m-d H:i" }}</p>
+                <p class="text-sm text-gray-700"><strong>Reason:</strong> {{ authorization.reason }}</p>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex justify-end space-x-3">
+                    <a href="{% url 'document_approval:authorization_list' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                        Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
