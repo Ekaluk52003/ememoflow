@@ -6,24 +6,24 @@
 
 
 
-<div class="flex flex-col items-start justify-between pb-6 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row mb-4">
-    <h1 class="text-2xl font-semibold whitespace-nowrap">All Documents</h1>   
+<div class="flex flex-col justify-between items-start pb-6 mb-4 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row">
+    <h1 class="text-2xl font-semibold">All Documents</h1>   
   </div>
 
-<p class="max-w-2xl mt-1 mb-4 text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
+<p class="mt-1 mb-4 max-w-2xl text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
 
 <!-- Search and Filter Form -->
 <form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter" hx-target="#document-list" hx-swap="innerHTML">
             <div class="flex items-center space-x-2">
-                <input type="text" name="search" class="border-2 border-gray-200 p-2 rounded-md w-full focus:border-blue-500 focus:outline-none" placeholder="Search documents..." value="{{ search_query }}">
-                <button class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="submit">Search</button>
+                <input type="text" name="search" class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none" placeholder="Search documents..." value="{{ search_query }}">
+                <button class="px-5 py-2.5 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800" type="submit">Search</button>
             </div>
 
             
 
             <div class="flex justify-between mt-2">
                 <div>
-                    <select id="workflow-filter" name="workflow" class="bg-gray-50 border  text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <select id="workflow-filter" name="workflow" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
                         <option value="">All Workflows</option>
                         {% for workflow in workflows %}
                             <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
@@ -31,7 +31,7 @@
                     </select>
                 </div>
                 <div>
-                    <select id="status-filter" name="status" class="bg-gray-50 border  text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                    <select id="status-filter" name="status" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
                         <option value="">All Statuses</option>
                         {% for status, display in status_choices %}
                             <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
