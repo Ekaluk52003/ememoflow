@@ -111,6 +111,7 @@ class DynamicField(models.Model):
         ('attachment', 'File Attachment'),
         ('product_list', 'Product List'),
         ('table_list', 'Table List'),
+        ('tiptap_editor', 'Rich Text Editor'),
     )
 
     WIDTH_CHOICES = (
@@ -358,41 +359,56 @@ class ReferenceID(models.Model):
         return f"{str(current_year).zfill(2)}{str(reference.last_number).zfill(5)}"
 
 def editor_image_path(instance, filename):
-    return f'documents/{instance.document.document_reference}/{filename}'
+    if instance.document and instance.document.document_reference:
+        return f'documents/{instance.document.document_reference}/{filename}'
+    else:
+        # For images that don't have a document yet, use a temporary path
+        # They will be moved to the correct location once the document is created
+        return f'documents/temp/{filename}'
 
 class EditorImage(models.Model):
-    document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='editor_images')
+    document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='editor_images', null=True)
     image = models.ImageField(upload_to=editor_image_path, storage=custom_storage)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     base_url = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Image for {self.document.document_reference}"
-
+        return f"Image for {self.document.document_reference if self.document and self.document.document_reference else 'new document'}"
+    
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)  # Save first to ensure we have an ID
         if self.image and not self.base_url:
-            # Store the URL that points to our view
-            self.base_url = f'/document/view-editor-image/{self.id}/'
-            super().save(update_fields=['base_url'])
-
+            # Set the base URL for referencing in HTML content
+            self.base_url = f"/document/view-editor-image/{self.id}/"
+            # Update with the base URL without triggering save() recursion
+            EditorImage.objects.filter(id=self.id).update(base_url=self.base_url)
+    
     @property
     def url(self):
         return self.base_url
-
+    
     def delete(self, *args, **kwargs):
-        # Delete the physical file first
+        # First delete the image file from storage
         if self.image:
             # Delete from storage
             self.image.delete(save=False)
         # Then delete the model instance
         super().delete(*args, **kwargs)
-
+    
     def has_access(self, user):
         """Check if user has access to this image"""
         from .utils import get_allowed_document
+        
+        # If the image doesn't have a document yet, allow access
+        # This is needed for images pasted into the editor before the form is submitted
+        # if not self.document:
+        #     return True
+            
+        # Otherwise, check if the user has access to the document
         document = get_allowed_document(user, self.document.document_reference)
         return document is not None and not isinstance(document, HttpResponse)
+
+
 
 class Document(models.Model):
     STATUS_CHOICES = [
@@ -802,7 +818,6 @@ def dynamic_file_upload_path(instance, filename):
 
 
 
-from .utils import get_allowed_document
 from django.http import HttpResponse
 class DynamicFieldValue(models.Model):
     document = models.ForeignKey('Document', on_delete=models.CASCADE, related_name='dynamic_values')
@@ -856,3 +871,54 @@ class DynamicFieldValue(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+        
+        # Process base64 images in tiptap_editor fields
+        if self.field.field_type == 'tiptap_editor' and self.value:
+            import re
+            import base64
+            from django.core.files.base import ContentFile
+            
+            # Find all current image URLs in the content
+            url_pattern = r'src="(/document/view-editor-image/\d+/)"'
+            current_image_urls = set(re.findall(url_pattern, self.value))
+            
+            # Process new base64 images
+            pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
+            matches = re.finditer(pattern, self.value)
+            content_updated = False
+            processed_images = set()
+        
+            for match in matches:
+                img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
+                base64_data = match.group(2)
+                data_url = f'data:image/{img_type};base64,{base64_data}'
+        
+                if base64_data in processed_images:
+                    continue
+                    
+                try:
+                    image_data = base64.b64decode(base64_data)
+                    file_content = ContentFile(image_data)
+                    
+                    # Create EditorImage instance
+                    editor_image = EditorImage.objects.create(document=self.document)
+                    
+                    # Use proper extension based on image type
+                    ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
+                    filename = f'dynamic_field_{self.field.id}_image.{ext}'
+                    editor_image.image.save(filename, file_content, save=True)
+                    
+                    # Get the image URL
+                    image_url = editor_image.url
+                    
+                    # Replace the entire data URL with the base image URL
+                    self.value = self.value.replace(data_url, image_url)
+                    content_updated = True
+                    processed_images.add(base64_data)
+                except Exception as e:
+                    logger.error(f"Error processing image in dynamic field: {str(e)}")
+            
+            # Only save again if we updated the content with image URLs
+            if content_updated:
+                # Use update to avoid recursion
+                DynamicFieldValue.objects.filter(id=self.id).update(value=self.value)

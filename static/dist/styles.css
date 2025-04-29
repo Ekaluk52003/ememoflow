@@ -2934,4 +2934,74 @@ video {
       max-width: 100%;
   }
   
+  /* Tiptap Editor Table Styles */
+  .ProseMirror table, .prose table, .tiptap-editor table {
+    border-collapse: collapse;
+    margin: 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
+    border: 1px solid #ced4da;
+  }
+  
+  .ProseMirror table td, .ProseMirror table th,
+  .prose table td, .prose table th,
+  .tiptap-editor table td, .tiptap-editor table th {
+    border: 2px solid #ced4da;
+    box-sizing: border-box;
+    min-width: 1em;
+    padding: 0.5em;
+    position: relative;
+    vertical-align: top;
+  }
+  
+  .ProseMirror table th,
+  .prose table th,
+  .tiptap-editor table th {
+    background-color: #f1f3f5;
+    font-weight: bold;
+    text-align: left;
+  }
+  
+  .ProseMirror table .selectedCell:after,
+  .prose table .selectedCell:after,
+  .tiptap-editor table .selectedCell:after {
+    background: rgba(200, 200, 255, 0.4);
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+  }
+  
+  .ProseMirror table .column-resize-handle,
+  .prose table .column-resize-handle,
+  .tiptap-editor table .column-resize-handle {
+    background-color: #adf;
+    bottom: -2px;
+    position: absolute;
+    right: -2px;
+    pointer-events: none;
+    top: 0;
+    width: 4px;
+  }
+  
+  .ProseMirror p,
+  .prose p,
+  .tiptap-editor p {
+    margin: 1em 0;
+  }
+  
+  /* Additional styles for tiptap-editor tables */
+  .tiptap-editor .ProseMirror table {
+    margin-bottom: 1em;
+  }
+  
+  .tiptap-editor table td {
+    min-width: 100px;
+  }
+  
   

@@ -256,6 +256,17 @@
 
     {% elif field.field_type  == 'textarea' %}
     <textarea name="dynamic_{{ field.id }}" class="block px-3 py-2 mt-1 w-full text-gray-700 rounded-md border border-gray-300 shadow-sm focus:outline-none" rows="{{ field.textarea_rows }}"></textarea>
+    
+    {% elif field.field_type == 'tiptap_editor' %}
+    <div x-data="editor('')" class="bg-white rounded-xl tiptap-editor">
+      <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
+      <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="sticky top-0 z-40 flex flex-wrap bg-white border-t rounded-t-lg border-x">
+        {% include "document/components/editor_toolbar.html" %}
+      </div>
+      <article class="prose max-w-none">
+        <div x-ref="element"></div>
+      </article>
+    </div>
 
     {% elif field.field_type == 'number' %}
         <input type="number" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"

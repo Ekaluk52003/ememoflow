@@ -919,6 +919,54 @@ def resubmit_document(request, pk):
                         elif field.field_type == 'textarea' and value:
                             # Ensure newlines are preserved as \n in the database
                             value = value.replace('\r\n', '\n').replace('\r', '\n')
+                        # For tiptap_editor fields, process base64 images
+                        elif field.field_type == 'tiptap_editor' and value:
+                            # Process base64 images in tiptap_editor content
+                            import re
+                            import base64
+                            from django.core.files.base import ContentFile
+                            
+                            # Process new base64 images
+                            pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
+                            matches = re.finditer(pattern, value)
+                            content_updated = False
+                            processed_images = set()
+                        
+                            for match in matches:
+                                img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
+                                base64_data = match.group(2)
+                                data_url = f'data:image/{img_type};base64,{base64_data}'
+                        
+                                if base64_data in processed_images:
+                                    continue
+                                    
+                                try:
+                                    # Decode the base64 image data
+                                    image_data = base64.b64decode(base64_data)
+                                    file_content = ContentFile(image_data)
+                                    
+                                    # Create EditorImage instance with the document reference
+                                    editor_image = EditorImage(document=document)
+                                    
+                                    # Use proper extension based on image type
+                                    ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
+                                    filename = f'dynamic_field_{field.id}_image.{ext}'
+                                    
+                                    # Save the image first
+                                    editor_image.save()
+                                    editor_image.image.save(filename, file_content, save=True)
+                                    
+                                    # Get the image URL
+                                    image_url = editor_image.url
+                                    
+                                    # Replace the base64 data with the image URL
+                                    value = value.replace(data_url, image_url)
+                                    content_updated = True
+                                    processed_images.add(base64_data)
+                                    
+                                    # No need to track editor image IDs anymore since we're linking directly to the document
+                                except Exception as e:
+                                    logger.error(f"Error processing image in dynamic field: {str(e)}")
                         DynamicFieldValue.objects.update_or_create(
                             document=document,
                             field=field,
@@ -1307,6 +1355,54 @@ def submit_document(request, workflow_id):
                         elif field.field_type == 'textarea' and value:
                             # Ensure newlines are preserved as \n in the database
                             value = value.replace('\r\n', '\n').replace('\r', '\n')
+                        # For tiptap_editor fields, process base64 images
+                        elif field.field_type == 'tiptap_editor' and value:
+                            # Process base64 images in tiptap_editor content
+                            import re
+                            import base64
+                            from django.core.files.base import ContentFile
+                            
+                            # Process new base64 images
+                            pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
+                            matches = re.finditer(pattern, value)
+                            content_updated = False
+                            processed_images = set()
+                        
+                            for match in matches:
+                                img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
+                                base64_data = match.group(2)
+                                data_url = f'data:image/{img_type};base64,{base64_data}'
+                        
+                                if base64_data in processed_images:
+                                    continue
+                                    
+                                try:
+                                    # Decode the base64 image data
+                                    image_data = base64.b64decode(base64_data)
+                                    file_content = ContentFile(image_data)
+                                    
+                                    # Create EditorImage instance with the document reference
+                                    editor_image = EditorImage(document=document)
+                                    
+                                    # Use proper extension based on image type
+                                    ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
+                                    filename = f'dynamic_field_{field.id}_image.{ext}'
+                                    
+                                    # Save the image first
+                                    editor_image.save()
+                                    editor_image.image.save(filename, file_content, save=True)
+                                    
+                                    # Get the image URL
+                                    image_url = editor_image.url
+                                    
+                                    # Replace the base64 data with the image URL
+                                    value = value.replace(data_url, image_url)
+                                    content_updated = True
+                                    processed_images.add(base64_data)
+                                    
+                                    # No need to track editor image IDs anymore since we're linking directly to the document
+                                except Exception as e:
+                                    logger.error(f"Error processing image in dynamic field: {str(e)}")
                         dynamic_field_values.append(DynamicFieldValue(
                             field=field,
                             value=value
@@ -1335,6 +1431,16 @@ def submit_document(request, workflow_id):
         
         # Track upload tasks
         upload_tasks = []
+        
+        # Update any editor images created for tiptap_editor fields
+        if hasattr(document, '_editor_images_to_update') and document._editor_images_to_update:
+            for image_id in document._editor_images_to_update:
+                try:
+                    editor_image = EditorImage.objects.get(id=image_id)
+                    editor_image.document = document
+                    editor_image.save()
+                except Exception as e:
+                    logger.error(f"Error updating editor image {image_id}: {str(e)}")
         
         for field_value_data in dynamic_field_values:
             if isinstance(field_value_data, tuple):
