@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.urls import reverse
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from django.db.models import Q
 
 from .models_authorization import ApprovalAuthorization
@@ -120,18 +121,13 @@ def authorization_list(request):
 
 @login_required
 def create_authorization(request):
-    """View to create a new authorization without using Django forms"""
+    """View to create a new authorization optimized for HTMX"""
     from accounts.models import CustomUser
     from django.utils import timezone
     import datetime
     
     # Get all active users for the dropdown
-    users = CustomUser.objects.filter(is_active=True).order_by('username')
-    print(f"Found {users.count()} active users")
-    
-    # Debug: Print the first 5 users
-    for user in users[:5]:
-        print(f"User: {user.username} (ID: {user.id})")
+    users = CustomUser.objects.filter(is_active=True).exclude(id=request.user.id).order_by('username')
     
     if request.method == 'POST':
         try:
@@ -142,21 +138,17 @@ def create_authorization(request):
             reason = request.POST.get('reason')
             
             # Validate required fields
-            error_message = None
-            if not authorized_user_id:
-                error_message = "Please select a user to authorize."
-            elif not valid_from_str:
-                error_message = "Please specify when the authorization becomes active."
-            elif not valid_until_str:
-                error_message = "Please specify when the authorization expires."
-            elif not reason:
-                error_message = "Please provide a reason for the authorization."
-            
-            if error_message:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': error_message,
-                    'users': users
-                })
+            if not authorized_user_id or not valid_from_str or not valid_until_str or not reason:
+                error_message = "All fields are required."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
             # Convert string dates to timezone-aware datetime objects
             try:
@@ -168,40 +160,70 @@ def create_authorization(request):
                 valid_from = timezone.make_aware(naive_valid_from)
                 valid_until = timezone.make_aware(naive_valid_until)
             except ValueError:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "Invalid date format.",
-                    'users': users
-                })
+                error_message = "Invalid date format."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
             # Validate dates
             now = timezone.now()
             if valid_from >= valid_until:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "End date must be after start date.",
-                    'users': users
-                })
+                error_message = "End date must be after start date."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
             if valid_until <= now:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "End date must be in the future.",
-                    'users': users
-                })
+                error_message = "End date must be in the future."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
             # Get the authorized user
             try:
                 authorized_user = CustomUser.objects.get(id=authorized_user_id)
             except CustomUser.DoesNotExist:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "Selected user does not exist.",
-                    'users': users
-                })
+                error_message = "Selected user does not exist."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
-            # Prevent self-authorization
+            # Prevent self-authorization (redundant with the exclude above, but kept as a safeguard)
             if authorized_user.id == request.user.id:
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "You cannot authorize yourself.",
-                    'users': users
-                })
+                error_message = "You cannot authorize yourself."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
             # Check for overlapping authorizations
             overlapping = ApprovalAuthorization.objects.filter(
@@ -213,12 +235,18 @@ def create_authorization(request):
             )
             
             if overlapping.exists():
-                return render(request, 'document/authorization_form.html', {
-                    'error_message': "There is already an overlapping authorization for this user.",
-                    'users': users
-                })
+                error_message = "There is already an overlapping authorization for this user."
+                if request.headers.get('HX-Request'):
+                    # For HTMX requests, return the error in a way that preserves the table
+                    return render(request, 'document/partials/authorization_error.html', {
+                        'error_message': error_message
+                    })
+                else:
+                    # Redirect back to the list page with an error message
+                    messages.error(request, error_message)
+                    return redirect('document_approval:authorization_list')
             
-            # Create the authorization directly
+            # Create the authorization
             authorization = ApprovalAuthorization(
                 authorizer=request.user,
                 authorized_user=authorized_user,
@@ -231,56 +259,60 @@ def create_authorization(request):
             # Save the authorization
             authorization.save()
             
-            messages.success(
-                request, 
-                f"Successfully authorized {authorized_user.username} to approve documents on your behalf."
-            )
-            return redirect('document_approval:authorization_list')
+            # Return appropriate response based on request type
+            if request.headers.get('HX-Request'):
+                # Return just the new row for appending to the table
+                return render(request, 'document/partials/authorization_table_row.html', {
+                    'auth': authorization,
+                    'now': timezone.now(),
+                })
+            else:
+                # Return redirect with success message for traditional request
+                messages.success(
+                    request, 
+                    f"Successfully authorized {authorized_user.username} to approve documents on your behalf."
+                )
+                return redirect('document_approval:authorization_list')
             
         except Exception as e:
-            print(f"Error creating authorization: {str(e)}")
-            return render(request, 'document/authorization_form.html', {
-                'error_message': f"Error creating authorization: {str(e)}",
-                'users': users
+            error_message = f"Error creating authorization: {str(e)}"
+            if request.headers.get('HX-Request'):
+                # For HTMX requests, return the error in a way that preserves the table
+                return render(request, 'document/partials/authorization_error.html', {
+                    'error_message': error_message
+                })
+            else:
+                # Redirect back to the list page with an error message
+                messages.error(request, error_message)
+                return redirect('document_approval:authorization_list')
+    
+    # GET request - redirect to the list page since we're using a modal form
+    return redirect('document_approval:authorization_list')
+
+
+def render_error(request, error_message, users=None):
+    """Helper function to render error responses based on request type"""
+    if request.headers.get('HX-Request'):
+        # Check if this is coming from the modal form
+        if request.headers.get('HX-Trigger') == 'create-authorization-form':
+            # For HTMX requests from the modal form, return the error partial
+            return render(request, 'document/partials/authorization_error.html', {
+                'error_message': error_message
             })
-    
-    # GET request - show the form
-    return render(request, 'document/authorization_form.html', {
-        'users': users
-    })
-
-
-@login_required
-def edit_authorization(request, pk):
-    """View to edit an existing authorization"""
-    authorization = get_object_or_404(ApprovalAuthorization, pk=pk)
-    
-    # Only the authorizer can edit their authorizations
-    if authorization.authorizer != request.user:
-        return HttpResponseForbidden("You don't have permission to edit this authorization.")
-    
-    if request.method == 'POST':
-        form = ApprovalAuthorizationForm(
-            request.POST, 
-            instance=authorization
-        )
-        if form.is_valid():
-            authorization = form.save(commit=False)
-            # The authorizer should already be set, but we'll ensure it's correct
-            authorization.authorizer = request.user
-            authorization.save()
-            messages.success(request, "Authorization updated successfully.")
-            return redirect('document_approval:authorization_list')
+        else:
+            # For other HTMX requests, return the error in the context of the current view
+            given_authorizations = ApprovalAuthorization.objects.filter(authorizer=request.user).order_by('-created_at')
+            return render(request, 'document/partials/authorization_list_container.html', {
+                'given_authorizations': given_authorizations,
+                'now': timezone.now(),
+                'error_message': error_message
+            })
     else:
-        form = ApprovalAuthorizationForm(
-            instance=authorization
-        )
-    
-    return render(request, 'document/authorization_form.html', {
-        'form': form,
-        'title': 'Edit Authorization',
-        'authorization': authorization,
-    })
+        return render(request, 'document/authorization_form.html', {
+            'error_message': error_message,
+            'users': users
+        })
+
 
 
 @login_required
@@ -292,6 +324,18 @@ def delete_authorization(request, pk):
     if authorization.authorizer != request.user:
         return HttpResponseForbidden("You don't have permission to delete this authorization.")
     
+    # Handle DELETE requests from HTMX
+    if request.method == 'DELETE' or (request.method == 'POST' and request.headers.get('HX-Request')):
+        authorization.delete()
+        
+        # If it's an HTMX request, return an empty response (row will be removed)
+        if request.headers.get('HX-Request'):
+            return HttpResponse("")
+        
+        
+        return redirect('document_approval:authorization_list')
+    
+    # Traditional GET request to show confirmation page
     if request.method == 'POST':
         authorization.delete()
         messages.success(request, "Authorization deleted successfully.")
@@ -312,12 +356,34 @@ def toggle_authorization(request, pk):
         return HttpResponseForbidden("You don't have permission to modify this authorization.")
     
     if request.method == 'POST':
-        authorization.is_active = not authorization.is_active
-        authorization.save()
-        
-        status = "activated" if authorization.is_active else "deactivated"
-        messages.success(request, f"Authorization {status} successfully.")
-        
+        try:
+            authorization.is_active = not authorization.is_active
+            authorization.save()
+            
+            status = "activated" if authorization.is_active else "deactivated"
+            
+            # Check if the request is from HTMX
+            if request.headers.get('HX-Request'):
+                # Return just the toggle form and status cell for OOB swap
+                return render(request, 'document/partials/authorization_response.html', {
+                    'auth': authorization,
+                    'now': timezone.now(),  # Need to pass the current time for status display
+                })
+        except ValidationError as e:
+            # Revert the change since it failed validation
+            authorization.is_active = not authorization.is_active  # Revert back
+            
+            # Handle validation errors
+            if request.headers.get('HX-Request'):
+                # Return the original row with an error message
+                return render(request, 'document/partials/authorization_error_response.html', {
+                    'auth': authorization,
+                    'now': timezone.now(),
+                    'error_message': str(e)
+                })
+            else:
+                messages.error(request, f"Error: {str(e)}")
+    
         return redirect('document_approval:authorization_list')
     
     return render(request, 'document/authorization_toggle.html', {
