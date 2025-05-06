@@ -237,6 +237,7 @@
                      required: {% if field.required %}true{% else %}false{% endif %},
                      inputWidth: '{{ field.input_width }}',
                      widthDisplay: '{{ field.get_width_display }}',
+                     order: {{ field.order }},
                      choices: '{{ field.choices|default:"" }}',
                      tableColumns: '{{ field.table_columns|default:"" }}',
                      allowedExtensions: '{{ field.allowed_extensions|default:"" }}',
@@ -256,6 +257,7 @@
                            field_type: this.fieldType,
                            required: this.required,
                            input_width: this.inputWidth,
+                           order: this.order,
                            choices: this.choices,
                            table_columns: this.tableColumns,
                            allowed_extensions: this.allowedExtensions,
@@ -273,6 +275,7 @@
                            this.required = data.field.required;
                            this.inputWidth = data.field.input_width;
                            this.widthDisplay = data.field.width_display;
+                           this.order = data.field.order;
                            this.choices = data.field.choices || '';
                            this.tableColumns = data.field.table_columns || '';
                            this.allowedExtensions = data.field.allowed_extensions || '';
@@ -370,6 +373,9 @@
                         </template>
                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-full" x-text="widthDisplay">
                         </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
+                          Order: <span x-text="order" class="ml-1"></span>
+                        </span>
                       </div>
                       
                       <!-- Field-specific details -->
@@ -448,6 +454,12 @@
                             <option value="{{ value }}">{{ label }}</option>
                             {% endfor %}
                           </select>
+                        </div>
+                        
+                        <!-- Order -->
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Order</label>
+                          <input type="number" x-model="order" min="0" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         </div>
                         
                         <!-- Type-specific fields -->

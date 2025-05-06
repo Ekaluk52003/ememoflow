@@ -6,11 +6,22 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .models import DynamicField, ApprovalWorkflow
+from functools import wraps
+
+# Custom decorator to check if user is superuser
+def superuser_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return render(request, '403.html', status=403)
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 @login_required
+@superuser_required
 def field_list(request):
     """List all dynamic fields with filtering options"""
-    fields = DynamicField.objects.all().order_by('name')
+    fields = DynamicField.objects.all().order_by('order')
     
     # Filter by field type if requested
     field_type = request.GET.get('type')
@@ -23,6 +34,7 @@ def field_list(request):
     })
 
 @login_required
+@superuser_required
 def create_field(request):
     """Create a new dynamic field using Alpine.js"""
     # Get workflow_id from query parameters if available
@@ -39,7 +51,12 @@ def create_field(request):
             field_type = request.POST.get('field_type')
             required = request.POST.get('required') == 'true'
             input_width = request.POST.get('width', 'full')  # Get width from form but use as input_width
-            order = request.POST.get('order', 0)
+            
+            # Properly handle order as an integer
+            try:
+                order = int(request.POST.get('order', 0))
+            except (ValueError, TypeError):
+                order = 0
             
             # Get workflow_id from form or query parameters
             post_workflow_id = request.POST.get('workflow_id') or workflow_id
@@ -105,6 +122,7 @@ def create_field(request):
     })
 
 @login_required
+@superuser_required
 def edit_field(request, field_id):
     """Edit an existing dynamic field"""
     field = get_object_or_404(DynamicField, id=field_id)
@@ -145,6 +163,7 @@ def edit_field(request, field_id):
     })
 
 @login_required
+@superuser_required
 def delete_field(request, field_id):
     """Delete a dynamic field"""
     field = get_object_or_404(DynamicField, id=field_id)
@@ -167,6 +186,7 @@ def delete_field(request, field_id):
     })
 
 @login_required
+@superuser_required
 @require_POST
 def delete_field_ajax(request, field_id):
     """Delete a dynamic field via AJAX"""
@@ -188,7 +208,9 @@ def delete_field_ajax(request, field_id):
         }, status=400)
 
 @login_required
+@superuser_required
 @require_POST
+@csrf_exempt
 def edit_field_ajax(request, field_id):
     """Edit a dynamic field via AJAX"""
     field = get_object_or_404(DynamicField, id=field_id)
@@ -202,18 +224,40 @@ def edit_field_ajax(request, field_id):
         field.required = data.get('required', field.required)
         field.input_width = data.get('input_width', field.input_width)
         
+        # Handle order as an integer
+        try:
+            if 'order' in data:
+                field.order = int(data.get('order'))
+        except (ValueError, TypeError):
+            # Keep existing order if conversion fails
+            pass
+        
         # Handle type-specific properties
         if field.field_type == 'choice' or field.field_type == 'multiple_choice':
-            field.choices = data.get('choices', field.choices)
+            field.choices = data.get('choices', field.choices or '')
         elif field.field_type == 'number':
-            field.min_value = data.get('min_value', field.min_value)
-            field.max_value = data.get('max_value', field.max_value)
+            # Safely handle min_value and max_value
+            if hasattr(field, 'min_value'):
+                field.min_value = data.get('min_value', field.min_value)
+            else:
+                # If attribute doesn't exist, only set it if a value is provided
+                min_value = data.get('min_value')
+                if min_value is not None:
+                    field.min_value = min_value
+                    
+            if hasattr(field, 'max_value'):
+                field.max_value = data.get('max_value', field.max_value)
+            else:
+                # If attribute doesn't exist, only set it if a value is provided
+                max_value = data.get('max_value')
+                if max_value is not None:
+                    field.max_value = max_value
         elif field.field_type == 'attachment':
-            field.allowed_extensions = data.get('allowed_extensions', field.allowed_extensions)
+            field.allowed_extensions = data.get('allowed_extensions', field.allowed_extensions or '')
         elif field.field_type == 'product_list':
-            field.product_list_columns = data.get('product_list_columns', field.product_list_columns)
+            field.product_list_columns = data.get('product_list_columns', field.product_list_columns or '')
         elif field.field_type == 'table_list':
-            field.table_columns = data.get('table_columns', field.table_columns)
+            field.table_columns = data.get('table_columns', field.table_columns or '')
         
         field.save()
         
@@ -226,18 +270,20 @@ def edit_field_ajax(request, field_id):
             'required': field.required,
             'input_width': field.input_width,
             'width_display': dict(DynamicField.WIDTH_CHOICES).get(field.input_width, ''),
-            'choices': field.choices,
-            'table_columns': field.table_columns,
-            'allowed_extensions': field.allowed_extensions,
-            'textarea_rows': field.textarea_rows,
-            'multiple_files': field.multiple_files
+            'choices': field.choices or '',
+            'table_columns': field.table_columns or '',
+            'allowed_extensions': field.allowed_extensions or '',
+            'textarea_rows': getattr(field, 'textarea_rows', 4),
+            'multiple_files': getattr(field, 'multiple_files', False),
+            'order': field.order
         }
         
-        # Add min_value and max_value if they exist
-        if hasattr(field, 'min_value'):
-            field_data['min_value'] = field.min_value
-        if hasattr(field, 'max_value'):
-            field_data['max_value'] = field.max_value
+        # Add min_value and max_value if they exist and field type is 'number'
+        if field.field_type == 'number':
+            if hasattr(field, 'min_value'):
+                field_data['min_value'] = field.min_value
+            if hasattr(field, 'max_value'):
+                field_data['max_value'] = field.max_value
         
         return JsonResponse({
             'success': True,
@@ -252,6 +298,7 @@ def edit_field_ajax(request, field_id):
         }, status=400)
 
 @login_required
+@superuser_required
 def field_preview(request, field_id=None):
     """Preview a dynamic field"""
     if field_id:

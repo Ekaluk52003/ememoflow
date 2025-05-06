@@ -20,9 +20,9 @@
   <!-- Alpine.js Form -->
   <div x-data="{
     name: '{{ field.name|escapejs }}',
-    description: '{{ field.description|escapejs }}',
     fieldType: '{{ field.field_type }}',
     width: '{{ field.width }}',
+    order: '{{ field.order }}',
     required: {% if field.required %}true{% else %}false{% endif %},
     
     // Field-specific properties
@@ -55,6 +55,7 @@
       this.errors = {};
       
       if (!this.name) this.errors.name = 'Field name is required';
+      if (!this.order) this.errors.order = 'Order is required';
       
       if (this.showChoices() && !this.choices) {
         this.errors.choices = 'Choices are required for this field type';
@@ -105,13 +106,14 @@
             </div>
           </div>
 
-          <div class="sm:col-span-6">
-            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+          <div class="sm:col-span-3">
+            <label for="order" class="block text-sm font-medium text-gray-700">Order</label>
             <div class="mt-1">
-              <textarea id="description" name="description" rows="3" x-model="description"
-                        class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"></textarea>
+              <input type="number" name="order" id="order" x-model="order" 
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                     :class="{'border-red-500': errors.order}">
+              <p x-show="errors.order" x-text="errors.order" class="mt-1 text-sm text-red-600"></p>
             </div>
-            <p class="mt-2 text-sm text-gray-500">Brief description of the field's purpose (optional)</p>
           </div>
 
           <div class="sm:col-span-3">
@@ -241,11 +243,13 @@
       const fieldType = document.getElementById('field_type').value;
       const required = document.getElementById('required').checked;
       const width = document.getElementById('width').value;
+      const order = document.getElementById('order').value;
       
       formData.append('name', fieldName);
       formData.append('field_type', fieldType);
       formData.append('required', required);
       formData.append('width', width);
+      formData.append('order', order);
       
       // Add field-specific data
       if (fieldType === 'choice' || fieldType === 'multiple_choice') {

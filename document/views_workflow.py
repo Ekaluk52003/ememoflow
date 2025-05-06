@@ -1,12 +1,23 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.http import JsonResponse
 from .models import ApprovalWorkflow, ApprovalStep, DynamicField, Document
 from accounts.models import CustomUser
+from functools import wraps
+
+# Custom decorator to check if user is superuser
+def superuser_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            return render(request, '403.html', status=403)
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 @login_required
+@superuser_required
 def workflow_list(request):
     """List all workflows with filtering options"""
     workflows = ApprovalWorkflow.objects.all().order_by('-created_at')
@@ -21,6 +32,7 @@ def workflow_list(request):
     })
 
 @login_required
+@superuser_required
 def create_workflow(request):
     """Create a new workflow with basic information only"""
     # Get all available groups for authorization
@@ -72,6 +84,7 @@ def create_workflow(request):
     })
 
 @login_required
+@superuser_required
 def edit_workflow(request, workflow_id):
     """Edit an existing workflow"""
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
@@ -79,8 +92,8 @@ def edit_workflow(request, workflow_id):
     # Get all available groups for authorization
     groups = Group.objects.all().order_by('name')
     
-    # Get only dynamic fields associated with this workflow
-    dynamic_fields = workflow.dynamic_fields.all().order_by('name')
+    # Get only dynamic fields associated with this workflow, sorted by order
+    dynamic_fields = workflow.dynamic_fields.all().order_by('order')
     
     if request.method == 'POST':
         try:
@@ -132,6 +145,7 @@ def edit_workflow(request, workflow_id):
     })
 
 @login_required
+@superuser_required
 def delete_workflow(request, workflow_id):
     """Delete a workflow"""
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
@@ -166,6 +180,7 @@ def workflow_steps(request, workflow_id):
     })
 
 @login_required
+@superuser_required
 def create_workflow_step(request, workflow_id):
     """Create a new workflow step using Alpine.js dynamic form"""
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
@@ -242,6 +257,7 @@ def create_workflow_step(request, workflow_id):
     })
 
 @login_required
+@superuser_required
 def edit_workflow_step(request, step_id):
     """Edit an existing workflow step using Alpine.js dynamic form"""
     step = get_object_or_404(ApprovalStep, id=step_id)
