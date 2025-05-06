@@ -2,6 +2,8 @@ from django.urls import path, include
 from . import views
 from django.conf import settings
 from . import views_authorization
+from . import views_workflow
+from . import views_dynamic_fields
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -25,7 +27,24 @@ urlpatterns = [
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
     path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
-    path('workflow/<int:workflow_id>/steps/', views.workflow_steps, name='workflow_steps'),  
+    # Workflow management
+    path('workflows/', views_workflow.workflow_list, name='workflow_list'),
+    path('workflows/create/', views_workflow.create_workflow, name='create_workflow'),
+    path('workflows/<int:workflow_id>/edit/', views_workflow.edit_workflow, name='edit_workflow'),
+    path('workflows/<int:workflow_id>/delete/', views_workflow.delete_workflow, name='delete_workflow'),
+    path('workflow/<int:workflow_id>/steps/', views_workflow.workflow_steps, name='workflow_steps'),
+    path('workflow/<int:workflow_id>/steps/create/', views_workflow.create_workflow_step, name='create_workflow_step'),
+    path('workflow/steps/<int:step_id>/edit/', views_workflow.edit_workflow_step, name='edit_workflow_step'),
+    
+    # Dynamic field management
+    path('fields/', views_dynamic_fields.field_list, name='field_list'),
+    path('fields/create/', views_dynamic_fields.create_field, name='create_field'),
+    path('fields/<int:field_id>/edit/', views_dynamic_fields.edit_field, name='edit_field'),
+    path('fields/<int:field_id>/delete/', views_dynamic_fields.delete_field, name='delete_field'),
+    path('fields/<int:field_id>/preview/', views_dynamic_fields.field_preview, name='field_preview'),
+    path('fields/preview/', views_dynamic_fields.field_preview, name='field_preview_ajax'),
+    path('fields/<int:field_id>/edit-ajax/', views_dynamic_fields.edit_field_ajax, name='edit_field_ajax'),
+    path('fields/<int:field_id>/delete-ajax/', views_dynamic_fields.delete_field_ajax, name='delete_field_ajax'),
     # Authorization URLs
    
 

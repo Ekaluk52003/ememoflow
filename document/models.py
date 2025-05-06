@@ -231,10 +231,9 @@ class ApprovalStep(models.Model):
     condition_value = models.CharField(max_length=255, null=True, blank=True)
 
 
-
-    input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
-    input_choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' input type")
-    allowed_file_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated file extensions for 'file' input type")
+    # input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
+    # input_choices = models.TextField(blank=True, help_text="Comma-separated choices for 'choice' input type")
+    # allowed_file_extensions = models.CharField(max_length=255, blank=True, help_text="Comma-separated file extensions for 'file' input type")
     requires_edit = models.BooleanField(default=False, help_text="Enable approvers to edit field or upload file for particular step")
     editable_fields = models.ManyToManyField(DynamicField, blank=True, related_name='approval_steps')
 

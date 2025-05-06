@@ -1,0 +1,296 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container relative px-4 py-8 mx-auto">
+  <div class="p-6 bg-white rounded-xl shadow-sm sm:p-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-bold text-gray-800">Create Workflow Step</h1>
+      <p class="text-gray-600">Add a new step to workflow: {{ workflow.name }}</p>
+    </div>
+
+    <!-- Alpine.js Form -->
+    <div x-data="{
+      name: '',
+      order: '',
+      approvalMode: 'all',
+      requiresEdit: false,
+      
+      // Approvers
+      approverType: 'none',
+      selectedApprovers: [],
+      approverGroup: 'none',
+      
+      // Conditional Logic
+      isConditional: false,
+      moveToNext: true,
+      conditionField: '',
+      conditionOperator: 'equals',
+      conditionValue: '',
+      
+      // Input Type
+      inputType: 'none',
+      inputLabel: '',
+      inputOptions: '',
+      
+      // Validation
+      errors: {},
+      
+      validateForm() {
+        this.errors = {};
+        
+        if (!this.name) this.errors.name = 'Name is required';
+        if (!this.order) this.errors.order = 'Order is required';
+        
+        if (this.approverType === 'specific' && this.selectedApprovers.length === 0) {
+          this.errors.approvers = 'Please select at least one approver';
+        }
+        
+        if (this.approverType === 'group' && this.approverGroup === 'none') {
+          this.errors.approverGroup = 'Please select an approver group';
+        }
+        
+        if (this.isConditional) {
+          if (!this.conditionField) this.errors.conditionField = 'Condition field is required';
+          if (!this.conditionValue) this.errors.conditionValue = 'Condition value is required';
+        }
+        
+        if (this.inputType === 'choice' && !this.inputOptions) {
+          this.errors.inputOptions = 'Options are required for choice input';
+        }
+        
+        if (this.inputType !== 'none' && !this.inputLabel) {
+          this.errors.inputLabel = 'Input label is required';
+        }
+        
+        return Object.keys(this.errors).length === 0;
+      }
+    }" class="space-y-8">
+      <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
+        {% csrf_token %}
+        
+        <!-- Basic Information Section -->
+        <div class="p-4 mb-6 bg-gray-50 rounded-lg">
+          <h2 class="mb-4 text-lg font-medium text-gray-800">Basic Information</h2>
+          
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <!-- Step Name -->
+            <div>
+              <label for="name" class="block mb-1 text-sm font-medium text-gray-700">Step Name</label>
+              <input type="text" name="name" id="name" x-model="name" 
+                     class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     :class="{'border-red-500': errors.name}">
+              <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-600"></p>
+            </div>
+            
+            <!-- Step Order -->
+            <div>
+              <label for="order" class="block mb-1 text-sm font-medium text-gray-700">Order</label>
+              <input type="number" name="order" id="order" x-model="order" min="1"
+                     class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     :class="{'border-red-500': errors.order}">
+              <p x-show="errors.order" x-text="errors.order" class="mt-1 text-sm text-red-600"></p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2">
+            <!-- Approval Mode -->
+            <div>
+              <label class="block mb-1 text-sm font-medium text-gray-700">Approval Mode</label>
+              <div class="flex space-x-4">
+                <label class="inline-flex items-center">
+                  <input type="radio" name="approval_mode" value="all" x-model="approvalMode" class="form-radio">
+                  <span class="ml-2">All Approvers Required</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="approval_mode" value="any" x-model="approvalMode" class="form-radio">
+                  <span class="ml-2">Any Approver Sufficient</span>
+                </label>
+              </div>
+            </div>
+            
+   
+          </div>
+        </div>
+        
+        <!-- Approvers Section -->
+        <div class="p-4 mb-6 bg-gray-50 rounded-lg">
+          <h2 class="mb-4 text-lg font-medium text-gray-800">Approvers</h2>
+          
+          <div class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">Approver Type</label>
+            <div class="flex space-x-4">
+              <label class="inline-flex items-center">
+                <input type="radio" value="none" x-model="approverType" class="form-radio">
+                <span class="ml-2">No Specific Approvers</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" value="specific" x-model="approverType" class="form-radio">
+                <span class="ml-2">Specific Users</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" value="group" x-model="approverType" class="form-radio">
+                <span class="ml-2">User Group</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Specific Approvers -->
+          <div x-show="approverType === 'specific'" class="mb-4">
+            <label class="block mb-1 text-sm font-medium text-gray-700">Select Approvers</label>
+            <div class="overflow-y-auto p-2 max-h-60 rounded-md border"
+                 :class="{'border-red-500': errors.approvers}">
+              {% for user in users %}
+              <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                <input type="checkbox" name="approvers[]" value="{{ user.id }}" 
+                       x-model="selectedApprovers" class="form-checkbox">
+                <span class="ml-2">{{ user.get_full_name|default:user.username }}</span>
+              </label>
+              {% endfor %}
+            </div>
+            <p x-show="errors.approvers" x-text="errors.approvers" class="mt-1 text-sm text-red-600"></p>
+          </div>
+          
+          <!-- Approver Group -->
+          <div x-show="approverType === 'group'" class="mb-4">
+            <label for="approver_group" class="block mb-1 text-sm font-medium text-gray-700">Select Group</label>
+            <select name="approver_group" id="approver_group" x-model="approverGroup"
+                    class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    :class="{'border-red-500': errors.approverGroup}">
+              <option value="none">-- Select Group --</option>
+              {% for group in groups %}
+              <option value="{{ group.id }}">{{ group.name }}</option>
+              {% endfor %}
+            </select>
+            <p x-show="errors.approverGroup" x-text="errors.approverGroup" class="mt-1 text-sm text-red-600"></p>
+          </div>
+        </div>
+        
+        <!-- Conditional Logic Section -->
+        <div class="p-4 mb-6 bg-gray-50 rounded-lg">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-800">Conditional Logic</h2>
+            <label class="inline-flex items-center">
+              <input type="checkbox" x-model="isConditional" class="form-checkbox">
+              <span class="ml-2">Enable Conditional Logic</span>
+            </label>
+            <input type="hidden" :value="isConditional ? 'true' : 'false'" name="is_conditional">
+          </div>
+          
+          <div x-show="isConditional" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <!-- Condition Field -->
+              <div>
+                <label for="condition_field" class="block mb-1 text-sm font-medium text-gray-700">Field</label>
+                <select name="condition_field" id="condition_field" x-model="conditionField"
+                        class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :class="{'border-red-500': errors.conditionField}">
+                  <option value="">-- Select Field --</option>
+                  {% for field in dynamic_fields %}
+                  <option value="{{ field.id }}">{{ field.name }}</option>
+                  {% endfor %}
+                </select>
+                <p x-show="errors.conditionField" x-text="errors.conditionField" class="mt-1 text-sm text-red-600"></p>
+              </div>
+              
+              <!-- Condition Operator -->
+              <div>
+                <label for="condition_operator" class="block mb-1 text-sm font-medium text-gray-700">Operator</label>
+                <select name="condition_operator" id="condition_operator" x-model="conditionOperator"
+                        class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {% for operator, display in condition_operators %}
+                  <option value="{{ operator }}">{{ display }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <!-- Condition Value -->
+              <div>
+                <label for="condition_value" class="block mb-1 text-sm font-medium text-gray-700">Value</label>
+                <input type="text" name="condition_value" id="condition_value" x-model="conditionValue"
+                       class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       :class="{'border-red-500': errors.conditionValue}">
+                <p x-show="errors.conditionValue" x-text="errors.conditionValue" class="mt-1 text-sm text-red-600"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <!-- Workflow Flow Control Section -->
+        <div class="p-4 mb-6 bg-gray-50 rounded-lg">
+          <h2 class="mb-4 text-lg font-medium text-gray-800">Workflow Flow Control</h2>
+          
+          <!-- Move to Next Step -->
+          <div class="flex items-center">
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" x-model="moveToNext" class="w-5 h-5 text-blue-600 form-checkbox" checked>
+              <span class="ml-2 text-sm text-gray-700">Move to next step after this step</span>
+            </label>
+          </div>
+          <p class="mt-1 mb-2 text-xs text-gray-500">If unchecked, workflow will complete after this step (when condition is met for conditional steps)</p>
+          <input type="hidden" :value="moveToNext ? 'true' : 'false'" name="move_to_next">
+        </div>
+        
+        <!-- Editable Fields Section -->
+        <div class="p-4 mb-6 bg-gray-50 rounded-lg">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-800">Editable Fields</h2>
+            <label class="inline-flex items-center">
+              <input type="checkbox" x-model="requiresEdit" class="w-5 h-5 text-blue-600 form-checkbox">
+              <span class="ml-2 text-sm text-gray-700">Requires Edit</span>
+            </label>
+          </div>
+          
+          <div x-show="requiresEdit" class="space-y-4">
+            <p class="mb-3 text-sm text-gray-600">Select which fields can be edited by approvers at this step:</p>
+            
+            <div class="overflow-y-auto p-2 max-h-60 rounded-md border">
+              {% for field in dynamic_fields %}
+              <label class="flex items-center px-2 py-1 rounded cursor-pointer hover:bg-gray-100">
+                <input type="checkbox" name="editable_fields[]" value="{{ field.id }}" 
+                       class="w-4 h-4 text-blue-600 form-checkbox">
+                <span class="ml-2 text-sm">{{ field.name }}</span>
+                <span class="ml-1 text-xs text-gray-500">({{ field.get_field_type_display }})</span>
+              </label>
+              {% empty %}
+              <p class="p-2 text-sm text-gray-500">No fields available. Please add fields to this workflow first.</p>
+              {% endfor %}
+            </div>
+            
+            <p class="mt-1 text-xs text-gray-500">Approvers will be able to edit these fields during their approval step.</p>
+          </div>
+          
+          <div x-show="!requiresEdit" class="text-sm italic text-gray-500">
+            Enable "Requires Edit" to allow approvers to edit fields at this step.
+          </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex justify-between">
+          <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
+             class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
+            Cancel
+          </a>
+          <button type="submit" 
+                  class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Create Step
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add a link to the workflow steps page -->
+<div class="container px-4 mx-auto mt-4">
+  <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
+     class="inline-flex items-center text-blue-600 hover:text-blue-800">
+    <svg class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+    </svg>
+    Back to Workflow Steps
+  </a>
+</div>
+{% endblock %}

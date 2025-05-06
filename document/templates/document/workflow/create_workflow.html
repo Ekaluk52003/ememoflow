@@ -1,0 +1,104 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Create New Workflow</h1>
+    <p class="text-gray-600">First, provide the basic workflow information</p>
+  </div>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded-md">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Alpine.js Form -->
+  <div x-data="{
+    name: '',
+    contentEditor: false,
+    
+    // Groups
+    selectedGroups: [],
+    
+    // Validation
+    errors: {},
+    
+    validateForm() {
+      this.errors = {};
+      
+      if (!this.name) this.errors.name = 'Workflow name is required';
+      
+      return Object.keys(this.errors).length === 0;
+    }
+  }" class="space-y-6">
+    <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
+      {% csrf_token %}
+      
+      <!-- Basic Information -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">Basic Information</h3>
+          <div class="mt-5 space-y-6">
+            <!-- Workflow Name -->
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700">Workflow Name</label>
+              <input type="text" name="name" id="name" x-model="name" 
+                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                     :class="{'border-red-500': errors.name}">
+              <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-600"></p>
+            </div>
+            
+            <!-- Content Editor -->
+            <div class="relative flex items-start">
+              <div class="flex items-center h-5">
+                <input id="content_editor" name="content_editor" type="checkbox" x-model="contentEditor"
+                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <input type="hidden" :value="contentEditor ? 'true' : 'false'" name="content_editor">
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="content_editor" class="font-medium text-gray-700">Enable Content Editor</label>
+                <p class="text-gray-500">Allow users to edit document content using a rich text editor</p>
+              </div>
+            </div>
+            
+            <!-- Authorized Groups -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Authorized Groups</label>
+              <p class="text-sm text-gray-500 mb-2">Select groups that have full access to documents in this workflow</p>
+              <div class="max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
+                {% for group in groups %}
+                <label class="flex items-center p-2 hover:bg-gray-100 rounded">
+                  <input type="checkbox" name="authorized_groups[]" value="{{ group.id }}" 
+                         x-model="selectedGroups" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                  <span class="ml-2 text-sm text-gray-700">{{ group.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Form Actions -->
+      <div class="flex justify-between mt-6">
+        <a href="{% url 'document_approval:workflow_list' %}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Cancel
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Create & Continue
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Field Preview: {{ field.name }}</h1>
+      <p class="text-gray-600">{{ field.get_field_type_display }} • {{ field.get_width_display }}</p>
+    </div>
+    <div class="flex space-x-3">
+      <a href="{% url 'document_approval:edit_field' field.id %}" 
+         class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+        Edit Field
+      </a>
+      <a href="{% url 'document_approval:field_list' %}" 
+         class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Fields
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="mb-4">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Field Information</h3>
+        <div class="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Name</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.name }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Type</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.get_field_type_display }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Width</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.get_width_display }}</dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Required</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.required|yesno:"Yes,No" }}</dd>
+          </div>
+          {% if field.description %}
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Description</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.description }}</dd>
+          </div>
+          {% endif %}
+          
+          {% if field.field_type == 'choice' or field.field_type == 'multiple_choice' %}
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Choices</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <ul class="list-disc pl-5 space-y-1">
+                {% for choice in field.choices_list %}
+                <li>{{ choice }}</li>
+                {% endfor %}
+              </ul>
+            </dd>
+          </div>
+          {% endif %}
+          
+          {% if field.field_type == 'table_list' %}
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Table Columns</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.table_columns }}</dd>
+          </div>
+          {% endif %}
+          
+          {% if field.field_type == 'product_list' %}
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Product List Columns</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.product_list_columns }}</dd>
+          </div>
+          {% endif %}
+          
+          {% if field.field_type == 'attachment' %}
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Allowed Extensions</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ field.allowed_extensions|default:"All file types" }}</dd>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="mt-8 border-t border-gray-200 pt-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Field Preview</h3>
+        <div class="mt-4 bg-gray-50 p-4 rounded-md">
+          {% include "document/dynamic_fields/field_preview_partial.html" %}
+        </div>
+      </div>
+      
+      {% if field.workflows.exists %}
+      <div class="mt-8 border-t border-gray-200 pt-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Used in Workflows</h3>
+        <div class="mt-2">
+          <ul class="divide-y divide-gray-200">
+            {% for workflow in field.workflows.all %}
+            <li class="py-3 flex justify-between">
+              <div class="text-sm font-medium text-gray-900">{{ workflow.name }}</div>
+              <a href="{% url 'document_approval:edit_workflow' workflow.id %}" 
+                 class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                View Workflow
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

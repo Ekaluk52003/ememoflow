@@ -1,0 +1,671 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<!-- Global Notification -->
+<div x-data="{ show: false, message: '', type: 'success' }" 
+     @show-notification.window="show = true; message = $event.detail.message; type = $event.detail.type; setTimeout(() => show = false, 3000)"
+     x-show="show"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 transform scale-90"
+     x-transition:enter-end="opacity-100 transform scale-100"
+     x-transition:leave="transition ease-in duration-300"
+     x-transition:leave-start="opacity-100 transform scale-100"
+     x-transition:leave-end="opacity-0 transform scale-90"
+     class="fixed top-4 right-4 z-50 max-w-md" 
+     x-cloak>
+  <div :class="{
+    'bg-green-50 border-green-200 text-green-800': type === 'success',
+    'bg-red-50 border-red-200 text-red-800': type === 'error'
+  }" class="flex items-center p-4 rounded-md border shadow-lg">
+    <div :class="{
+      'text-green-500': type === 'success',
+      'text-red-500': type === 'error'
+    }" class="flex-shrink-0">
+      <svg x-show="type === 'success'" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+      <svg x-show="type === 'error'" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm font-medium" x-text="message"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Field Preview Modal -->
+<div x-data="{ showPreview: false, previewUrl: '' }" 
+     @preview-field.window="showPreview = true; previewUrl = '/document/fields/' + $event.detail.fieldId + '/preview/?embed=true';"
+     x-show="showPreview" 
+     class="overflow-y-auto fixed inset-0 z-50" 
+     x-cloak>
+  <div class="flex fixed inset-0 z-50 flex-col bg-white">
+    <!-- Header with close button -->
+    <div class="flex justify-between items-center p-4 border-b border-gray-200">
+      <h3 class="text-xl font-medium text-gray-900">Field Preview</h3>
+      <button type="button" @click="showPreview = false" class="inline-flex justify-center items-center p-2 text-gray-400 rounded-md hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+        <span class="sr-only">Close</span>
+        <!-- Heroicon name: outline/x -->
+        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Main content area with iframe -->
+    <div class="overflow-hidden flex-grow">
+      <iframe :src="previewUrl" class="w-full h-full border-0"></iframe>
+    </div>
+    </div>
+  </div>
+</div>
+<div class="container px-4 py-8 mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Edit Workflow: {{ workflow.name }}</h1>
+    <p class="text-gray-600">Modify workflow settings, dynamic fields, and email notifications</p>
+  </div>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded-md">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Alpine.js Form -->
+  <div x-data="{
+    name: '{{ workflow.name|escapejs }}',
+    contentEditor: {% if workflow.content_editor %}true{% else %}false{% endif %},
+    
+    // Email settings
+    sendRejectEmail: {% if workflow.send_reject_email %}true{% else %}false{% endif %},
+    rejectEmailSubject: '{{ workflow.reject_email_subject|default:'Your document has been rejected'|escapejs }}',
+    rejectEmailBody: '{{ workflow.reject_email_body|default:'Your document has been rejected. Please review the comments and resubmit.'|escapejs }}',
+    
+    sendWithdrawEmail: {% if workflow.send_withdraw_email %}true{% else %}false{% endif %},
+    withdrawEmailSubject: '{{ workflow.withdraw_email_subject|default:'Document has been withdrawn'|escapejs }}',
+    withdrawEmailBody: '{{ workflow.withdraw_email_body|default:'The document has been withdrawn by the submitter.'|escapejs }}',
+    
+    sendApprovedEmail: {% if workflow.send_approved_email %}true{% else %}false{% endif %},
+    approvedEmailSubject: '{{ workflow.email_approved_subject|default:'Your document has been fully approved'|escapejs }}',
+    approvedEmailBody: '{{ workflow.email_approved_body_template|default:'Congratulations! Your document has been approved by all required approvers.'|escapejs }}',
+    
+    ccEmails: '{{ workflow.cc_emails|default:''|escapejs }}',
+    
+    // Groups and fields
+    selectedGroups: [{% for group in workflow.authorized_groups.all %}{{ group.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    selectedFields: [{% for field in workflow.dynamic_fields.all %}{{ field.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    
+    // Tabs
+    activeTab: 'basic',
+    
+    // Validation
+    errors: {},
+    
+    validateForm() {
+      this.errors = {};
+      
+      if (!this.name) this.errors.name = 'Workflow name is required';
+      
+      if (this.sendRejectEmail) {
+        if (!this.rejectEmailSubject) this.errors.rejectEmailSubject = 'Subject is required';
+        if (!this.rejectEmailBody) this.errors.rejectEmailBody = 'Body is required';
+      }
+      
+      if (this.sendWithdrawEmail) {
+        if (!this.withdrawEmailSubject) this.errors.withdrawEmailSubject = 'Subject is required';
+        if (!this.withdrawEmailBody) this.errors.withdrawEmailBody = 'Body is required';
+      }
+      
+      if (this.sendApprovedEmail) {
+        if (!this.approvedEmailSubject) this.errors.approvedEmailSubject = 'Subject is required';
+        if (!this.approvedEmailBody) this.errors.approvedEmailBody = 'Body is required';
+      }
+      
+      return Object.keys(this.errors).length === 0;
+    }
+  }" class="space-y-6">
+    <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
+      {% csrf_token %}
+      
+      <!-- Tabs -->
+      <div class="flex justify-center mb-6">
+        <div class="inline-flex p-1 bg-gray-100 rounded-md shadow-sm">
+          <button type="button" @click="activeTab = 'basic'" 
+                  :class="{'bg-white text-blue-600 shadow': activeTab === 'basic', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'basic'}"
+                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Basic Information
+          </button>
+          <button type="button" @click="activeTab = 'fields'" 
+                  :class="{'bg-white text-blue-600 shadow': activeTab === 'fields', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'fields'}"
+                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+            </svg>
+            Dynamic Fields
+          </button>
+          <button type="button" @click="activeTab = 'email'" 
+                  :class="{'bg-white text-blue-600 shadow': activeTab === 'email', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'email'}"
+                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Email Settings
+          </button>
+        </div>
+      </div>
+      
+      <!-- Basic Information Tab -->
+      <div x-show="activeTab === 'basic'" class="overflow-hidden bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
+          <div class="mt-5 space-y-6">
+            <!-- Workflow Name -->
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700">Workflow Name</label>
+              <input type="text" name="name" id="name" x-model="name" 
+                     class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                     :class="{'border-red-500': errors.name}">
+              <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-600"></p>
+            </div>
+            
+            <!-- Content Editor -->
+            <div class="flex relative items-start">
+              <div class="flex items-center h-5">
+                <input id="content_editor" name="content_editor" type="checkbox" x-model="contentEditor"
+                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                <input type="hidden" :value="contentEditor ? 'true' : 'false'" name="content_editor">
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="content_editor" class="font-medium text-gray-700">Enable Content Editor</label>
+                <p class="text-gray-500">Allow users to edit document content using a rich text editor</p>
+              </div>
+            </div>
+            
+            <!-- Authorized Groups -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Authorized Groups</label>
+              <p class="mb-2 text-sm text-gray-500">Select groups that have full access to documents in this workflow</p>
+              <div class="overflow-y-auto p-2 max-h-60 rounded-md border border-gray-300">
+                {% for group in groups %}
+                <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                  <input type="checkbox" name="authorized_groups[]" value="{{ group.id }}" 
+                         {% if group in workflow.authorized_groups.all %}checked{% endif %}
+                         x-model="selectedGroups" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                  <span class="ml-2 text-sm text-gray-700">{{ group.name }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Dynamic Fields Tab -->
+      <div x-show="activeTab === 'fields'" class="overflow-hidden bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Dynamic Fields</h3>
+            <a href="{% url 'document_approval:create_field' %}?next=document_approval:edit_workflow&id={{ workflow.id }}" 
+               class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <svg class="mr-1 -ml-1 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Create New Field
+            </a>
+          </div>
+          <div class="mt-5">
+            <p class="mb-2 text-sm text-gray-500">Dynamic fields associated with this workflow</p>
+            
+            {% if dynamic_fields %}
+            <div class="overflow-y-auto p-2 max-h-96 rounded-md border border-gray-300">
+              {% for field in dynamic_fields %}
+              <div class="p-3 border-b border-gray-200 hover:bg-gray-50 last:border-b-0" 
+                   x-data="{
+                     isEditing: false,
+                     fieldId: {{ field.id }},
+                     name: '{{ field.name }}',
+                     fieldType: '{{ field.field_type }}',
+                     fieldTypeDisplay: '{{ field.get_field_type_display }}',
+                     required: {% if field.required %}true{% else %}false{% endif %},
+                     inputWidth: '{{ field.input_width }}',
+                     widthDisplay: '{{ field.get_width_display }}',
+                     choices: '{{ field.choices|default:"" }}',
+                     tableColumns: '{{ field.table_columns|default:"" }}',
+                     allowedExtensions: '{{ field.allowed_extensions|default:"" }}',
+                     textareaRows: {{ field.textarea_rows|default:4 }},
+                     multipleFiles: {% if field.multiple_files %}true{% else %}false{% endif %},
+                     showSuccess: false,
+                     
+                     saveField() {
+                       fetch('/document/fields/' + this.fieldId + '/edit-ajax/', {
+                         method: 'POST',
+                         headers: {
+                           'Content-Type': 'application/json',
+                           'X-CSRFToken': '{{ csrf_token }}'
+                         },
+                         body: JSON.stringify({
+                           name: this.name,
+                           field_type: this.fieldType,
+                           required: this.required,
+                           input_width: this.inputWidth,
+                           choices: this.choices,
+                           table_columns: this.tableColumns,
+                           allowed_extensions: this.allowedExtensions,
+                           textarea_rows: this.textareaRows,
+                           multiple_files: this.multipleFiles
+                         })
+                       })
+                       .then(response => response.json())
+                       .then(data => {
+                         if (data.success) {
+                           // Update the local data with the response from the server
+                           this.name = data.field.name;
+                           this.fieldType = data.field.field_type;
+                           this.fieldTypeDisplay = data.field.field_type_display;
+                           this.required = data.field.required;
+                           this.inputWidth = data.field.input_width;
+                           this.widthDisplay = data.field.width_display;
+                           this.choices = data.field.choices || '';
+                           this.tableColumns = data.field.table_columns || '';
+                           this.allowedExtensions = data.field.allowed_extensions || '';
+                           this.textareaRows = data.field.textarea_rows || 4;
+                           this.multipleFiles = data.field.multiple_files || false;
+                           
+                           // Close the edit form
+                           this.isEditing = false;
+                           
+                           // Show success message
+                           this.showSuccess = true;
+                           setTimeout(() => {
+                             this.showSuccess = false;
+                           }, 3000);
+                         } else {
+                           alert('Error: ' + data.error);
+                         }
+                       })
+                       .catch(error => {
+                         console.error('Error:', error);
+                         alert('An error occurred while saving the field.');
+                       });
+                     },
+                     
+                     deleteField() {
+                       if (confirm('Are you sure you want to delete this field? This action cannot be undone.')) {
+                         fetch('/document/fields/' + this.fieldId + '/delete-ajax/', {
+                           method: 'POST',
+                           headers: {
+                             'Content-Type': 'application/json',
+                             'X-CSRFToken': '{{ csrf_token }}'
+                           }
+                         })
+                         .then(response => response.json())
+                         .then(data => {
+                           if (data.success) {
+                             // Show a success notification
+                             const successEvent = new CustomEvent('show-notification', {
+                               detail: {
+                                 message: data.message,
+                                 type: 'success'
+                               }
+                             });
+                             window.dispatchEvent(successEvent);
+                             
+                             // Force a page reload to update the UI
+                             // This ensures the field is completely removed from the list
+                             window.location.reload();
+                           } else {
+                             alert('Error: ' + data.error);
+                           }
+                         })
+                         .catch(error => {
+                           console.error('Error:', error);
+                           alert('An error occurred while deleting the field.');
+                         });
+                       }
+                     }
+                   }">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <!-- View Mode -->
+                    <div x-show="!isEditing">
+                      <!-- Success Message -->
+                      <div x-show="showSuccess" class="flex items-center px-4 py-2 mb-3 text-green-700 bg-green-50 rounded-md border border-green-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Field updated successfully!</span>
+                      </div>
+                      
+                      <div class="flex justify-between items-center">
+                        <h4 class="font-medium text-gray-700" x-text="name"></h4>
+                        <div class="flex items-center space-x-2">
+                          <button @click="isEditing = true" type="button" class="inline-flex items-center p-1.5 text-white bg-blue-600 rounded-full border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                          <button @click="$dispatch('preview-field', { fieldId: fieldId })" type="button" class="inline-flex items-center p-1.5 text-white bg-green-500 rounded-full border border-transparent shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap gap-2 items-center mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full" x-text="fieldTypeDisplay">
+                        </span>
+                        <template x-if="required">
+                          <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                            Required
+                          </span>
+                        </template>
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-full" x-text="widthDisplay">
+                        </span>
+                      </div>
+                      
+                      <!-- Field-specific details -->
+                      <template x-if="fieldType === 'choice' || fieldType === 'multiple_choice'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Options:</span> <span x-text="choices"></span>
+                        </div>
+                      </template>
+                      <template x-if="fieldType === 'table_list'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Columns:</span> <span x-text="tableColumns"></span>
+                        </div>
+                      </template>
+                      <template x-if="fieldType === 'product_list'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Columns:</span> <span x-text="tableColumns"></span>
+                        </div>
+                      </template>
+                      <template x-if="fieldType === 'attachment'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Allowed Extensions:</span> <span x-text="allowedExtensions"></span>
+                        </div>
+                      </template>
+                      <template x-if="fieldType === 'textarea'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Rows:</span> <span x-text="textareaRows"></span>
+                        </div>
+                      </template>
+                      
+                      <template x-if="fieldType === 'attachment'">
+                        <div class="mt-1 text-sm text-gray-500">
+                          <span class="font-medium">Multiple Files:</span> <span x-text="multipleFiles ? 'Yes' : 'No'"></span>
+                        </div>
+                      </template>
+                    </div>
+                    
+                    <!-- Edit Mode -->
+                    <div x-show="isEditing" class="p-4">
+                      <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-medium text-gray-700">Edit Field</h4>
+                        <button @click="isEditing = false" type="button" class="inline-flex items-center p-1 text-gray-700 bg-white rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      <div class="space-y-4">
+                        <!-- Field Name -->
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Field Name</label>
+                          <input type="text" x-model="name" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Field Type -->
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Field Type</label>
+                          <select x-model="fieldType" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            {% for value, label in field_types %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        
+                        <!-- Required -->
+                        <div class="flex items-center">
+                          <input id="required_{{ field.id }}" type="checkbox" x-model="required" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                          <label for="required_{{ field.id }}" class="block ml-2 text-sm text-gray-700">Required</label>
+                        </div>
+                        
+                        <!-- Input Width -->
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700">Input Width</label>
+                          <select x-model="inputWidth" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            {% for value, label in width_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        
+                        <!-- Type-specific fields -->
+                        <!-- Choice Options -->
+                        <div x-show="fieldType === 'choice' || fieldType === 'multiple_choice'">
+                          <label class="block text-sm font-medium text-gray-700">Options (comma-separated)</label>
+                          <input type="text" x-model="choices" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Table Columns -->
+                        <div x-show="fieldType === 'table_list'">
+                          <label class="block text-sm font-medium text-gray-700">Table Columns (pipe-separated)</label>
+                          <input type="text" x-model="tableColumns" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Product List Columns -->
+                        <div x-show="fieldType === 'product_list'">
+                          <label class="block text-sm font-medium text-gray-700">Product List Columns (pipe-separated)</label>
+                          <input type="text" x-model="tableColumns" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Attachment Extensions -->
+                        <div x-show="fieldType === 'attachment'">
+                          <label class="block text-sm font-medium text-gray-700">Allowed Extensions (comma-separated)</label>
+                          <input type="text" x-model="allowedExtensions" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Textarea Rows -->
+                        <div x-show="fieldType === 'textarea'">
+                          <label class="block text-sm font-medium text-gray-700">Textarea Rows</label>
+                          <input type="number" x-model="textareaRows" min="1" max="20" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        
+                        <!-- Multiple Files -->
+                        <div x-show="fieldType === 'attachment'" class="flex items-center">
+                          <input id="multiple_files_{{ field.id }}" type="checkbox" x-model="multipleFiles" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                          <label for="multiple_files_{{ field.id }}" class="block ml-2 text-sm text-gray-700">Allow Multiple Files</label>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-3">
+                          <button @click="deleteField()" type="button" class="items-center px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md border border-transparent shadow-sm inline-600-flex hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            Delete
+                          </button>
+                      
+                          <button @click="saveField()" type="button" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-4 text-center rounded-md border border-gray-300">
+              <p class="text-gray-500">No dynamic fields available. Create some fields first.</p>
+              <a href="{% url 'document_approval:create_field' %}?next=document_approval:edit_workflow&id={{ workflow.id }}" 
+                 class="inline-flex items-center px-3 py-1.5 mt-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="mr-1 -ml-1 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New Field
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Email Settings Tab -->
+      <div x-show="activeTab === 'email'" class="overflow-hidden bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg font-medium leading-6 text-gray-900">Email Settings</h3>
+          <div class="mt-5 space-y-6">
+            <!-- Rejection Email Settings -->
+            <div class="p-4 rounded-md border border-gray-200">
+              <div class="flex justify-between items-center">
+                <h4 class="text-base font-medium text-gray-900">Rejection Email</h4>
+                <div class="flex relative items-start">
+                  <div class="flex items-center h-5">
+                    <input id="send_reject_email" name="send_reject_email" type="checkbox" x-model="sendRejectEmail"
+                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <input type="hidden" :value="sendRejectEmail ? 'true' : 'false'" name="send_reject_email">
+                  </div>
+                  <div class="ml-3 text-sm">
+                    <label for="send_reject_email" class="font-medium text-gray-700">Enable</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div x-show="sendRejectEmail" class="mt-4 space-y-4">
+                <div>
+                  <label for="reject_email_subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                  <input type="text" name="reject_email_subject" id="reject_email_subject" x-model="rejectEmailSubject"
+                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                         :class="{'border-red-500': errors.rejectEmailSubject}">
+                  <p x-show="errors.rejectEmailSubject" x-text="errors.rejectEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                </div>
+                <div>
+                  <label for="reject_email_body" class="block text-sm font-medium text-gray-700">Body</label>
+                  <textarea name="reject_email_body" id="reject_email_body" rows="3" x-model="rejectEmailBody"
+                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            :class="{'border-red-500': errors.rejectEmailBody}"></textarea>
+                  <p x-show="errors.rejectEmailBody" x-text="errors.rejectEmailBody" class="mt-1 text-sm text-red-600"></p>
+                  <p class="mt-1 text-xs text-gray-500">Use {document}, {approver}, and {step} as placeholders</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Withdrawal Email Settings -->
+            <div class="p-4 rounded-md border border-gray-200">
+              <div class="flex justify-between items-center">
+                <h4 class="text-base font-medium text-gray-900">Withdrawal Email</h4>
+                <div class="flex relative items-start">
+                  <div class="flex items-center h-5">
+                    <input id="send_withdraw_email" name="send_withdraw_email" type="checkbox" x-model="sendWithdrawEmail"
+                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <input type="hidden" :value="sendWithdrawEmail ? 'true' : 'false'" name="send_withdraw_email">
+                  </div>
+                  <div class="ml-3 text-sm">
+                    <label for="send_withdraw_email" class="font-medium text-gray-700">Enable</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div x-show="sendWithdrawEmail" class="mt-4 space-y-4">
+                <div>
+                  <label for="withdraw_email_subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                  <input type="text" name="withdraw_email_subject" id="withdraw_email_subject" x-model="withdrawEmailSubject"
+                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                         :class="{'border-red-500': errors.withdrawEmailSubject}">
+                  <p x-show="errors.withdrawEmailSubject" x-text="errors.withdrawEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                </div>
+                <div>
+                  <label for="withdraw_email_body" class="block text-sm font-medium text-gray-700">Body</label>
+                  <textarea name="withdraw_email_body" id="withdraw_email_body" rows="3" x-model="withdrawEmailBody"
+                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            :class="{'border-red-500': errors.withdrawEmailBody}"></textarea>
+                  <p x-show="errors.withdrawEmailBody" x-text="errors.withdrawEmailBody" class="mt-1 text-sm text-red-600"></p>
+                  <p class="mt-1 text-xs text-gray-500">Use {document} and {submitter} as placeholders</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Approved Email Settings -->
+            <div class="p-4 rounded-md border border-gray-200">
+              <div class="flex justify-between items-center">
+                <h4 class="text-base font-medium text-gray-900">Final Approval Email</h4>
+                <div class="flex relative items-start">
+                  <div class="flex items-center h-5">
+                    <input id="send_approved_email" name="send_approved_email" type="checkbox" x-model="sendApprovedEmail"
+                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <input type="hidden" :value="sendApprovedEmail ? 'true' : 'false'" name="send_approved_email">
+                  </div>
+                  <div class="ml-3 text-sm">
+                    <label for="send_approved_email" class="font-medium text-gray-700">Enable</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div x-show="sendApprovedEmail" class="mt-4 space-y-4">
+                <div>
+                  <label for="email_approved_subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                  <input type="text" name="email_approved_subject" id="email_approved_subject" x-model="approvedEmailSubject"
+                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                         :class="{'border-red-500': errors.approvedEmailSubject}">
+                  <p x-show="errors.approvedEmailSubject" x-text="errors.approvedEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                </div>
+                <div>
+                  <label for="email_approved_body_template" class="block text-sm font-medium text-gray-700">Body</label>
+                  <textarea name="email_approved_body_template" id="email_approved_body_template" rows="3" x-model="approvedEmailBody"
+                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            :class="{'border-red-500': errors.approvedEmailBody}"></textarea>
+                  <p x-show="errors.approvedEmailBody" x-text="errors.approvedEmailBody" class="mt-1 text-sm text-red-600"></p>
+                  <p class="mt-1 text-xs text-gray-500">Use {document} and {approvers} as placeholders</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- CC Emails -->
+            <div>
+              <label for="cc_emails" class="block text-sm font-medium text-gray-700">CC Emails</label>
+              <input type="text" name="cc_emails" id="cc_emails" x-model="ccEmails"
+                     class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <p class="mt-1 text-xs text-gray-500">Comma-separated email addresses for CC</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Form Actions -->
+      <div class="flex justify-between">
+        <a href="{% url 'document_approval:workflow_list' %}" 
+           class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Cancel
+        </a>
+        <div class="flex space-x-3">
+          <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
+             class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Manage Steps
+          </a>
+          <button type="button" @click="activeTab = (activeTab === 'basic' ? 'fields' : (activeTab === 'fields' ? 'email' : 'basic'))"
+                  class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <span x-text="activeTab === 'basic' ? 'Next: Dynamic Fields' : (activeTab === 'fields' ? 'Next: Email Settings' : 'Back to Basic Info')"></span>
+          </button>
+          <button type="submit" 
+                  class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

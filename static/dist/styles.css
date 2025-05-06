@@ -1609,11 +1609,17 @@ video {
   --tw-divide-opacity: 1;
   border-color: rgb(229 231 235 / var(--tw-divide-opacity));
 }
+.self-start {
+  align-self: flex-start;
+}
 .self-center {
   align-self: center;
 }
 .overflow-auto {
   overflow: auto;
+}
+.overflow-hidden {
+  overflow: hidden;
 }
 .overflow-clip {
   overflow: clip;
@@ -1623,6 +1629,9 @@ video {
 }
 .overflow-y-auto {
   overflow-y: auto;
+}
+.overflow-x-hidden {
+  overflow-x: hidden;
 }
 .truncate {
   overflow: hidden;
@@ -2097,6 +2106,9 @@ video {
 }
 .tracking-tighter {
   letter-spacing: -0.05em;
+}
+.tracking-wider {
+  letter-spacing: 0.05em;
 }
 .text-black {
   --tw-text-opacity: 1;

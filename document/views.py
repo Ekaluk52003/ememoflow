@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.utils import timezone
 from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite, Approval
 from accounts.models import CustomUser
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.http import HttpResponse
@@ -1819,13 +1820,4 @@ def check_upload_status(request):
         'uploads': results
     })
 
-@login_required
-def workflow_steps(request, workflow_id):
-    """Display workflow steps with connecting dot lines"""
-    workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
-    steps = workflow.steps.all().order_by('order')
-    
-    return render(request, 'document/workflow_steps.html', {
-        'workflow': workflow,
-        'steps': steps
-    })
+# Workflow step views have been moved to views_workflow.py

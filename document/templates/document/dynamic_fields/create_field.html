@@ -1,0 +1,282 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Create New Dynamic Field</h1>
+    <p class="text-gray-600">Define a new field that can be used in workflows</p>
+  </div>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded-md">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Alpine.js Form -->
+  <div x-data="{
+    name: '',
+    fieldType: 'text',
+    width: 'full',
+    required: false,
+    
+    // Field-specific properties
+    choices: '',
+    tableColumns: '',
+    productListColumns: '',
+    allowedExtensions: '',
+    
+    // Validation
+    errors: {},
+    
+    // Show/hide field-specific options
+    showChoices() {
+      return this.fieldType === 'choice' || this.fieldType === 'multiple_choice';
+    },
+    
+    showTableColumns() {
+      return this.fieldType === 'table_list';
+    },
+    
+    showProductListColumns() {
+      return this.fieldType === 'product_list';
+    },
+    
+    showAllowedExtensions() {
+      return this.fieldType === 'attachment';
+    },
+    
+    validateForm() {
+      this.errors = {};
+      
+      if (!this.name) this.errors.name = 'Field name is required';
+      
+      if (this.showChoices() && !this.choices) {
+        this.errors.choices = 'Choices are required for this field type';
+      }
+      
+      if (this.showTableColumns() && !this.tableColumns) {
+        this.errors.tableColumns = 'Table columns are required for this field type';
+      }
+      
+      if (this.showProductListColumns() && !this.productListColumns) {
+        this.errors.productListColumns = 'Product list columns are required for this field type';
+      }
+      
+      return Object.keys(this.errors).length === 0;
+    }
+  }" class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
+      {% csrf_token %}
+      {% if request.GET.id %}
+      <input type="hidden" name="workflow_id" value="{{ request.GET.id }}">
+      {% endif %}
+      {% if request.GET.next %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}{% if request.GET.id %}&id={{ request.GET.id }}{% endif %}">
+      {% endif %}
+      
+      <div class="px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+          <!-- Basic Field Information -->
+          <div class="sm:col-span-3">
+            <label for="name" class="block text-sm font-medium text-gray-700">Field Name</label>
+            <div class="mt-1">
+              <input type="text" name="name" id="name" x-model="name" 
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                     :class="{'border-red-500': errors.name}">
+              <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-600"></p>
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="field_type" class="block text-sm font-medium text-gray-700">Field Type</label>
+            <div class="mt-1">
+              <select id="field_type" name="field_type" x-model="fieldType"
+                      class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                <option value="text">Text</option>
+                <option value="textarea">Text Area</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+                <option value="choice">Single Choice</option>
+                <option value="multiple_choice">Multiple Choice</option>
+                <option value="attachment">Attachment</option>
+                <option value="table_list">Table List</option>
+                <option value="product_list">Product List</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="width" class="block text-sm font-medium text-gray-700">Field Width</label>
+            <div class="mt-1">
+              <select id="width" name="width" x-model="width"
+                      class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                <option value="full">Full Width</option>
+                <option value="half">Half Width</option>
+                <option value="third">One Third</option>
+                <option value="two_thirds">Two Thirds</option>
+                <option value="quarter">One Quarter</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <div class="flex items-start pt-5">
+              <div class="flex items-center h-5">
+                <input id="required" name="required" type="checkbox" x-model="required"
+                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <input type="hidden" :value="required ? 'true' : 'false'" name="required_hidden">
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="required" class="font-medium text-gray-700">Required Field</label>
+                <p class="text-gray-500">Make this field mandatory when submitting documents</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Field-specific options -->
+          <!-- Choices for choice and multiple_choice fields -->
+          <div class="sm:col-span-6" x-show="showChoices()">
+            <label for="choices" class="block text-sm font-medium text-gray-700">Choices</label>
+            <div class="mt-1">
+              <textarea id="choices" name="choices" rows="3" x-model="choices"
+                        class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                        :class="{'border-red-500': errors.choices}"></textarea>
+              <p x-show="errors.choices" x-text="errors.choices" class="mt-1 text-sm text-red-600"></p>
+              <p class="mt-2 text-sm text-gray-500">Enter one choice per line</p>
+            </div>
+          </div>
+
+          <!-- Table columns for table_list fields -->
+          <div class="sm:col-span-6" x-show="showTableColumns()">
+            <label for="table_columns" class="block text-sm font-medium text-gray-700">Table Columns</label>
+            <div class="mt-1">
+              <input type="text" id="table_columns" name="table_columns" x-model="tableColumns"
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                     :class="{'border-red-500': errors.tableColumns}">
+              <p x-show="errors.tableColumns" x-text="errors.tableColumns" class="mt-1 text-sm text-red-600"></p>
+              <p class="mt-2 text-sm text-gray-500">Enter column names separated by pipes (|) e.g., "item|name|qty|invoice|reason|credit"</p>
+            </div>
+          </div>
+
+          <!-- Product list columns for product_list fields -->
+          <div class="sm:col-span-6" x-show="showProductListColumns()">
+            <label for="product_list_columns" class="block text-sm font-medium text-gray-700">Product List Columns</label>
+            <div class="mt-1">
+              <input type="text" id="product_list_columns" name="product_list_columns" x-model="productListColumns"
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                     :class="{'border-red-500': errors.productListColumns}">
+              <p x-show="errors.productListColumns" x-text="errors.productListColumns" class="mt-1 text-sm text-red-600"></p>
+              <p class="mt-2 text-sm text-gray-500">Enter column names separated by pipes (|)</p>
+            </div>
+          </div>
+
+          <!-- Allowed extensions for attachment fields -->
+          <div class="sm:col-span-6" x-show="showAllowedExtensions()">
+            <label for="allowed_extensions" class="block text-sm font-medium text-gray-700">Allowed Extensions</label>
+            <div class="mt-1">
+              <input type="text" id="allowed_extensions" name="allowed_extensions" x-model="allowedExtensions"
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+              <p class="mt-2 text-sm text-gray-500">Enter file extensions separated by commas (e.g., pdf,doc,docx). Leave empty to allow all types.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+        <div class="flex justify-end space-x-3">
+          <a href="{% url 'document_approval:field_list' %}" 
+             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Create Field
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Field Preview -->
+  <div class="mt-8" x-data="{ showPreview: false }">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-medium text-gray-900">Field Preview</h2>
+      <button @click="showPreview = !showPreview" 
+              class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <span x-text="showPreview ? 'Hide Preview' : 'Show Preview'"></span>
+      </button>
+    </div>
+    
+    <div x-show="showPreview" class="bg-white shadow sm:rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <div id="field-preview-container">
+          <p class="text-sm text-gray-500 text-center py-4">
+            Fill in the form above and click "Show Preview" to see how your field will look
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('alpine:init', () => {
+    // Preview functionality
+    const previewButton = document.querySelector('[x-text="showPreview ? \'Hide Preview\' : \'Show Preview\'"]');
+    const previewContainer = document.getElementById('field-preview-container');
+    
+    previewButton?.addEventListener('click', async function() {
+      const formData = new FormData();
+      const fieldName = document.getElementById('name').value || 'Untitled Field';
+      const fieldType = document.getElementById('field_type').value;
+      const required = document.getElementById('required').checked;
+      const width = document.getElementById('width').value;
+      
+      formData.append('name', fieldName);
+      formData.append('field_type', fieldType);
+      formData.append('required', required);
+      formData.append('width', width);
+      
+      // Add field-specific data
+      if (fieldType === 'choice' || fieldType === 'multiple_choice') {
+        formData.append('choices', document.getElementById('choices').value);
+      } else if (fieldType === 'table_list') {
+        formData.append('table_columns', document.getElementById('table_columns').value);
+      } else if (fieldType === 'product_list') {
+        formData.append('product_list_columns', document.getElementById('product_list_columns').value);
+      } else if (fieldType === 'attachment') {
+        formData.append('allowed_extensions', document.getElementById('allowed_extensions').value);
+      }
+      
+      try {
+        const response = await fetch("{% url 'document_approval:field_preview_ajax' %}", {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (response.ok) {
+          const html = await response.text();
+          previewContainer.innerHTML = html;
+        } else {
+          previewContainer.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Error loading preview</p>';
+          console.error('Server error:', await response.text());
+        }
+      } catch (error) {
+        console.error('Preview error:', error);
+        previewContainer.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Error loading preview</p>';
+      }
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}
