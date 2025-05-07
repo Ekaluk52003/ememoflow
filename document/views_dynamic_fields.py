@@ -115,9 +115,11 @@ def create_field(request):
             
         except Exception as e:
             messages.error(request, f'Error creating field: {str(e)}')
-    
+    # Create a field_type_choices list for the template
+    field_type_choices = [{'value': value, 'display': display} for value, display in DynamicField.FIELD_TYPES]
     return render(request, 'document/dynamic_fields/create_field.html', {
         'field_types': DynamicField.FIELD_TYPES,
+         'field_type_choices': field_type_choices, 
         'width_choices': DynamicField.WIDTH_CHOICES
     })
 

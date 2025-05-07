@@ -98,16 +98,10 @@
             <label for="field_type" class="block text-sm font-medium text-gray-700">Field Type</label>
             <div class="mt-1">
               <select id="field_type" name="field_type" x-model="fieldType"
-                      class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                <option value="text">Text</option>
-                <option value="textarea">Text Area</option>
-                <option value="number">Number</option>
-                <option value="date">Date</option>
-                <option value="choice">Single Choice</option>
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="attachment">Attachment</option>
-                <option value="table_list">Table List</option>
-                <option value="product_list">Product List</option>
+              class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                {% for choice in field_type_choices %}
+                <option value="{{ choice.value }}">{{ choice.display }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
