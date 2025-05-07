@@ -71,7 +71,7 @@ def create_workflow(request):
             
             workflow.save()
             
-            messages.success(request, f'Workflow "{name}" created successfully! Now you can configure email settings and dynamic fields.')
+            messages.success(request, f'Workflow "{name}" created successfully! Now you can configure dynamic fields.')
             
             # Redirect to edit workflow page for further configuration
             return redirect('document_approval:edit_workflow', workflow_id=workflow.id)
