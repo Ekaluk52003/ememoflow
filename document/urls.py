@@ -35,7 +35,7 @@ urlpatterns = [
     path('workflow/<int:workflow_id>/steps/', views_workflow.workflow_steps, name='workflow_steps'),
     path('workflow/<int:workflow_id>/steps/create/', views_workflow.create_workflow_step, name='create_workflow_step'),
     path('workflow/steps/<int:step_id>/edit/', views_workflow.edit_workflow_step, name='edit_workflow_step'),
-    
+    path('workflow/steps/<int:step_id>/delete/', views_workflow.delete_workflow_step, name='delete_workflow_step'),
     # Dynamic field management
     path('fields/', views_dynamic_fields.field_list, name='field_list'),
     path('fields/create/', views_dynamic_fields.create_field, name='create_field'),

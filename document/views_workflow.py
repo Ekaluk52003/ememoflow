@@ -201,7 +201,8 @@ def create_workflow_step(request, workflow_id):
             name = request.POST.get('name')
             order = request.POST.get('order')
             approval_mode = request.POST.get('approval_mode')
-            requires_edit = request.POST.get('requires_edit') == 'true'
+            requires_edit = request.POST.get('requires_edit') in ['true', 'on', True, 'True']
+            allow_custom_approver = request.POST.get('allow_custom_approver_value') == 'on'
             
             # Create the step
             step = ApprovalStep.objects.create(
@@ -209,7 +210,8 @@ def create_workflow_step(request, workflow_id):
                 name=name,
                 order=order,
                 approval_mode=approval_mode,
-                requires_edit=requires_edit
+                requires_edit=requires_edit,
+                allow_custom_approver=allow_custom_approver
             )
             
             # Handle editable fields if requires_edit is enabled
@@ -279,12 +281,14 @@ def edit_workflow_step(request, step_id):
             order = request.POST.get('order')
             approval_mode = request.POST.get('approval_mode')
             requires_edit = request.POST.get('requires_edit') == 'true'
+            allow_custom_approver = request.POST.get('allow_custom_approver_value') == 'on'
             
             # Update the step
             step.name = name
             step.order = order
             step.approval_mode = approval_mode
             step.requires_edit = requires_edit
+            step.allow_custom_approver = allow_custom_approver
             step.save()
             
             # Handle editable fields if requires_edit is enabled
@@ -358,3 +362,20 @@ def edit_workflow_step(request, step_id):
         'approver_type': approver_type,
         'selected_approvers': [str(a.id) for a in step.approvers.all()]
     })
+
+@login_required
+@superuser_required
+def delete_workflow_step(request, step_id):
+    """Delete a workflow step and redirect to workflow steps page"""
+    step = get_object_or_404(ApprovalStep, id=step_id)
+    workflow_id = step.workflow.id
+    
+    if request.method == 'POST':
+        try:
+            step_name = step.name
+            step.delete()
+            messages.success(request, f'Step "{step_name}" deleted successfully!')
+        except Exception as e:
+            messages.error(request, f'Error deleting step: {str(e)}')
+    
+    return redirect('document_approval:workflow_steps', workflow_id=workflow_id)

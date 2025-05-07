@@ -81,6 +81,8 @@
                 </div>
               </div>
               {% endif %}
+
+              
               
               <!-- Flex layout for card content -->
               <div class="flex flex-wrap">
@@ -92,7 +94,8 @@
                     <div class="mt-1 text-sm {% if step.approval_mode == 'all' %}text-blue-600{% else %}text-green-600{% endif %}">
                       {% if step.approval_mode == 'all' %}All Approvers Required{% else %}Any Approver Sufficient{% endif %}
                     </div>
-                  </div>
+                  </div>                 
+                  
                 </div>
                 
                 <!-- Right column -->
@@ -117,10 +120,15 @@
                     </div>
                   </div>
                 </div>
+
+                
               </div>
+          
               
               <!-- Additional info in flex layout -->
-              <div class="flex flex-wrap">        
+              <div class="flex flex-wrap"> 
+                
+             
                 
                 <!-- Conditional logic if any -->
                 {% if step.is_conditional %}
@@ -134,6 +142,17 @@
                     </div>
                   </div>
                 </div>
+                {% endif %}                
+              </div>
+              <div class="mt-2">
+                {% if step.move_to_next %}
+                <span class="px-2 py-0.5 text-xxs font-medium text-blue-700 bg-blue-50 rounded-full" title="When condition is met, moves to next step">
+                  Then: Next Step
+                </span>
+                {% else %}
+                <span class="px-2 py-0.5 text-xxs font-medium text-green-700 bg-green-50 rounded-full" title="When condition is met, completes workflow">
+                  Then: Complete
+                </span>
                 {% endif %}
               </div>
             </div>
