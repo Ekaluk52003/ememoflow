@@ -115,7 +115,9 @@ class DynamicField(models.Model):
     )
 
     WIDTH_CHOICES = (
+        ('quarter', 'Quarter Width'),
         ('half', 'Half Width'),
+        ('three_quarter', 'Three Quarter Width'),
         ('full', 'Full Width'),
     )
     workflow = models.ForeignKey(ApprovalWorkflow, on_delete=models.CASCADE, related_name='dynamic_fields')
@@ -139,7 +141,7 @@ class DynamicField(models.Model):
         help_text="Number of rows for textarea fields",
         validators=[MinValueValidator(1), MaxValueValidator(20)]
     )
-    input_width = models.CharField(max_length=4, choices=WIDTH_CHOICES, default='full', help_text="Width of the input field")
+    input_width = models.CharField(max_length=15, choices=WIDTH_CHOICES, default='full', help_text="Width of the input field")
     table_columns = models.TextField(blank=True, help_text="Pipe-separated column names for 'table_list' field type (e.g., 'item|name|qty|invoice|reason|credit')")
 
     class Meta:

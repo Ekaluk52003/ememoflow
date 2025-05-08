@@ -46,10 +46,10 @@
     {% include "document/components/editor.html" %}
     {% endif %}
 
-    <div class="flex flex-wrap -mx-2">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         {% for field in prepared_fields %}
         {% if field.name != 'Total Quantity' %}
-        <div class="mb-3 px-2 {% if field.input_width == 'half' %}md:w-1/2{% else %}w-full{% endif %}">
+        <div class="{% if field.input_width == 'quarter' %}md:col-span-1{% elif field.input_width == 'half' %}md:col-span-2{% elif field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
             <label for="dynamic_{{ field.id }}" class="w-full max-xs">
                 <div class="label">
                     <span class="label-text">{{ field.name }} {% if field.required %}

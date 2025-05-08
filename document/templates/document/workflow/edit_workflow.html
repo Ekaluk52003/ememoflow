@@ -231,16 +231,36 @@
                    x-data="{
                      isEditing: false,
                      fieldId: {{ field.id }},
-                     name: '{{ field.name }}',
-                     fieldType: '{{ field.field_type }}',
-                     fieldTypeDisplay: '{{ field.get_field_type_display }}',
+                     name: '{{ field.name|escapejs }}',
+                     fieldType: '{{ field.field_type|escapejs }}',
+                     fieldTypeDisplay: '{{ field.get_field_type_display|escapejs }}',
                      required: {% if field.required %}true{% else %}false{% endif %},
-                     inputWidth: '{{ field.input_width }}',
-                     widthDisplay: '{{ field.get_width_display }}',
+                     inputWidth: '{{ field.input_width|escapejs }}',
+                     widthDisplay: '',
+                     init() {
+                       // Initialize widthDisplay based on inputWidth
+                       const widthMap = {
+                         'quarter': 'Quarter Width',
+                         'half': 'Half Width',
+                         'three_quarter': 'Three Quarter Width',
+                         'full': 'Full Width'
+                       };
+                       this.widthDisplay = widthMap[this.inputWidth] || this.inputWidth;
+                     },
+                     updateWidthDisplay() {
+                       // Map width values to display text
+                       const widthMap = {
+                         'quarter': 'Quarter Width',
+                         'half': 'Half Width',
+                         'three_quarter': 'Three Quarter Width',
+                         'full': 'Full Width'
+                       };
+                       this.widthDisplay = widthMap[this.inputWidth] || this.inputWidth;
+                     },
                      order: {{ field.order }},
-                     choices: '{{ field.choices|default:"" }}',
-                     tableColumns: '{{ field.table_columns|default:"" }}',
-                     allowedExtensions: '{{ field.allowed_extensions|default:"" }}',
+                     choices: '{{ field.choices|default:""|escapejs }}',
+                     tableColumns: '{{ field.table_columns|default:""|escapejs }}',
+                     allowedExtensions: '{{ field.allowed_extensions|default:""|escapejs }}',
                      textareaRows: {{ field.textarea_rows|default:4 }},
                      multipleFiles: {% if field.multiple_files %}true{% else %}false{% endif %},
                      showSuccess: false,
@@ -350,7 +370,8 @@
                       <div class="flex justify-between items-center">
                         <h4 class="font-medium text-gray-700" x-text="name"></h4>
                         <div class="flex items-center space-x-2">
-                          <button @click="isEditing = true" type="button" class="inline-flex items-center p-1.5 text-white bg-blue-600 rounded-full border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    
+                          <button @click="isEditing = true; inputWidth = '{{ field.input_width|escapejs }}'; updateWidthDisplay()" type="button" class="inline-flex items-center p-1.5 text-white bg-blue-600 rounded-full border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
@@ -371,7 +392,8 @@
                             Required
                           </span>
                         </template>
-                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-full" x-text="widthDisplay">
+                        
+                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-full" x-text="'Width: ' + widthDisplay">
                         </span>
                         <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
                           Order: <span x-text="order" class="ml-1"></span>
@@ -449,7 +471,8 @@
                         <!-- Input Width -->
                         <div>
                           <label class="block text-sm font-medium text-gray-700">Input Width</label>
-                          <select x-model="inputWidth" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+
+                          <select x-model="inputWidth" @change="updateWidthDisplay()" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                             {% for value, label in width_choices %}
                             <option value="{{ value }}">{{ label }}</option>
                             {% endfor %}

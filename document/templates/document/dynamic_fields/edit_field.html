@@ -21,7 +21,7 @@
   <div x-data="{
     name: '{{ field.name|escapejs }}',
     fieldType: '{{ field.field_type }}',
-    width: '{{ field.width }}',
+    inputWidth: '{{ field.input_width }}',
     order: '{{ field.order }}',
     required: {% if field.required %}true{% else %}false{% endif %},
     
@@ -93,15 +93,9 @@
             <div class="mt-1">
               <select id="field_type" name="field_type" x-model="fieldType"
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                <option value="text">Text</option>
-                <option value="textarea">Text Area</option>
-                <option value="number">Number</option>
-                <option value="date">Date</option>
-                <option value="choice">Single Choice</option>
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="attachment">Attachment</option>
-                <option value="table_list">Table List</option>
-                <option value="product_list">Product List</option>
+                {% for value, label in field_types %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
@@ -117,15 +111,13 @@
           </div>
 
           <div class="sm:col-span-3">
-            <label for="width" class="block text-sm font-medium text-gray-700">Field Width</label>
+            <label for="input_width" class="block text-sm font-medium text-gray-700">Field Width</label>
             <div class="mt-1">
-              <select id="width" name="width" x-model="width"
+              <select id="input_width" name="input_width" x-model="inputWidth"
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                <option value="full">Full Width</option>
-                <option value="half">Half Width</option>
-                <option value="third">One Third</option>
-                <option value="two_thirds">Two Thirds</option>
-                <option value="quarter">One Quarter</option>
+                {% for value, label in width_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>

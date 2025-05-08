@@ -21,7 +21,7 @@
   <div x-data="{
     name: '',
     fieldType: 'text',
-    width: 'full',
+    inputWidth: 'full',
     required: false,
     order: '',
     
@@ -30,6 +30,8 @@
     tableColumns: '',
     productListColumns: '',
     allowedExtensions: '',
+    textareaRows: 4,
+    multipleFiles: false,
     
     // Validation
     errors: {},
@@ -48,6 +50,14 @@
     },
     
     showAllowedExtensions() {
+      return this.fieldType === 'attachment';
+    },
+    
+    showTextareaRows() {
+      return this.fieldType === 'textarea';
+    },
+    
+    showMultipleFiles() {
       return this.fieldType === 'attachment';
     },
     
@@ -121,11 +131,9 @@
             <div class="mt-1">
               <select id="width" name="width" x-model="width"
                       class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
-                <option value="full">Full Width</option>
-                <option value="half">Half Width</option>
-                <option value="third">One Third</option>
-                <option value="two_thirds">Two Thirds</option>
-                <option value="quarter">One Quarter</option>
+                {% for value, display in width_choices %}
+                <option value="{{ value }}">{{ display }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
@@ -149,11 +157,11 @@
           <div class="sm:col-span-6" x-show="showChoices()">
             <label for="choices" class="block text-sm font-medium text-gray-700">Choices</label>
             <div class="mt-1">
-              <textarea id="choices" name="choices" rows="3" x-model="choices"
-                        class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                        :class="{'border-red-500': errors.choices}"></textarea>
+              <input type="text" id="choices" name="choices" x-model="choices"
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                     :class="{'border-red-500': errors.choices}">
               <p x-show="errors.choices" x-text="errors.choices" class="mt-1 text-sm text-red-600"></p>
-              <p class="mt-2 text-sm text-gray-500">Enter one choice per line</p>
+              <p class="mt-2 text-sm text-gray-500">Enter choices separated by commas (e.g., Option 1,Option 2,Option 3)</p>
             </div>
           </div>
 
@@ -188,6 +196,32 @@
               <input type="text" id="allowed_extensions" name="allowed_extensions" x-model="allowedExtensions"
                      class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
               <p class="mt-2 text-sm text-gray-500">Enter file extensions separated by commas (e.g., pdf,doc,docx). Leave empty to allow all types.</p>
+            </div>
+          </div>
+          
+          <!-- Textarea Rows -->
+          <div class="sm:col-span-6" x-show="showTextareaRows()">
+            <label for="textarea_rows" class="block text-sm font-medium text-gray-700">Textarea Rows</label>
+            <div class="mt-1">
+              <input type="number" id="textarea_rows" name="textarea_rows" x-model="textareaRows"
+                     min="1" max="20"
+                     class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+              <p class="mt-2 text-sm text-gray-500">Number of rows to display in the textarea (1-20)</p>
+            </div>
+          </div>
+          
+          <!-- Multiple Files -->
+          <div class="sm:col-span-6" x-show="showMultipleFiles()">
+            <div class="flex items-start pt-5">
+              <div class="flex items-center h-5">
+                <input id="multiple_files" name="multiple_files" type="checkbox" x-model="multipleFiles"
+                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                <input type="hidden" :value="multipleFiles ? 'true' : 'false'" name="multiple_files_hidden">
+              </div>
+              <div class="ml-3 text-sm">
+                <label for="multiple_files" class="font-medium text-gray-700">Allow Multiple Files</label>
+                <p class="text-gray-500">Allow users to upload multiple files for this attachment field</p>
+              </div>
             </div>
           </div>
         </div>
