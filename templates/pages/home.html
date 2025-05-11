@@ -2,20 +2,264 @@
 
 {% load static %}
 
-{% block title %}Home page{% endblock title %}
+{% block title %}SmartFlow - Intelligent Document Workflows{% endblock title %}
 
 {% block content %}
-<section class="flex flex-col items-start gap-2 px-4 py-8 mx-auto md:py-12 md:pb-8 lg:py-12 lg:pb-10"
->
+<!-- Hero Section -->
+<section class="overflow-hidden relative py-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-md md:py-24">
+  <div class="absolute inset-0 opacity-20">
+    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#grid-pattern)" />
+    </svg>
+    <defs>
+      <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
+        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5" />
+      </pattern>
+    </defs>
+  </div>
+  <div class="container relative px-4 mx-auto">
+    <div class="flex flex-col items-center text-center md:flex-row md:text-left md:justify-between">
+      <div class="mb-8 md:w-1/2 md:mb-0">
+        <h1 class="mb-4 text-4xl font-bold text-white md:text-5xl">
+          SmartFlow <span class="text-green-300">Simplify Your Document Workflows</span>
+        </h1>
+        <p class="mb-8 max-w-lg text-xl text-white/80">
+          Create unlimited workflows, dynamic forms, and beautiful PDF exports for your own document management system.
+        </p>
+        <div class="flex flex-col gap-4 justify-center sm:flex-row md:justify-start">
+          <a href="#features" class="px-6 py-3 font-medium text-white bg-transparent rounded-lg border border-white transition hover:bg-white/10">
+            Learn More
+          </a>
+        </div>
+      </div>
+      <div class="mt-8 md:w-2/5 md:mt-0">
+        <div class="p-4 mx-auto max-w-md bg-white rounded-lg shadow-2xl sm:p-6 md:p-8 md:mx-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" class="w-full h-auto" style="max-height: 300px;">
+            <!-- Background Grid -->
+            <defs>
+              <pattern id="smallGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="0.5"/>
+              </pattern>
+              <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                <rect width="100" height="100" fill="url(#smallGrid)"/>
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            
+            <!-- Document Flow Illustration -->
+            <!-- Document 1 -->
+            <rect x="100" y="100" width="140" height="180" rx="10" fill="#f0f9ff" stroke="#3b82f6" stroke-width="2"/>
+            <rect x="120" y="130" width="100" height="10" rx="2" fill="#93c5fd"/>
+            <rect x="120" y="150" width="80" height="10" rx="2" fill="#93c5fd"/>
+            <rect x="120" y="170" width="90" height="10" rx="2" fill="#93c5fd"/>
+            <rect x="120" y="190" width="70" height="10" rx="2" fill="#93c5fd"/>
+            <rect x="120" y="210" width="60" height="10" rx="2" fill="#93c5fd"/>
+            <rect x="120" y="230" width="85" height="10" rx="2" fill="#93c5fd"/>
+            
+            <!-- Arrow 1 -->
+            <path d="M 260 180 L 330 180" stroke="#3b82f6" stroke-width="3" stroke-dasharray="5,5"/>
+            <polygon points="330,180 320,175 320,185" fill="#3b82f6"/>
+            
+            <!-- Process Circle -->
+            <circle cx="400" cy="180" r="50" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <path d="M 380 160 L 400 180 L 380 200" stroke="#3b82f6" stroke-width="3" fill="none"/>
+            <path d="M 420 160 L 400 180 L 420 200" stroke="#3b82f6" stroke-width="3" fill="none"/>
+            
+            <!-- Arrow 2 -->
+            <path d="M 470 180 L 540 180" stroke="#3b82f6" stroke-width="3" stroke-dasharray="5,5"/>
+            <polygon points="540,180 530,175 530,185" fill="#3b82f6"/>
+            
+            <!-- Document 2 (Approved) -->
+            <rect x="560" y="100" width="140" height="180" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <rect x="580" y="130" width="100" height="10" rx="2" fill="#6ee7b7"/>
+            <rect x="580" y="150" width="80" height="10" rx="2" fill="#6ee7b7"/>
+            <rect x="580" y="170" width="90" height="10" rx="2" fill="#6ee7b7"/>
+            <rect x="580" y="190" width="70" height="10" rx="2" fill="#6ee7b7"/>
+            <rect x="580" y="210" width="60" height="10" rx="2" fill="#6ee7b7"/>
+            <rect x="580" y="230" width="85" height="10" rx="2" fill="#6ee7b7"/>
+            
+            <!-- Checkmark -->
+            <circle cx="630" cy="320" r="30" fill="#10b981"/>
+            <path d="M 615 320 L 625 330 L 645 310" stroke="white" stroke-width="5" fill="none"/>
+            
+            <!-- People Icons -->
+            <circle cx="150" cy="350" r="30" fill="#bfdbfe"/>
+            <circle cx="150" cy="330" r="12" fill="#3b82f6"/>
+            <path d="M 130 370 Q 150 350 170 370" stroke="#3b82f6" stroke-width="3" fill="none"/>
+            
+            <circle cx="400" cy="350" r="30" fill="#bfdbfe"/>
+            <circle cx="400" cy="330" r="12" fill="#3b82f6"/>
+            <path d="M 380 370 Q 400 350 420 370" stroke="#3b82f6" stroke-width="3" fill="none"/>
+            
+            <circle cx="650" cy="350" r="30" fill="#bfdbfe"/>
+            <circle cx="650" cy="330" r="12" fill="#3b82f6"/>
+            <path d="M 630 370 Q 650 350 670 370" stroke="#3b82f6" stroke-width="3" fill="none"/>
+            
+            <!-- Connection Lines -->
+            <path d="M 150 380 L 150 450 L 400 450" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" fill="none"/>
+            <path d="M 400 380 L 400 450" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" fill="none"/>
+            <path d="M 650 380 L 650 450 L 400 450" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" fill="none"/>
+            
+            <!-- Workflow Text -->
+            <text x="400" y="480" font-family="Arial" font-size="24" fill="#1e40af" text-anchor="middle" font-weight="bold">Document Workflow</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <h1 class="text-3xl font-bold leading-tight tracking-tighter" >
-    SmartFlow
-  </h1>
+<!-- Features Section -->
+<section id="features" class="py-16 bg-gray-50">
+  <div class="container px-4 mx-auto">
+    <div class="mb-8 text-center md:mb-12">
+      <h2 class="mb-3 text-2xl font-bold text-gray-700 md:mb-4 md:text-3xl">Powerful Features</h2>
+      <p class="mx-auto max-w-2xl text-base text-gray-600 md:text-lg">Everything you need to manage document workflows efficiently</p>
+    </div>
+    
+    <div class="grid grid-cols-1 gap-6 sm:gap-8 sm:grid-cols-2 md:grid-cols-3" x-data="{ activeFeature: 0 }">
+      <!-- Feature 1 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg"
+           @mouseenter="activeFeature = 0"
+           :class="{ 'ring-2 ring-blue-500': activeFeature === 0 }">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-blue-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold text-gray-700">Unlimited Workflows</h3>
+        <p class="text-gray-600">Create unlimited custom workflows to match any business process, no matter how complex.</p>
+      </div>
+      
+      <!-- Feature 2 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg"
+           @mouseenter="activeFeature = 1"
+           :class="{ 'ring-2 ring-blue-500': activeFeature === 1 }">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-green-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Dynamic Form Builder</h3>
+        <p class="text-gray-600">Build powerful forms with dynamic fields, including our specialized table list component.</p>
+      </div>
+      
+      <!-- Feature 3 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg"
+           @mouseenter="activeFeature = 2"
+           :class="{ 'ring-2 ring-blue-500': activeFeature === 2 }">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-purple-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Visual Workflow Designer</h3>
+        <p class="text-gray-600">Easily visualize and design your approval workflows with our intuitive interface.</p>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 gap-6 mt-8 sm:gap-8 md:mt-12 sm:grid-cols-2 md:grid-cols-3">
+      <!-- Feature 4 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-red-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Delegate Approvals</h3>
+        <p class="text-gray-600">Allow authorized personnel to approve documents on behalf of others when needed.</p>
+      </div>
+      
+      <!-- Feature 5 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-yellow-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Beautiful PDF Exports</h3>
+        <p class="text-gray-600">Generate professional, branded PDF documents from your approved workflows.</p>
+      </div>
+      
+      <!-- Feature 6 -->
+      <div class="p-6 bg-white rounded-lg shadow-md transition hover:shadow-lg">
+        <div class="flex justify-center items-center mb-4 w-12 h-12 bg-indigo-100 rounded-full">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Email Template Customization</h3>
+        <p class="text-gray-600">Personalize notification emails with your branding and custom messaging.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <p class="max-w-2xl text-lg font-light text-foreground">
-    SmartFlow: Streamline your document approvals with intelligent workflows. Automate, track, and optimize your business processes effortlessly.
-  </p>
+<!-- How It Works -->
+<section class="py-16 bg-white">
+  <div class="container px-4 mx-auto">
+    <div class="mb-8 text-center md:mb-12">
+      <h2 class="mb-3 text-2xl font-bold text-gray-900 md:mb-4 md:text-3xl">How SmartFlow Works</h2>
+      <p class="mx-auto max-w-2xl text-base text-gray-600 md:text-lg">A simple process for powerful document management</p>
+    </div>
+    
+    <div class="flex flex-col gap-6 justify-between items-center md:gap-8 md:flex-row">
+      <!-- Step 1 -->
+      <div class="flex flex-col items-center max-w-xs text-center">
+        <div class="flex justify-center items-center mb-4 w-16 h-16 bg-blue-100 rounded-full">
+          <span class="text-2xl font-bold text-blue-600">1</span>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Create Templates</h3>
+        <p class="text-gray-600">Design document templates with custom fields and approval paths</p>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="hidden text-gray-300 md:block">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </div>
+      
+      <!-- Step 2 -->
+      <div class="flex flex-col items-center max-w-xs text-center">
+        <div class="flex justify-center items-center mb-4 w-16 h-16 bg-blue-100 rounded-full">
+          <span class="text-2xl font-bold text-blue-600">2</span>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Submit Documents</h3>
+        <p class="text-gray-600">Users fill out forms with all required information</p>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="hidden text-gray-300 md:block">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </div>
+      
+      <!-- Step 3 -->
+      <div class="flex flex-col items-center max-w-xs text-center">
+        <div class="flex justify-center items-center mb-4 w-16 h-16 bg-blue-100 rounded-full">
+          <span class="text-2xl font-bold text-blue-600">3</span>
+        </div>
+        <h3 class="mb-2 text-xl font-semibold">Automated Workflow</h3>
+        <p class="text-gray-600">Documents route through approval chains with notifications</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 
+<!-- CTA Section -->
+<section class="py-12 text-white bg-gradient-to-r from-blue-600 to-indigo-700 rounded rounded-md md:py-16">
+  <div class="container px-4 mx-auto text-center">
+    <h2 class="mb-3 text-2xl font-bold md:mb-4 md:text-3xl">Ready to Transform Your Document Workflows?</h2>
+    <p class="mx-auto mb-6 max-w-2xl text-lg opacity-80 md:mb-8 md:text-xl">Create unlimited workflows, dynamic forms, beautiful PDFs, and more with SmartFlow.</p>
+    <div class="flex flex-col gap-4 justify-center sm:flex-row">
+      <a href="#" class="px-6 py-3 w-full font-medium text-white bg-transparent rounded-lg border border-white transition md:px-8 hover:bg-white/10 sm:w-auto">
+        Schedule a Demo
+      </a>
+    </div>
+  </div>
 </section>
 {% endblock content %}
