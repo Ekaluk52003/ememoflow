@@ -115,125 +115,142 @@ def send_withdraw_email(document):
 
 
 #for sending email when document is approved
-def send_approved_email(document):
+def send_approved_document_email(document, approval=None, status=None):
     """
-    Send approved email with PDF attachment using Celery tasks
+    Combined function to handle both approval request emails and approved notification emails
+    
     Args:
         document: Document instance
-    Returns:
-        Celery chain result
-    """
-    from celery import chain
-    from document.tasks import (
-        generate_pdf_task,
-        send_approved_email_with_pdf_task,
-        send_approval_notification_task
-    )
-    import logging
+        approval: Approval instance (optional, only for approval request emails)
+        status: Document status (optional, defaults to document.status if not provided)
     
+    Returns:
+        Task result or None
+    """
+    import logging
     logger = logging.getLogger(__name__)
     
-    try:
-        workflow = document.workflow
-        if not workflow.send_approved_email:
-            # If approved email is disabled, only send approval notifications
-            return send_approval_notification_task.delay(None, document.id)
-
-        # Create a chain of tasks:
-        # 1. Generate PDF
-        # 2. Send approved email with the generated PDF
-        # 3. Send approval notifications
-        task_chain = chain(
-            generate_pdf_task.s(document.id),
-            send_approved_email_with_pdf_task.s(document.id),
-            send_approval_notification_task.s(document.id)
-        )
-        
-        # Execute the chain
-        return task_chain()
-        
-    except Exception as e:
-        logger.error(f"Error initiating approved email chain: {str(e)}")
-        raise
-
-
-# notify to approver for up coming document to approve
-def send_approval_email(approval):
-    if not approval.step.send_email:
-        logger.info(
-            f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}"
-        )
-        return
-
-    try:
-        context_dict = {
-            'document': approval.document,
-            'approver': approval.approver,
-            'step': approval.step,
-        }
-
-        # Get email templates
-        subject_template = approval.step.email_subject
-        body_template = approval.step.email_body_template
-
-        # Get CC list
-        cc_list = approval.step.get_cc_list()
-        
-        # Get list of recipients (primary approver + authorized users)
-        recipients = [approval.approver.email]
-        
-        # Add authorized users who can approve on behalf of this approver
-        from .models_authorization import ApprovalAuthorization
-        from django.utils import timezone
-        
-        now = timezone.now()
-        authorized_users = ApprovalAuthorization.objects.filter(
-            authorizer=approval.approver,
-            valid_from__lte=now,
-            valid_until__gte=now,
-            is_active=True
-        )
-        
-        # Create a serializable list of authorized user info
-        authorized_user_info = []
-        
-        for auth in authorized_users:
-            if auth.authorized_user.email and auth.authorized_user.email not in recipients:
-                recipients.append(auth.authorized_user.email)
-                # Add serializable user info (not the actual User object)
-                authorized_user_info.append({
-                    'id': auth.authorized_user.id,
-                    'username': auth.authorized_user.username,
-                    'email': auth.authorized_user.email,
-                    'full_name': auth.authorized_user.get_full_name() or auth.authorized_user.username
-                })
-        
-        # Only add to context if we have authorized users
-        if authorized_user_info:
-            context_dict['authorized_users'] = authorized_user_info
-        
-        # Send email using the common function
-        success = send_templated_email(
-            subject_template,
-            body_template,
-            context_dict,
-            recipients,
-            cc_list
-        )
-
-        if success:
-            logger.info(
-                f"Approval email sent for document {approval.document.id} to {approval.approver.email}"
+    # Determine the status if not explicitly provided
+    if status is None and document:
+        status = document.status
+    
+    # Handle approved email with PDF generation
+    if status == 'approved':
+        try:
+            from celery import chain
+            from document.tasks import (
+                generate_pdf_task,
+                send_approved_email_with_pdf_task,
+                send_approval_notification_task
             )
-        else:
+            
+            workflow = document.workflow
+            if not workflow.send_approved_email:
+                # If approved email is disabled, only send approval notifications
+                return send_approval_notification_task.delay(None, document.id)
+
+            # Create a chain of tasks:
+            # 1. Generate PDF
+            # 2. Send approved email with the generated PDF
+            # 3. Send approval notifications
+            task_chain = chain(
+                generate_pdf_task.s(document.id),
+                send_approved_email_with_pdf_task.s(document.id),
+                send_approval_notification_task.s(document.id)
+            )
+            
+            # Execute the chain
+            return task_chain()
+            
+        except Exception as e:
+            logger.error(f"Error initiating approved email chain: {str(e)}")
+            raise
+    
+    # Handle pending approval email
+    elif status == 'pending' and approval:
+        try:
+            workflow = document.workflow
+            if not workflow.send_approved_email:  # Using the same setting as approved emails
+                logger.info(
+                    f"Email sending is disabled for document {document.id}"
+                )
+                return
+                
+            context_dict = {
+                'document': document,
+                'approver': approval.approver,
+                'step': approval.step,
+                'workflow': workflow,
+            }
+
+            # Get email templates from workflow instead of step
+            subject_template = workflow.email_approved_subject
+            body_template = workflow.email_approved_body_template
+
+            # Get CC list from workflow
+            cc_list = workflow.get_cc_list()
+            
+            # Get list of recipients (primary approver + authorized users)
+            recipients = [approval.approver.email]
+            
+            # Add authorized users who can approve on behalf of this approver
+            from .models_authorization import ApprovalAuthorization
+            from django.utils import timezone
+            
+            now = timezone.now()
+            authorized_users = ApprovalAuthorization.objects.filter(
+                authorizer=approval.approver,
+                valid_from__lte=now,
+                valid_until__gte=now,
+                is_active=True
+            )
+            
+            # Create a serializable list of authorized user info
+            authorized_user_info = []
+            
+            for auth in authorized_users:
+                if auth.authorized_user.email and auth.authorized_user.email not in recipients:
+                    recipients.append(auth.authorized_user.email)
+                    # Add serializable user info (not the actual User object)
+                    authorized_user_info.append({
+                        'id': auth.authorized_user.id,
+                        'username': auth.authorized_user.username,
+                        'email': auth.authorized_user.email,
+                        'full_name': auth.authorized_user.get_full_name() or auth.authorized_user.username
+                    })
+            
+            # Only add to context if we have authorized users
+            if authorized_user_info:
+                context_dict['authorized_users'] = authorized_user_info
+            
+            # Send email using the common function
+            success = send_templated_email(
+                subject_template,
+                body_template,
+                context_dict,
+                recipients,
+                cc_list
+            )
+
+            if success:
+                logger.info(
+                    f"Approval email sent for document {approval.document.id} to {approval.approver.email}"
+                )
+            else:
+                logger.error(
+                    f"Failed to send approval email for document {approval.document.id}"
+                )
+
+        except Exception as e:
             logger.error(
-                f"Failed to send approval email for document {approval.document.id}"
+                f"Error in send_approval_email for document {approval.document.id}: {str(e)}"
             )
+    
+    else:
+        logger.warning(f"Invalid status '{status}' or missing required parameters for document email")
 
-    except Exception as e:
-        logger.error(
-            f"Error in send_approval_email for document {approval.document.id}: {str(e)}"
-        )
+
+# Legacy functions removed - using combined function directly
 
 
 def _generate_pdf_content(document):

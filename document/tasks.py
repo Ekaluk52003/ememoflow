@@ -181,12 +181,15 @@ def send_approval_notification_task(email_result, document_id):
         document = Document.objects.get(id=document_id)
         
         # Get all approvals that need notification
+        workflow = document.workflow
+        if not workflow.send_approved_email:
+            logger.info(f"Email sending is disabled for document {document_id}")
+            return {
+                'status': 'skipped',
+                'message': 'Email sending is disabled'
+            }
+            
         for approval in document.approvals.all():
-            if not approval.step.send_email:
-                logger.info(
-                    f"Email sending is disabled for step {approval.step.id} of document {approval.document.id}"
-                )
-                continue
 
             context = {
                 'document': document,
@@ -199,8 +202,8 @@ def send_approval_notification_task(email_result, document_id):
             recipient_list = [approval.approver.email]
 
             send_templated_email_task(
-                approval.step.email_subject,
-                approval.step.email_body_template,
+                workflow.email_approved_subject,
+                workflow.email_approved_body_template,
                 _serialize_context(context),
                 recipient_list
             )

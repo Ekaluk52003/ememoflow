@@ -1,7 +1,7 @@
 from django.db import models
 from accounts.models import CustomUser
 from django.core.exceptions import ValidationError
-from .sendEmails import send_reject_email,  send_withdraw_email, send_approval_email, send_approved_email
+from .sendEmails import send_reject_email, send_withdraw_email, send_approved_document_email
 import os
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
@@ -86,7 +86,7 @@ class ApprovalWorkflow(models.Model):
     withdraw_email_body = models.TextField(blank=True, help_text="Body template for withdrawal emails")
 
     # Email notification for all approve
-    send_approved_email = models.BooleanField(default=False, help_text="This email is sent to requestor when all approvers approve document")
+    send_approved_email = models.BooleanField(default=False, help_text="This email is sent to pending approver and requestor when all approvers approve document")
     email_approved_subject = models.CharField(max_length=255, blank=True)
     email_approved_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
 
@@ -239,11 +239,7 @@ class ApprovalStep(models.Model):
     requires_edit = models.BooleanField(default=False, help_text="Enable approvers to edit field or upload file for particular step")
     editable_fields = models.ManyToManyField(DynamicField, blank=True, related_name='approval_steps')
 
-    # Email notification fields
-    send_email = models.BooleanField(default=False, help_text="When select, approvers will be notified by email for particular step")
-    email_subject = models.CharField(max_length=255, blank=True)
-    email_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, {step} as placeholders. For authorized users, use {% if authorized_users %}...{% for user in authorized_users %}{{ user.full_name }}{% endfor %}...{% endif %}")
-    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC for")
+    # Email notification fields removed - now using workflow-level email settings instead
 
 
 
@@ -560,7 +556,7 @@ class Document(models.Model):
             self.status = 'in_review'
             self.current_step = approvals_created[0].step
             self.save()
-            send_approval_email(approvals_created[0])
+            send_approved_document_email(approvals_created[0].document, approvals_created[0], status='pending')
 
         return approvals_created
 
@@ -664,7 +660,7 @@ class Document(models.Model):
         if current_step.evaluate_condition(self) and not current_step.move_to_next:            
             self.status = 'approved'
             self.save()
-            send_approved_email(self)
+            send_approved_document_email(self, status='approved')
             return
 
         next_step = ApprovalStep.objects.filter(
@@ -676,7 +672,7 @@ class Document(models.Model):
             # No more steps, document is approved
             self.status = 'approved'
             self.save()
-            send_approved_email(self)
+            send_approved_document_email(self, status='approved')
             return
 
         if next_step.evaluate_condition(self):
@@ -688,7 +684,7 @@ class Document(models.Model):
             # Send approval emails for the next step
             approvals = self.approvals.filter(step=next_step)
             for appr in approvals:
-                send_approval_email(appr)
+                send_approved_document_email(appr.document, appr, status='pending')
         else:
             # If condition not met for next step, recursively try next step
             dummy_approval = type('obj', (object,), {'step': next_step})()

@@ -589,7 +589,7 @@
                 </div>
                 <div>
                   <label for="reject_email_body" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="reject_email_body" id="reject_email_body" rows="3" x-model="rejectEmailBody"
+                  <textarea name="reject_email_body" id="reject_email_body" rows="12" x-model="rejectEmailBody"
                             class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             :class="{'border-red-500': errors.rejectEmailBody}"></textarea>
                   <p x-show="errors.rejectEmailBody" x-text="errors.rejectEmailBody" class="mt-1 text-sm text-red-600"></p>
@@ -624,7 +624,7 @@
                 </div>
                 <div>
                   <label for="withdraw_email_body" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="withdraw_email_body" id="withdraw_email_body" rows="3" x-model="withdrawEmailBody"
+                  <textarea name="withdraw_email_body" id="withdraw_email_body" rows="12"  x-model="withdrawEmailBody"
                             class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             :class="{'border-red-500': errors.withdrawEmailBody}"></textarea>
                   <p x-show="errors.withdrawEmailBody" x-text="errors.withdrawEmailBody" class="mt-1 text-sm text-red-600"></p>
@@ -636,7 +636,7 @@
             <!-- Approved Email Settings -->
             <div class="p-4 rounded-md border border-gray-200">
               <div class="flex justify-between items-center">
-                <h4 class="text-base font-medium text-gray-900">Final Approval Email</h4>
+                <h4 class="text-base font-medium text-gray-900">Approval Email</h4>
                 <div class="flex relative items-start">
                   <div class="flex items-center h-5">
                     <input id="send_approved_email" name="send_approved_email" type="checkbox" x-model="sendApprovedEmail"
@@ -659,7 +659,7 @@
                 </div>
                 <div>
                   <label for="email_approved_body_template" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="email_approved_body_template" id="email_approved_body_template" rows="3" x-model="approvedEmailBody"
+                  <textarea name="email_approved_body_template" id="email_approved_body_template" rows="12" x-model="approvedEmailBody"
                             class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             :class="{'border-red-500': errors.approvedEmailBody}"></textarea>
                   <p x-show="errors.approvedEmailBody" x-text="errors.approvedEmailBody" class="mt-1 text-sm text-red-600"></p>
