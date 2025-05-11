@@ -1,0 +1,101 @@
+{% extends "_base.html" %}
+{% load static %}
+
+{% block title %}User List{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="{ selectedGroup: '{{ filter_group|default:'all' }}' }">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-6">User List</h1>
+        
+        <!-- Filter by group -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Filter by Group</h2>
+            <div class="flex flex-wrap gap-2">
+                <button 
+                    @click="selectedGroup = 'all'; window.location.href = '{% url 'accounts:user_list' %}'"
+                    :class="selectedGroup === 'all' || !selectedGroup ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'"
+                    class="px-4 py-2 rounded-md transition-colors duration-200">
+                    All Groups
+                </button>
+                
+                {% for group in groups %}
+                <button 
+                    @click="selectedGroup = '{{ group.name }}'; window.location.href = '{% url 'accounts:user_list' %}?group={{ group.name }}'"
+                    :class="selectedGroup === '{{ group.name }}' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'"
+                    class="px-4 py-2 rounded-md transition-colors duration-200">
+                    {{ group.name }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Users by group -->
+        {% if users_by_group %}
+            {% for group_name, users in users_by_group.items %}
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">{{ group_name }}</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-700">
+                                <th class="py-3 px-4 text-left">Username</th>
+                                <th class="py-3 px-4 text-left">Full Name</th>
+                                <th class="py-3 px-4 text-left">Email</th>
+                                <th class="py-3 px-4 text-left">Job Title</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                <td class="py-3 px-4">{{ user.username }}</td>
+                                <td class="py-3 px-4">{{ user.get_full_name }}</td>
+                                <td class="py-3 px-4">{{ user.email }}</td>
+                                <td class="py-3 px-4">{{ user.job_title|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Users with no group -->
+        {% if users_with_no_group %}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">No Group Assigned</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700">
+                            <th class="py-3 px-4 text-left">Username</th>
+                            <th class="py-3 px-4 text-left">Full Name</th>
+                            <th class="py-3 px-4 text-left">Email</th>
+                            <th class="py-3 px-4 text-left">Job Title</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users_with_no_group %}
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-3 px-4">{{ user.username }}</td>
+                            <td class="py-3 px-4">{{ user.get_full_name }}</td>
+                            <td class="py-3 px-4">{{ user.email }}</td>
+                            <td class="py-3 px-4">{{ user.job_title|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- No users message -->
+        {% if not users_by_group and not users_with_no_group %}
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <p class="text-center text-gray-600 py-8">No users found matching the selected criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

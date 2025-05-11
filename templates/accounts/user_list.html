@@ -1,0 +1,113 @@
+{% extends "_base.html" %}
+{% load static %}
+
+{% block title %}User List{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="{
+    activeGroup: '{{ filter_group|default:"all" }}',
+    updateActiveGroup() {
+        // Get the current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        this.activeGroup = urlParams.get('group') || 'all';
+    }
+}" x-init="updateActiveGroup(); $watch('activeGroup', value => console.log('Active group changed:', value))" @htmx:afterRequest.window="updateActiveGroup()">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-6">User List</h1>
+        
+        <!-- Filter by group -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Filter by Group</h2>
+            <div class="flex flex-wrap gap-2" id="filter-buttons">
+                <a 
+                    href="{% url 'accounts:user_list' %}"
+                    hx-get="{% url 'accounts:user_list' %}"
+                    hx-target="#user-list-content"
+                    hx-indicator=".htmx-indicator"
+                    hx-push-url="true"
+                    @click="activeGroup = 'all'"
+                    :class="activeGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'"
+                    class="px-4 py-2 rounded-md transition-colors duration-200">
+                    All Groups
+                </a>
+                
+                {% for group in groups %}
+                <a 
+                    href="{% url 'accounts:user_list' %}?group={{ group.name }}"
+                    hx-get="{% url 'accounts:user_list' %}?group={{ group.name }}"
+                    hx-target="#user-list-content"
+                    hx-indicator=".htmx-indicator"
+                    hx-push-url="true"
+                    @click="activeGroup = '{{ group.name }}'"
+                    :class="activeGroup === '{{ group.name }}' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'"
+                    class="px-4 py-2 rounded-md transition-colors duration-200">
+                    {{ group.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- User list content that will be updated via HTMX -->
+        <div id="user-list-content" class="relative">
+            <!-- Skeleton loading UI -->
+            <div class="htmx-indicator absolute inset-0 z-10 w-full">
+                <!-- Skeleton for group 1 -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6 animate-pulse">
+                    <div class="h-7 bg-gray-200 rounded w-1/4 mb-4"></div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-20"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-24"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-32"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-28"></div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in '12345'|make_list %}
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Skeleton for group 2 -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6 animate-pulse">
+                    <div class="h-7 bg-gray-200 rounded w-1/5 mb-4"></div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-20"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-24"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-32"></div></th>
+                                    <th class="py-3 px-4 text-left"><div class="h-4 bg-gray-200 rounded w-28"></div></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in '123'|make_list %}
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+                                    <td class="py-3 px-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            {% include "accounts/partials/user_list_content.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}
