@@ -3,7 +3,11 @@
 
 <div id="form-errors"></div>
 
-<div><h3 class="text-lg font-medium leading-6 text-base-content">Document Ref:{{document.document_reference}}</h3>
+<div>
+    <div>
+        <h3 class="text-lg font-medium leading-6 text-base-content">Document Ref: {{document.document_reference}}</h3>
+        <p class="text-sm text-gray-600">Workflow: {{document.workflow.name}}</p>
+    </div>
     <p class="mt-1 max-w-2xl text-sm text-gray-500">Resubmit</p></div>
 <div>
 <form x-data="{
