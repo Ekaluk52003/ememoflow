@@ -4,6 +4,7 @@ from django.conf import settings
 from . import views_authorization
 from . import views_workflow
 from . import views_dynamic_fields
+from .views_statistics import approval_statistics
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -58,6 +59,9 @@ urlpatterns = [
     
     # API endpoints
     path('api/users/', views_authorization.api_users, name='api_users'),
+    
+    # Statistics
+    path('statistics/', approval_statistics, name='approval_statistics'),
 
 
 ]

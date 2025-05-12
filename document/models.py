@@ -556,6 +556,14 @@ class Document(models.Model):
             self.status = 'in_review'
             self.current_step = approvals_created[0].step
             self.save()
+            
+            # Set can_approveAt for initial approvals of the first step
+            current_time = timezone.now()
+            first_step_approvals = [a for a in approvals_created if a.step == self.current_step]
+            for approval in first_step_approvals:
+                approval.can_approveAt = current_time
+                approval.save(update_fields=['can_approveAt'])
+                
             send_approved_document_email(approvals_created[0].document, approvals_created[0], status='pending')
 
         return approvals_created
@@ -683,7 +691,11 @@ class Document(models.Model):
 
             # Send approval emails for the next step
             approvals = self.approvals.filter(step=next_step)
+            current_time = timezone.now()
             for appr in approvals:
+                # Set the can_approveAt timestamp
+                appr.can_approveAt = current_time
+                appr.save(update_fields=['can_approveAt'])
                 send_approved_document_email(appr.document, appr, status='pending')
         else:
             # If condition not met for next step, recursively try next step
@@ -789,6 +801,7 @@ class Approval(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     recorded_at = models.DateTimeField(null=True)
+    can_approveAt = models.DateTimeField(null=True, blank=True, help_text="Timestamp when the user became eligible to approve this document")
 
     def __str__(self):
         return f"{self.document.title} - {self.step.name} - {self.approver.username}"
