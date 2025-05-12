@@ -786,8 +786,6 @@ class Approval(models.Model):
     is_approved = models.BooleanField(null=True, default=None)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     comment = models.TextField(blank=True)
-    user_input = models.TextField(blank=True)
-    uploaded_file = models.FileField(upload_to=user_directory_path, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     recorded_at = models.DateTimeField(null=True)

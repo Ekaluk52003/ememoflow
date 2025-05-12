@@ -665,6 +665,19 @@ def document_detail(request, reference_id):
         editable_fields = user_approval.step.editable_fields.all() if user_approval and user_approval.step.requires_edit else []
 
         ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
+        
+        # Simple pending time calculation for current step
+        current_step_pending_since = None
+        if document.current_step and document.status == 'in_review':
+            # Find the earliest created approval for the current step
+            earliest_approval = document.approvals.filter(
+                step=document.current_step,
+                is_approved__isnull=True
+            ).order_by('created_at').first()
+            
+            if earliest_approval:
+                current_step_pending_since = earliest_approval.created_at
+        
         # Get authorized users that the current user can approve on behalf of
         authorized_approvers = []
         if document.status == 'in_review' and document.current_step:
@@ -691,6 +704,7 @@ def document_detail(request, reference_id):
             'editable_fields': editable_fields,
             'authorized_approvers': authorized_approvers,
             'on_behalf_of': on_behalf_of,
+            'current_step_pending_since': current_step_pending_since,
         }
 
         if request.htmx:
