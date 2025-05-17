@@ -31,15 +31,27 @@ def get_allowed_documents(user):
     authorized_workflow_docs = Document.objects.filter(
         workflow__authorized_groups__in=user.groups.all()
     )
+    
+    # Get documents where the user is an authorized user
+    # Use try/except to handle the case when the relation doesn't exist yet
+    try:
+        cc_authorized_docs = Document.objects.filter(
+            authorized_users=user
+        )
+    except Exception:
+        # If the relation doesn't exist yet, use an empty queryset
+        cc_authorized_docs = Document.objects.none()
 
     # Get user's BU groups
     bu_groups = get_user_bu_groups(user)
     if not bu_groups:
-        # If user is not in any BU group, they can only see their submitted documents
-        # and documents from workflows where they're in an authorized group
+        # If user is not in any BU group, they can only see their submitted documents,
+        # documents from workflows where they're in an authorized group,
+        # and documents where they are authorized as a CC recipient
         return (Document.objects.filter(
             Q(submitted_by=user) |
-            Q(id__in=authorized_workflow_docs)
+            Q(id__in=authorized_workflow_docs) |
+            Q(id__in=cc_authorized_docs)
         )).distinct().order_by('-created_at')
 
     # Get all users who are either in these BU groups or are managers of these BUs
@@ -48,19 +60,24 @@ def get_allowed_documents(user):
         Q(groups__name__in=[f"{bu}_Manager" for bu in bu_groups])  # Users who are managers
     ).distinct()  
     
-    # Base queryset - documents submitted by users in the same BUs
-    # or documents from workflows where the user's group is authorized
+    # Base queryset - documents submitted by the user themselves,
+    # documents submitted by users in the same BUs,
+    # documents from workflows where the user's group is authorized,
+    # or documents where the user is authorized as a CC recipient
     documents = Document.objects.filter(
+        Q(submitted_by=user) |  # Always include user's own documents
         Q(submitted_by__in=users_in_same_bus) |
-        Q(id__in=authorized_workflow_docs)
+        Q(id__in=authorized_workflow_docs) |
+        Q(id__in=cc_authorized_docs)
     )
 
-    # If user is not a BU manager, they can only see their submitted documents
-    # and documents from authorized workflows
+    # If user is not a BU manager, they can only see their submitted documents,
+    # documents from authorized workflows, and documents where they are CC'd
     if not is_bu_manager(user):
         documents = documents.filter(
             Q(submitted_by=user) |
-            Q(id__in=authorized_workflow_docs)
+            Q(id__in=authorized_workflow_docs) |
+            Q(id__in=cc_authorized_docs)
         )
 
     # Order the documents by creation date, most recent first

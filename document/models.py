@@ -426,6 +426,7 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # important a lot mill
     last_submitted_at = models.DateTimeField(auto_now_add=True)
+    authorized_users = models.ManyToManyField('accounts.CustomUser', related_name='authorized_documents', blank=True, help_text='Users authorized to view this document and receive notifications')
 
 
     def __str__(self):

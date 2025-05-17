@@ -129,6 +129,18 @@ def send_approved_email_with_pdf_task(pdf_result, document_id):
         recipient_list = [document.submitted_by.email]
         cc_list = workflow.get_cc_list()
         
+        # Include emails from authorized users
+        try:
+            authorized_user_emails = document.authorized_users.values_list('email', flat=True)
+            cc_list.extend(authorized_user_emails)
+        except Exception as e:
+            # If the relation doesn't exist yet, just log the error and continue
+            logger.error(f"Error getting authorized users: {str(e)}")
+            pass
+            
+        # Remove duplicates while preserving order
+        cc_list = list(dict.fromkeys(cc_list))
+        
         attachments = None
         if pdf_result and pdf_result.get('status') == 'success':
             temp_path = pdf_result.get('temp_pdf_path')

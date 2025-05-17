@@ -991,7 +991,22 @@ def resubmit_document(request, pk):
                         errors[field.name] = [f"Error saving field: {str(e)}"]
 
         if not errors:
+            # Save CC emails if provided
             document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
+            
+            # Process authorized users
+            # First, clear existing authorized users
+            document.authorized_users.clear()
+            
+            # Add users from the selected recipients
+            user_ids = request.POST.getlist('cc_user_ids', [])
+            if user_ids:
+                for user_id in user_ids:
+                    try:
+                        user = CustomUser.objects.get(id=user_id)
+                        document.authorized_users.add(user)
+                    except (CustomUser.DoesNotExist, ValueError):
+                        pass
             # Save all the DynamicFieldValue objects and start async uploads
             from .tasks import upload_file_to_s3_task
             
@@ -1107,7 +1122,6 @@ def resubmit_document(request, pk):
         return render(request, 'document/components/resubmit_document.html', context)
 
     return render(request, 'document/resubmit_document_full.html', context)
-
 
 
 @login_required
@@ -1439,7 +1453,22 @@ def submit_document(request, workflow_id):
         document = form.save(commit=False)
         document.submitted_by = request.user
         document.workflow = workflow
+        
         document.save()
+        
+        # Process authorized users
+        # First, clear existing authorized users
+        document.authorized_users.clear()
+        
+        # Add users from the selected recipients
+        user_ids = request.POST.getlist('cc_user_ids', [])
+        if user_ids:
+            for user_id in user_ids:
+                try:
+                    user = CustomUser.objects.get(id=user_id)
+                    document.authorized_users.add(user)
+                except (CustomUser.DoesNotExist, ValueError):
+                    pass
 
         # Save all the DynamicFieldValue objects and start async uploads
         from .tasks import upload_file_to_s3_task
@@ -1835,3 +1864,72 @@ def check_upload_status(request):
     })
 
 # Workflow step views have been moved to views_workflow.py
+
+@login_required
+def search_users(request):
+    """Search for users by name or email"""
+    query = request.GET.get('q', '').strip()
+    
+    if len(query) < 2:
+        return JsonResponse({'users': []})
+    
+    # Search for users by name or email
+    users = CustomUser.objects.filter(
+        Q(username__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query) |
+        Q(email__icontains=query)
+    ).distinct()[:10]  # Limit to 10 results
+    
+    # Format the response
+    user_data = [{
+        'id': user.id,
+        'username': user.username,
+        'full_name': user.get_full_name(),
+        'email': user.email
+    } for user in users]
+    
+    return JsonResponse({'users': user_data})
+
+@login_required
+def get_user_details(request, user_id):
+    """Get user details by ID"""
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'email': user.email
+        }
+        return JsonResponse({'success': True, 'user': user_data})
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+
+@login_required
+def get_document_authorized_users(request, document_id):
+    """Get authorized users for a document"""
+    try:
+        # Get the document and check if the user has access to it
+        document = get_object_or_404(Document, id=document_id)
+        
+        # Check if the user has access to the document
+        if document.submitted_by != request.user and not request.user.is_staff:
+            # Check if the user is an authorized approver or authorized user
+            if not is_authorized_approver(request.user, document) and not document.authorized_users.filter(id=request.user.id).exists():
+                return JsonResponse({'success': False, 'error': 'Access denied'}, status=403)
+        
+        # Get all authorized users for the document
+        authorized_users = document.authorized_users.all()
+        
+        # Format the response
+        user_data = [{
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'email': user.email
+        } for user in authorized_users]
+        
+        return JsonResponse({'success': True, 'users': user_data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

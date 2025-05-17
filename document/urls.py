@@ -59,6 +59,9 @@ urlpatterns = [
     
     # API endpoints
     path('api/users/', views_authorization.api_users, name='api_users'),
+    path('search-users/', views.search_users, name='search_users'),
+    path('api/user/<int:user_id>/', views.get_user_details, name='get_user_details'),
+    path('api/document/<int:document_id>/authorized-users/', views.get_document_authorized_users, name='get_document_authorized_users'),
     
     # Statistics
     path('statistics/', approval_statistics, name='approval_statistics'),

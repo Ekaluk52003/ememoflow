@@ -1,6 +1,7 @@
 from django import template
 from django.utils import timezone
 from datetime import timedelta
+import json
 
 register = template.Library()
 
@@ -24,3 +25,17 @@ def precise_timesince(value):
     # For longer durations, use Django's built-in timesince
     from django.utils.timesince import timesince
     return timesince(value)
+
+@register.filter
+def split_string(value, delimiter=','):
+    """
+    Splits a string by delimiter and returns a JSON array
+    """
+    if not value:
+        return '[]'
+    
+    # Split the string and create a list of items
+    items = [item.strip() for item in value.split(delimiter) if item.strip()]
+    
+    # Convert to JSON array
+    return json.dumps(items)
