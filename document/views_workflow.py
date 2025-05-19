@@ -224,10 +224,16 @@ def create_workflow_step(request, workflow_id):
             if approver_ids:
                 step.approvers.set(approver_ids)
             
-            # Handle approver group
-            approver_group_id = request.POST.get('approver_group')
-            if approver_group_id and approver_group_id != 'none':
-                step.approver_group_id = approver_group_id
+            # Handle approver groups
+            approver_group_ids = request.POST.getlist('approver_groups[]')
+            
+            # Validate that approver groups are set if allow_custom_approver is enabled
+            if allow_custom_approver and not approver_group_ids:
+                messages.error(request, "At least one approver group must be set when custom approver is allowed.")
+                return redirect('edit_workflow_step', workflow_id=workflow_id, step_id=step.id)
+                
+            if approver_group_ids:
+                step.approver_groups.set(approver_group_ids)
                 step.save()
             
             # Handle conditional logic
@@ -302,16 +308,24 @@ def edit_workflow_step(request, step_id):
             approver_ids = request.POST.getlist('approvers[]')
             if request.POST.get('approverType') == 'specific':
                 step.approvers.set(approver_ids)
-                step.approver_group = None
+                step.approver_groups.clear()
             elif request.POST.get('approverType') == 'group':
                 step.approvers.clear()
-                approver_group_id = request.POST.get('approver_group')
-                if approver_group_id and approver_group_id != 'none':
-                    step.approver_group_id = approver_group_id
+                approver_group_ids = request.POST.getlist('approver_groups[]')
+                
+                # Validate that approver groups are set if allow_custom_approver is enabled
+                if step.allow_custom_approver and not approver_group_ids:
+                    messages.error(request, "At least one approver group must be set when custom approver is allowed.")
+                    return redirect('edit_workflow_step', workflow_id=workflow_id, step_id=step.id)
+                    
+                if approver_group_ids:
+                    step.approver_groups.set(approver_group_ids)
+                else:
+                    step.approver_groups.clear()
             else:
                 # No specific approvers
                 step.approvers.clear()
-                step.approver_group = None
+                step.approver_groups.clear()
             
             step.save()
             
@@ -347,7 +361,7 @@ def edit_workflow_step(request, step_id):
     # Determine approver type for the form
     if step.approvers.exists():
         approver_type = 'specific'
-    elif step.approver_group:
+    elif step.approver_groups.exists():
         approver_type = 'group'
     else:
         approver_type = 'none'
@@ -360,7 +374,8 @@ def edit_workflow_step(request, step_id):
         'dynamic_fields': dynamic_fields,
         'condition_operators': condition_operators,
         'approver_type': approver_type,
-        'selected_approvers': [str(a.id) for a in step.approvers.all()]
+        'selected_approvers': [str(a.id) for a in step.approvers.all()],
+        'selected_approver_groups': [str(g.id) for g in step.approver_groups.all()]
     })
 
 @login_required

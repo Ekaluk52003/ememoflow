@@ -1076,21 +1076,29 @@ def resubmit_document(request, pk):
     steps_with_approvers = []
     for step in workflow.steps.all():
         potential_approvers = CustomUser.objects.none()  # Initialize with empty queryset
-        if step.allow_custom_approver and step.approver_group:
+        if step.allow_custom_approver:
             # Get current user's BU groups
             user_bu_groups = get_user_bu_groups(request.user)
             
-            # Get all users in the approver group
-            approvers = CustomUser.objects.filter(groups=step.approver_group).distinct()
-            potential_approvers = []
-            
-            # Filter approvers who share any BU with current user
-            for approver in approvers:
-                approver_bu_groups = get_user_bu_groups(approver)
-                if any(bu in user_bu_groups for bu in approver_bu_groups):
-                    potential_approvers.append(approver)
-            
-            potential_approvers = CustomUser.objects.filter(id__in=[u.id for u in potential_approvers])
+            # Get all approver groups for this step
+            approver_groups = list(step.approver_groups.all())
+                
+            if approver_groups:
+                # Get all users in any of the approver groups
+                approvers_query = CustomUser.objects.none()
+                for group in approver_groups:
+                    approvers_query = approvers_query | CustomUser.objects.filter(groups=group)
+                approvers = approvers_query.distinct()
+                
+                potential_approvers = []
+                
+                # Filter approvers who share any BU with current user
+                for approver in approvers:
+                    approver_bu_groups = get_user_bu_groups(approver)
+                    if any(bu in user_bu_groups for bu in approver_bu_groups):
+                        potential_approvers.append(approver)
+                
+                potential_approvers = CustomUser.objects.filter(id__in=[u.id for u in potential_approvers])
 
         if potential_approvers.exists():
             previous_approver = document.approvals.filter(step=step).first()
@@ -1543,12 +1551,15 @@ def submit_document(request, workflow_id):
 
         steps_with_approvers = []
         for step in workflow.steps.all():
-            if step.allow_custom_approver and step.approver_group:         
+            if step.allow_custom_approver and step.approver_groups.exists():         
                 
                 # Get current user's BU groups
                 user_bu_groups = get_user_bu_groups(request.user)                
-                # Get all users in the approver group
-                approvers = CustomUser.objects.filter(groups=step.approver_group).distinct()
+                # Get all users in the approver groups
+                approvers_query = CustomUser.objects.none()
+                for group in step.approver_groups.all():
+                    approvers_query = approvers_query | CustomUser.objects.filter(groups=group)
+                approvers = approvers_query.distinct()
                 potential_approvers = []
                 
                 # Filter approvers who share any BU with current user

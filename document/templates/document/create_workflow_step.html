@@ -20,7 +20,7 @@
       // Approvers
       approverType: 'none',
       selectedApprovers: [],
-      approverGroup: 'none',
+      approverGroups: [],
       
       // Conditional Logic
       isConditional: false,
@@ -47,8 +47,8 @@
           this.errors.approvers = 'Please select at least one approver';
         }
         
-        if (this.approverType === 'group' && this.approverGroup === 'none') {
-          this.errors.approverGroup = 'Please select an approver group';
+        if (this.approverType === 'group' && this.approverGroups.length === 0) {
+          this.errors.approverGroups = 'Please select at least one approver group';
         }
         
         if (this.isConditional) {
@@ -160,18 +160,20 @@
             <p x-show="errors.approvers" x-text="errors.approvers" class="mt-1 text-sm text-red-600"></p>
           </div>
           
-          <!-- Approver Group -->
+          <!-- Approver Groups (Multiple Selection) -->
           <div x-show="approverType === 'group'" class="mb-4">
-            <label for="approver_group" class="block mb-1 text-sm font-medium text-gray-700">Select Group</label>
-            <select name="approver_group" id="approver_group" x-model="approverGroup"
-                    class="px-3 py-2 w-full rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :class="{'border-red-500': errors.approverGroup}">
-              <option value="none">-- Select Group --</option>
+            <label class="block mb-1 text-sm font-medium text-gray-700">Select Groups</label>
+            <div class="overflow-y-auto p-2 max-h-60 rounded-md border"
+                 :class="{'border-red-500': errors.approverGroups}">
               {% for group in groups %}
-              <option value="{{ group.id }}">{{ group.name }}</option>
+              <label class="flex items-center p-2 rounded hover:bg-gray-100">
+                <input type="checkbox" name="approver_groups[]" value="{{ group.id }}" 
+                       x-model="approverGroups" class="form-checkbox">
+                <span class="ml-2">{{ group.name }}</span>
+              </label>
               {% endfor %}
-            </select>
-            <p x-show="errors.approverGroup" x-text="errors.approverGroup" class="mt-1 text-sm text-red-600"></p>
+            </div>
+            <p x-show="errors.approverGroups" x-text="errors.approverGroups" class="mt-1 text-sm text-red-600"></p>
           </div>
         </div>
         

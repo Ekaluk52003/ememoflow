@@ -341,7 +341,15 @@
              x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
             <div class="mb-2">
                 <span class="font-medium">{{ step_info.step.name }}</span>
-                <span class="text-gray-600">({{ step_info.step.approver_group.name }})</span>
+                <span class="text-gray-600">(
+                    {% if step_info.step.approver_groups.exists %}
+                        {% for group in step_info.step.approver_groups.all %}
+                            {{ group.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        No groups assigned
+                    {% endif %}
+                )</span>
             </div>
             
             <!-- Hidden select for form submission -->
@@ -367,7 +375,7 @@
                   </div>
                 </template>
                 
-                <button type="button" @click="openDialog()" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
+                <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
                   + Select Approver
                 </button>
               </div>

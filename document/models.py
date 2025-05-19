@@ -206,7 +206,8 @@ class ApprovalStep(models.Model):
     # approvers = models.ManyToManyField(CustomUser, related_name='approval_steps', null=True, blank=True)
     approvers = models.ManyToManyField(User, related_name='approval_steps', blank=True)
     allow_custom_approver = models.BooleanField(default=False)
-    approver_group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
+    # Use many-to-many relationship for approver groups
+    approver_groups = models.ManyToManyField(Group, related_name='approval_steps', blank=True)
     approval_mode = models.CharField(
         max_length=10,
         choices=[('all', 'All Approvers Required'), ('any', 'Any Approver Sufficient')],
@@ -332,8 +333,9 @@ class ApprovalStep(models.Model):
         return f"{self.workflow.name} - {self.name}"
 
     def clean(self):
-        if self.allow_custom_approver and not self.approver_group:
-            raise ValidationError("Approver group must be set when custom approver is allowed.")
+        # For new instances, we can't check approver_groups.exists() because the M2M relationship
+        # isn't saved yet when clean is called. This validation will be handled in the view instead.
+        pass
 
 
 class ReferenceID(models.Model):

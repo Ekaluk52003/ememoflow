@@ -106,10 +106,24 @@
                           {{ approver.get_full_name|default:approver.username }}
                         </span>
                       {% empty %}
-                        {% if step.approver_group %}
-                          <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
-                            Group: {{ step.approver_group.name }}
-                          </span>
+                        {% if step.approver_groups.exists %}
+                          {% for group in step.approver_groups.all %}
+                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
+                              Group: {{ group.name }}
+                            </span>
+                            {% if not forloop.last %}&nbsp;{% endif %}
+                          {% endfor %}
+                          
+                          {% if step.allow_custom_approver %}
+                            <div class="mt-1 text-xs text-gray-600 italic">
+                              <span class="inline-flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Users can select specific approvers from these groups during submission
+                              </span>
+                            </div>
+                          {% endif %}
                         {% else %}
                           <span class="text-sm text-gray-500">No specific approvers</span>
                         {% endif %}
