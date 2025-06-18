@@ -42,7 +42,7 @@ def get_allowed_documents(user):
         # If the relation doesn't exist yet, use an empty queryset
         cc_authorized_docs = Document.objects.none()
 
-    # **NEW**: A query to find documents pending this user's approval
+    # **MODIFIED**: A query to find documents where this user is or was an approver.
     involved_in_approval_q = Q(approvals__approver=user)
     
     # Get user's BU groups
