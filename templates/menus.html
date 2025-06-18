@@ -561,6 +561,12 @@
                    class="flex justify-center items-center p-2 text-white bg-blue-600 rounded-md transition-colors hover:bg-blue-700">
                     Access Admin
                 </a>
+                
+                <!-- This is the new link for the diagram -->
+                <a href="{% url 'document_approval:user_group_diagram' %}" 
+                   class="flex justify-center items-center p-2 text-white bg-green-600 rounded-md transition-colors hover:bg-green-700">
+                    Permission Diagram
+                </a>
             </div>
         </div>
     {% endif %}

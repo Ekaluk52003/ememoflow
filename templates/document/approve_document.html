@@ -1,8 +1,8 @@
 {% extends '_base.html' %}
 
 {% block content %}
-<h1 class="text-2xl mb-4">Approve Document: {{ document.title }}</h1>
-<div class="bg-white p-4 rounded shadow">
+<h1 class="mb-4 text-2xl">Approve Document: {{ document.title }}</h1>
+<div class="p-4 bg-white rounded shadow">
     <h2 class="text-xl">{{ document.title }}</h2>
     <p class="mt-2">Content: {{ document.content }}</p>
     <p class="mt-2">Step: {{ document.current_step.name }}</p>
@@ -10,11 +10,11 @@
         {% csrf_token %}
         <div>
             <label for="comment" class="block">Comment:</label>
-            <textarea id="comment" name="comment" class="w-full p-2 border rounded"></textarea>
+            <textarea id="comment" name="comment" class="p-2 w-full rounded border"></textarea>
         </div>
         <div>
-            <button type="submit" name="is_approved" value="true" class="bg-green-500 text-white px-4 py-2 rounded mr-2">Approve</button>
-            <button type="submit" name="is_approved" value="false" class="bg-red-500 text-white px-4 py-2 rounded">Reject</button>
+            <button type="submit" name="is_approved" value="true" class="px-4 py-2 mr-2 text-white bg-green-500 rounded">Approve</button>
+            <button type="submit" name="is_approved" value="false" class="px-4 py-2 text-white bg-red-500 rounded">Reject</button>
         </div>
     </form>
 </div>

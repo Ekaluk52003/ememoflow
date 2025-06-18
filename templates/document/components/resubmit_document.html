@@ -343,162 +343,110 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
    </div>
 
    {% if steps_with_approvers %}
-   <h3>Select Custom Approvers</h3>
+
+   <h3 class="mt-6 mb-4 text-lg font-medium">Select Approvers</h3>
    {% for step_info in steps_with_approvers %}
-   <div class="mt-6 mb-6"
-   x-data="{
-    search: '',
-    selected: '',
-    focused: false,
-    isEditing: true,
-    showDialog: false,
-    selectedUser: null,
-    filteredOptions: {{ step_info.potential_approvers_json|safe }},
-    
-    selectUser(option) {
-        this.selected = option.id;
-        this.search = option.full_name;
-        this.selectedUser = option;
-        this.focused = false;
-        this.isEditing = false;
-        this.showDialog = false;
-    },
+       {% comment %}
+       We use the same robust pattern as the submit form.
+       - Create a unique ID for the script tag.
+       - Pass the approver data safely via json_script.
+       - Initialize the userSearch component, passing it the script ID and the ID of the previously selected approver.
+       {% endcomment %}
+       {% with script_id="potential-approvers-resubmit-"|add:step_info.step_id_str %}
+   
+         {{ step_info.potential_approvers_json|json_script:script_id }}
+   
+         <div class="mt-6 mb-6"
+              x-data="userSearch('{{ script_id }}', {{ step_info.previous_approver.id|default:'null' }})"
+              x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
+           
+             <div class="mb-2">
+                 <span class="font-medium">{{ step_info.step.name }}</span>
+                 <span class="text-gray-600">
+                     ({% if step_info.step.approver_groups.exists %}
+                         {% for group in step_info.step.approver_groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                     {% else %}
+                         No groups assigned
+                     {% endif %})
+                 </span>
+             </div>
+   
+             <select name="approver_{{ step_info.step.id }}" x-model="selected" class="hidden">
+                 <option value="">Select an approver</option>
+                 <template x-for="option in options" :key="option.id">
+                     <option :value="option.id" x-text="option.full_name"></option>
+                 </template>
+             </select>
+   
+             <div class="mb-4">
+                 <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
+                     <template x-if="selected">
+                         <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
+                             <div>
+                                 <div x-text="selectedUser.full_name" class="font-medium"></div>
+                                 <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500"></div>
+                             </div>
+                             <button type="button" @click="reset()" class="self-start ml-2 text-gray-500 hover:text-red-500">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                 </svg>
+                             </button>
+                         </div>
+                     </template>
+   
+                     <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
+                         + Select Approver
+                     </button>
+                 </div>
+   
+                 <p x-show="!selected" class="mt-1 text-sm text-red-500">
+                     Please select an approver
+                 </p>
+             </div>
+   
+             <div x-show="showDialog" @click.self="closeDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" style="display: none;">
+                 <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
+                     <h3 class="mb-4 text-lg font-medium">Select Approver</h3>
+                     <div class="relative mb-4">
+                         <input type="text"
+                                id="user-search-dialog-input-resubmit-{{ step_info.step.id }}"
+                                x-model="search"
+                                placeholder="Search by name or job title..."
+                                class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     </div>
+   
+                     <div class="overflow-y-auto mb-4 max-h-60">
+                         <template x-if="filteredOptions.length === 0 && search.length > 0">
+                             <div class="py-2 text-sm text-gray-500">No approvers found</div>
+                         </template>
+                         <template x-for="option in filteredOptions" :key="option.id">
+                             <div class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
+                                  @click="selectUser(option)"
+                                  :class="{ 'bg-blue-50': selected === option.id }">
+                                 <div>
+                                     <div x-text="option.full_name" class="font-medium"></div>
+                                     <div x-show="option.job_title" x-text="option.job_title" class="text-sm text-gray-500"></div>
+                                 </div>
+                                 <div x-show="selected === option.id" class="text-blue-500">
+                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                     </svg>
+                                 </div>
+                             </div>
+                         </template>
+                     </div>
+   
+                     <div class="flex justify-end">
+                         <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                             Close
+                         </button>
+                     </div>
+                 </div>
+             </div>
+         </div>
+       {% endwith %}
+   {% endfor %}
 
-    startEditing() {
-        this.isEditing = true;
-        this.focused = true;
-        if (this.selected !== null) {
-            this.search = '';
-            this.selected = '';
-        }
-    },
-    
-    reset() {
-        this.search = '';
-        this.selected = '';
-        this.selectedUser = null;
-        this.focused = false;
-        this.isEditing = true;
-    },
-    
-    openDialog() {
-        this.showDialog = true;
-        this.search = '';
-        // Focus the search input after the dialog is shown
-        setTimeout(() => {
-            const searchInput = document.getElementById('approver-search-dialog-input-{{ step_info.step.id }}');
-            if (searchInput) searchInput.focus();
-        }, 100);
-    },
-
-    closeDialog() {
-        this.showDialog = false;
-    },
-    
-    init() {
-        {% if step_info.previous_approver %}
-        this.selected = '{{ step_info.previous_approver.id }}';
-        this.search = '{{ step_info.previous_approver.get_full_name }}';
-        this.isEditing = false;
-        {% endif %}
-    }
-}"
-            x-init="init()"
-            x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
-            <div class="mb-2">
-                <span class="font-medium">{{ step_info.step.name }}</span>
-                <span class="text-gray-600">(
-                    {% if step_info.step.approver_groups.exists %}
-                        {% for group in step_info.step.approver_groups.all %}
-                            {{ group.name }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        No groups assigned
-                    {% endif %}
-                )</span>
-            </div>
-            
-            <!-- Hidden select for form submission -->
-            <select name="approver_{{ step_info.step.id }}"
-                    x-model="selected"
-                    class="hidden">
-                <option value="">Select an approver</option>
-                <template x-for="option in filteredOptions" :key="option.id">
-                    <option :value="option.id" x-text="option.full_name"></option>
-                </template>
-            </select>
-            
-            <div class="mb-4">              
-              <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
-                <template x-if="selected">
-                  <div class="flex items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
-                    <span x-text="search"></span>
-                    <button type="button" @click="reset()" class="ml-2 text-gray-500 hover:text-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </template>
-                
-                <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
-                  + Select Approver
-                </button>
-              </div>
-              
-              <!-- Only show error if section is visible and no approver selected -->
-              <p x-show="!selected" class="mt-1 text-sm text-red-500">
-                  Please select an approver
-              </p>
-              
-              <!-- Approver search dialog -->
-              <div x-show="showDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" @click.self="closeDialog">
-                <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
-                  <h3 class="mb-4 text-lg font-medium">Select Approver</h3>
-                  
-                  <div class="relative mb-4">
-                    <input 
-                      type="text" 
-                      :id="'approver-search-dialog-input-' + {{ step_info.step.id }}"
-                      x-model="search" 
-                      placeholder="Search by name..."
-                      class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                  </div>
-                  
-                  <div class="overflow-y-auto mb-4 max-h-60">
-                    <template x-if="filteredOptions.length === 0 || (search && filteredOptions.filter(option => option.full_name.toLowerCase().includes(search.toLowerCase())).length === 0)">
-                      <div class="py-2 text-sm text-gray-500">No approvers found</div>
-                    </template>
-                    
-                    <template x-for="option in filteredOptions.filter(option => !search || option.full_name.toLowerCase().includes(search.toLowerCase()))" :key="option.id">
-                      <div 
-                        class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
-                        @click="selectUser(option)"
-                        :class="{ 'bg-blue-50': selected === option.id }"
-                      >
-                        <div>
-                          <div x-text="option.full_name" class="font-medium"></div>
-                        </div>
-                        <div x-show="selected === option.id" class="text-blue-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                  
-                  <div class="flex justify-end">
-                    <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </div>
-    {% endfor %}
 
 {% endif %}
 

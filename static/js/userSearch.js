@@ -1,39 +1,51 @@
 // Alpine.js is expected to be loaded on the page already
 document.addEventListener('alpine:init', () => {
     // Original userSearch component
-    Alpine.data('userSearch', (initialOptions = []) => ({
+    Alpine.data('userSearch', (dataSourceId) => ({
         search: '',
         focused: false,
         selected: null,
-        options: initialOptions,
+        options: [],
         isEditing: true, // Start in editing mode
         showDialog: false, // For dialog-based selection
         selectedUser: null, // Store the selected user object
 
-        get filteredOptions() {
-            if (!this.search) return this.options;
-            return this.options.filter(option => 
-                option.full_name.toLowerCase().includes(this.search.toLowerCase())
-            );
-        },
+        init() {
+          // Load data from the script tag after the component is initialized
+          const dataEl = document.getElementById(dataSourceId);
+          if (dataEl) {
+              this.options = JSON.parse(dataEl.textContent);
+          } else {
+              console.error(`[userSearch] Data source element with ID '${dataSourceId}' not found.`);
+          }
+      },
 
-        selectUser(option) {
-            this.selected = option.id;
-            this.search = option.full_name;
-            this.selectedUser = option;
-            this.focused = false;
-            this.isEditing = false;
-            this.showDialog = false; // Close dialog after selection
-        },
+      get filteredOptions() {
+        if (!this.search) return this.options;
+        return this.options.filter(option =>
+            option.full_name.toLowerCase().includes(this.search.toLowerCase()) ||
+            (option.job_title && option.job_title.toLowerCase().includes(this.search.toLowerCase()))
+        );
+    },
 
-        startEditing() {
-            this.isEditing = true;
-            this.focused = true;
-            if (this.selected !== null) {
-                this.search = '';
-                this.selected = null;
-            }
-        },
+    selectUser(option) {
+      this.selected = option.id;
+      this.search = option.full_name;
+      this.selectedUser = option;
+      this.focused = false;
+      this.isEditing = false;
+      this.showDialog = false; // Close dialog after selection
+  },
+
+  startEditing() {
+      this.isEditing = true;
+      this.focused = true;
+      if (this.selected !== null) {
+          this.search = '';
+          this.selected = null;
+      }
+  },
+
 
         reset() {
             this.search = '';
@@ -43,22 +55,22 @@ document.addEventListener('alpine:init', () => {
             this.isEditing = true; // Reset to editing mode
         },
 
+       
         // Dialog-specific methods
         openDialog() {
-            this.showDialog = true;
-            this.search = '';
-            // Focus the search input after the dialog is shown
-            setTimeout(() => {
-                const searchInput = document.getElementById('user-search-dialog-input');
-                if (searchInput) searchInput.focus();
-            }, 100);
-        },
-
+          this.showDialog = true;
+          this.search = '';
+          // Focus the search input after the dialog is shown
+          setTimeout(() => {
+              const searchInput = document.getElementById('user-search-dialog-input');
+              if (searchInput) searchInput.focus();
+          }, 100);
+      },
         closeDialog() {
             this.showDialog = false;
         }
     }));
-    
+
     // CC Recipients component
     Alpine.data('ccRecipients', () => ({
       searchQuery: '',
@@ -68,7 +80,7 @@ document.addEventListener('alpine:init', () => {
       showDialog: false,
       errorMessage: '',
       documentId: null, // Will be set via x-init in the template
-      
+
       init() {
         // Initialize selected users from existing hidden inputs
         this.loadExistingUsers();
@@ -77,14 +89,14 @@ document.addEventListener('alpine:init', () => {
           this.loadDocumentAuthorizedUsers();
         }
       },
-      
+
       loadDocumentAuthorizedUsers() {
         if (!this.documentId) {
           return;
         }
-        
+
         const url = `/document/api/document/${this.documentId}/authorized-users/`;
-        
+
         fetch(url)
           .then(response => {
             if (!response.ok) {
@@ -111,7 +123,7 @@ document.addEventListener('alpine:init', () => {
             console.error('Error fetching authorized users:', error);
           });
       },
-      
+
       loadExistingUsers() {
         const container = document.getElementById('cc-recipients-container');
         if (container) {
@@ -122,14 +134,14 @@ document.addEventListener('alpine:init', () => {
           });
         }
       },
-      
+
       loadAuthorizedUsers() {
         // If we have a document ID, use it to fetch authorized users
         if (this.documentId) {
           this.loadDocumentAuthorizedUsers();
         }
       },
-      
+
       fetchUserDetails(userId) {
         fetch(`/document/api/user/${userId}/`)
           .then(response => response.json())
@@ -142,13 +154,13 @@ document.addEventListener('alpine:init', () => {
             console.error('Error fetching user details:', error);
           });
       },
-      
+
       searchUsers() {
         if (this.searchQuery.length < 2) {
           this.searchResults = [];
           return;
         }
-        
+
         this.isLoading = true;
         fetch(`/document/search-users/?q=${encodeURIComponent(this.searchQuery)}`)
           .then(response => {
@@ -167,7 +179,7 @@ document.addEventListener('alpine:init', () => {
             console.error('Error searching users:', error);
           });
       },
-      
+
       selectUser(user) {
         if (!this.isUserSelected(user.id)) {
           this.selectedUsers.push(user);
@@ -178,17 +190,17 @@ document.addEventListener('alpine:init', () => {
         this.searchQuery = '';
         this.searchResults = [];
       },
-      
+
       removeUser(userId) {
         this.selectedUsers = this.selectedUsers.filter(user => user.id !== userId);
         // Remove hidden input for the user
         this.removeUserFromForm(userId);
       },
-      
+
       isUserSelected(userId) {
         return this.selectedUsers.some(user => user.id === userId);
       },
-      
+
       addUserToForm(userId) {
         const container = document.getElementById('cc-recipients-container');
         const input = document.createElement('input');
@@ -198,14 +210,14 @@ document.addEventListener('alpine:init', () => {
         input.id = `cc-user-${userId}`;
         container.appendChild(input);
       },
-      
+
       removeUserFromForm(userId) {
         const input = document.getElementById(`cc-user-${userId}`);
         if (input) {
           input.remove();
         }
       },
-      
+
       openDialog() {
         this.showDialog = true;
         this.searchQuery = '';
@@ -216,7 +228,7 @@ document.addEventListener('alpine:init', () => {
           document.getElementById('user-search-input').focus();
         }, 100);
       },
-      
+
       closeDialog() {
         this.showDialog = false;
       }

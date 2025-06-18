@@ -42,6 +42,13 @@ def get_allowed_documents(user):
         # If the relation doesn't exist yet, use an empty queryset
         cc_authorized_docs = Document.objects.none()
 
+    # **NEW**: A query to find documents pending this user's approval
+    pending_approval_q = Q(
+        approvals__approver=user, 
+        approvals__is_approved__isnull=True, 
+        status='in_review'
+    )
+    
     # Get user's BU groups
     bu_groups = get_user_bu_groups(user)
     if not bu_groups:
@@ -68,7 +75,8 @@ def get_allowed_documents(user):
         Q(submitted_by=user) |  # Always include user's own documents
         Q(submitted_by__in=users_in_same_bus) |
         Q(id__in=authorized_workflow_docs) |
-        Q(id__in=cc_authorized_docs)
+        Q(id__in=cc_authorized_docs) |
+        pending_approval_q
     )
 
     # If user is not a BU manager, they can only see their submitted documents,
@@ -77,7 +85,8 @@ def get_allowed_documents(user):
         documents = documents.filter(
             Q(submitted_by=user) |
             Q(id__in=authorized_workflow_docs) |
-            Q(id__in=cc_authorized_docs)
+            Q(id__in=cc_authorized_docs) |
+            pending_approval_q 
         )
 
     # Order the documents by creation date, most recent first

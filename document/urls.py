@@ -66,5 +66,6 @@ urlpatterns = [
     # Statistics
     path('statistics/', approval_statistics, name='approval_statistics'),
 
+    path('user-group-diagram/', views.user_group_diagram, name='user_group_diagram'),
 
 ]

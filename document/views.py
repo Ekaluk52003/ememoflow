@@ -123,7 +123,7 @@ def generate_pdf_report(request, reference_id, template_id):
     document = document_response
     template = get_object_or_404(PDFTemplate, id=template_id)
     report_config = ReportConfiguration.objects.first()
-    
+
     # Create S3 client for generating signed URLs
     s3_client = boto3.client(
         's3',
@@ -142,7 +142,7 @@ def generate_pdf_report(request, reference_id, template_id):
                 url = parsed.path
             else:
                 return weasyprint.default_url_fetcher(url)
-        
+
         if url.startswith('/document/view-editor-image/'):
             try:
                 image_id = int(url.split('/')[-2])
@@ -158,7 +158,7 @@ def generate_pdf_report(request, reference_id, template_id):
                 return weasyprint.default_url_fetcher(signed_url)
             except Exception:
                 return weasyprint.default_url_fetcher(url)
-        
+
         if url.startswith('/document/view-file/'):
             try:
                 field_value_id = int(url.split('/')[-2])
@@ -176,26 +176,26 @@ def generate_pdf_report(request, reference_id, template_id):
                 return weasyprint.default_url_fetcher(signed_url)
             except Exception:
                 return None
-        
+
         return weasyprint.default_url_fetcher(url)
 
     # Get the context data and render template
     context_data = document.get_report_context()
     context_data['report_config'] = report_config
-    
+
     # Add logo data URI to context
     if report_config and report_config.company_logo:
         context_data['company_logo_data_uri'] = report_config.logo_data_uri
-    
+
     # Get approvals ordered by most recent first
     approvals = document.approvals.all().order_by('-recorded_at', '-created_at')
     context_data['approvals'] = approvals
-    
+
     # Get users who have approved
     approved_users = document.approvals.filter(
         is_approved=True
     ).select_related('approver', 'on_behalf_of')
-    
+
     approver_names = []
     for approval in approved_users:
         if approval.on_behalf_of:
@@ -210,24 +210,24 @@ def generate_pdf_report(request, reference_id, template_id):
             if approval.approver.job_title:
                 name += f" ({approval.approver.job_title})"
             approver_names.append(name.strip())
-    
+
     context_data['approver_names'] = ", ".join(approver_names)
-    
+
     # Add on_behalf_of information if available
     if hasattr(document, 'on_behalf_of') and document.on_behalf_of:
         context_data['on_behalf_of'] = document.on_behalf_of
-    
+
     # Prepare dynamic fields with file URLs
     prepared_values = []
     dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
-    
+
     for value in dynamic_values:
         prepared_value = {
             'name': value.field.name,
             'field_type': value.field.field_type,
             'value': value.value
         }
-        
+
         if value.field.field_type == 'product_list':
             products = value.json_value if value.json_value else []
             prepared_value['value'] = products
@@ -236,7 +236,7 @@ def generate_pdf_report(request, reference_id, template_id):
         elif value.field.field_type == 'table_list':
             # Get the column order from the field
             columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
-            
+
             # Prepare the rows with ordered columns
             ordered_rows = []
             for row in (value.json_value or []):
@@ -245,7 +245,7 @@ def generate_pdf_report(request, reference_id, template_id):
                 for col in columns:
                     ordered_row.append((col, row.get(col, '')))
                 ordered_rows.append(ordered_row)
-            
+
             prepared_value['value'] = ordered_rows
             prepared_value['columns'] = columns
             prepared_value['field'] = value.field  # Make sure field is available in template
@@ -255,15 +255,15 @@ def generate_pdf_report(request, reference_id, template_id):
             original_filename = '_'.join(full_filename.split('_')[:-1]) + os.path.splitext(full_filename)[1]
             file_ext = original_filename.split('.')[-1].lower()
             is_image = file_ext in ['jpg', 'jpeg', 'png', 'gif']
-            
+
             prepared_value['file'] = {
                 'name': original_filename,
                 'url': file_url,
                 'is_image': is_image
             }
-        
+
         prepared_values.append(prepared_value)
-    
+
     context_data['prepared_values'] = prepared_values
 
     html_template = Template(template.html_content)
@@ -274,16 +274,16 @@ def generate_pdf_report(request, reference_id, template_id):
     font_config = FontConfiguration()
     font_regular = '/code/static/fonts/NotoSansThai-Regular.ttf'
     font_bold = '/code/static/fonts/NotoSansThai-Bold.ttf'
-    
+
     # Read and encode fonts
     with open(font_regular, 'rb') as f:
         regular_font_data = f.read()
     with open(font_bold, 'rb') as f:
         bold_font_data = f.read()
-    
+
     regular_font_b64 = base64.b64encode(regular_font_data).decode('utf-8')
     bold_font_b64 = base64.b64encode(bold_font_data).decode('utf-8')
-    
+
     css_content = f'''
     @font-face {{
         font-family: 'NotoSansThai';
@@ -298,13 +298,13 @@ def generate_pdf_report(request, reference_id, template_id):
         font-weight: bold;
         font-style: normal;
     }}
-    
+
     * {{
         font-family: 'NotoSansThai', Arial, sans-serif !important;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }}
-    
+
     body {{
         font-family: 'NotoSansThai', Arial, sans-serif;
         line-height: 1.5;
@@ -313,14 +313,14 @@ def generate_pdf_report(request, reference_id, template_id):
     strong, b {{
         font-weight: bold !important;
     }}
-    
+
     {template.css_content}
     '''
 
     css = CSS(string=css_content, font_config=font_config)
     html = HTML(string=html_content, base_url=request.build_absolute_uri('/'), url_fetcher=url_fetcher)
     pdf = html.write_pdf(stylesheets=[css], font_config=font_config)
- 
+
     # Create HTTP response
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'filename="document_{reference_id}_report.pdf"'
@@ -408,17 +408,17 @@ def document_detail(request, reference_id):
         # document = get_object_or_404(Document, document_reference=reference_id)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
         dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
-        
+
         # Check if user is directly an approver
         user_approval = document.approvals.filter(approver=request.user, step=document.current_step, is_approved__isnull=True).first()
-        
+
         # Check if user is authorized to approve on behalf of someone else
         authorized_for = None
         on_behalf_of = None
         if not user_approval and document.current_step:
             # Get all users that the current user is authorized to approve for
             authorized_approver_ids = get_authorized_approvers(request.user)
-            
+
             # Check if any of those users are approvers for this document's current step
             if authorized_approver_ids:
                 authorized_approval = document.approvals.filter(
@@ -426,7 +426,7 @@ def document_detail(request, reference_id):
                     step=document.current_step,
                     is_approved__isnull=True
                 ).first()
-                
+
                 if authorized_approval:
                     user_approval = authorized_approval
                     on_behalf_of = authorized_approval.approver
@@ -444,7 +444,7 @@ def document_detail(request, reference_id):
             elif value.field.field_type == 'table_list':
                 # Get the column order from the field
                 columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
-                
+
                 # Prepare the rows with ordered columns
                 ordered_rows = []
                 for row in (value.json_value or []):
@@ -453,7 +453,7 @@ def document_detail(request, reference_id):
                     for col in columns:
                         ordered_row.append((col, row.get(col, '')))
                     ordered_rows.append(ordered_row)
-                
+
                 prepared_value['value'] = ordered_rows
                 prepared_value['columns'] = columns
                 prepared_value['field'] = value.field  # Make sure field is available in template
@@ -484,7 +484,7 @@ def document_detail(request, reference_id):
             errors = {}
             is_approved = request.POST.get('is_approved') == 'true'
             comment = request.POST.get('comment', '')
-            
+
             # Ensure newlines in comments are properly preserved as \n
             if comment:
                 comment = comment.replace('\r\n', '\n').replace('\r', '\n')
@@ -548,21 +548,21 @@ def document_detail(request, reference_id):
             try:
                 # Check if the user is approving on behalf of someone else
                 is_authorized, original_approver = is_authorized_approver(document, request.user)
-                
+
                 if is_authorized:
                     # If user is authorized, use the original approver's approval record
                     approver = original_approver if original_approver else request.user
-                    
-                    
+
+
                     # When approving on behalf of someone else, we need to handle it differently
                     if original_approver:
                         # Get the approval for the original approver
                         approval = document.approvals.get(
-                            approver=original_approver, 
-                            step=document.current_step, 
+                            approver=original_approver,
+                            step=document.current_step,
                             is_approved__isnull=True
                         )
-                        
+
                         # Set approval fields directly
                         approval.is_approved = is_approved
                         approval.status = 'approved' if is_approved else 'rejected'
@@ -570,7 +570,7 @@ def document_detail(request, reference_id):
                         approval.recorded_at = timezone.now()
                         approval.on_behalf_of = request.user  # Set the user who performed the approval on behalf
                         approval.save()
-                        
+
                         # Process any edited values if required
                         if document.current_step.requires_edit:
                             for field in document.current_step.editable_fields.all():
@@ -592,22 +592,22 @@ def document_detail(request, reference_id):
                                         field=field,
                                         defaults={'value': edited_values[field_name]}
                                     )
-                        
+
                         # Handle workflow progression
                         if is_approved:
                             # Check if we should move to the next step based on approval mode
                             current_step = document.current_step
-                            
+
                             if current_step.approval_mode == 'any':
                                 # Cancel all other pending approvals for this step
                                 other_pending_approvals = document.approvals.filter(
                                     step=current_step,
                                     is_approved__isnull=True
                                 ).exclude(pk=approval.pk)
-                                
+
                                 # Delete other pending approvals
                                 other_pending_approvals.delete()
-                                
+
                                 # Move to the next step
                                 document.move_to_next_step(approval)
                             else:  # 'all' mode (default)
@@ -616,7 +616,7 @@ def document_detail(request, reference_id):
                                     step=current_step,
                                     is_approved__isnull=True
                                 ).exists()
-                                
+
                                 # If no pending approvals remain, move to the next step
                                 if not pending_approvals:
                                     document.move_to_next_step(approval)
@@ -631,7 +631,7 @@ def document_detail(request, reference_id):
                             edited_values=edited_values,
                             uploaded_files=uploaded_files
                         )
-                    
+
                     if original_approver:
                         messages.success(request, f"Thank you for reviewing the document on behalf of {original_approver.get_full_name() or original_approver.username}")
                     else:
@@ -665,7 +665,7 @@ def document_detail(request, reference_id):
         editable_fields = user_approval.step.editable_fields.all() if user_approval and user_approval.step.requires_edit else []
 
         ordered_approvals = document.approvals.order_by('-created_at', '-step__order')
-        
+
         # Simple pending time calculation for current step
         current_step_pending_since = None
         if document.current_step and document.status == 'in_review':
@@ -674,10 +674,10 @@ def document_detail(request, reference_id):
                 step=document.current_step,
                 is_approved__isnull=True
             ).order_by('created_at').first()
-            
+
             if earliest_approval:
                 current_step_pending_since = earliest_approval.created_at
-        
+
         # Get authorized users that the current user can approve on behalf of
         authorized_approvers = []
         if document.status == 'in_review' and document.current_step:
@@ -690,7 +690,7 @@ def document_detail(request, reference_id):
                     is_approved__isnull=True
                 ).select_related('approver')
                 authorized_approvers = [approval.approver for approval in authorized_approvals]
-        
+
         context = {
             'document': document,
             'prepared_values': prepared_values,
@@ -788,27 +788,27 @@ def resubmit_document(request, pk):
             if field.field_type == 'table_list':
                 # Get the column names from the field in the correct order
                 columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
-                
+
                 # Initialize data structure for rows
                 rows = []
                 field_errors = []
-                
+
                 # Determine the number of rows by checking the first column's data
                 if columns:
                     first_col = columns[0].strip()
                     row_count = len(request.POST.getlist(f'table_{field.id}_{first_col}[]'))
-                    
+
                     # Process each row
                     for row_idx in range(row_count):
                         # Create a list of tuples to preserve column order
                         row_items = []
                         row_has_data = False
-                        
+
                         # Process each column in this row in the specified order
                         for col in columns:
                             col_name = col.strip()
                             col_values = request.POST.getlist(f'table_{field.id}_{col_name}[]')
-                            
+
                             if row_idx < len(col_values):
                                 col_value = col_values[row_idx]
                                 row_items.append((col_name, col_value))
@@ -816,7 +816,7 @@ def resubmit_document(request, pk):
                                     row_has_data = True
                             else:
                                 row_items.append((col_name, ''))
-                        
+
                         # Only add rows that have at least some data
                         if row_has_data:
                             # Convert the list of tuples to a dictionary while preserving order
@@ -824,7 +824,7 @@ def resubmit_document(request, pk):
                             for col_name, col_value in row_items:
                                 row_data[col_name] = col_value
                             rows.append(row_data)
-                
+
                 if rows:
                     dynamic_field_values.append(DynamicFieldValue(
                         field=field,
@@ -832,10 +832,10 @@ def resubmit_document(request, pk):
                     ))
                 elif is_required_for_submission:
                     field_errors.append("At least one row is required")
-                
+
                 if field_errors:
                     errors[field.name] = field_errors
-                    
+
             elif field.field_type == 'product_list':
                 product_ids = request.POST.getlist(f'product_id_{field.id}[]')
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
@@ -888,19 +888,19 @@ def resubmit_document(request, pk):
                 if file:
                     try:
                         field.validate_file(file)
-                        
+
                         # Create DynamicFieldValue without file
                         field_value = DynamicFieldValue(
                             field=field,
                             document=None  # Will be set after document is saved
                         )
-                        
+
                         # Read file content
                         file_content = file.read()
-                        
+
                         # Store the file info for async upload
                         dynamic_field_values.append((field_value, file_content, file.name))
-                        
+
                     except ValidationError as e:
                         errors[field.name] = [str(e)]
                 elif is_required_for_submission:
@@ -940,45 +940,45 @@ def resubmit_document(request, pk):
                             import re
                             import base64
                             from django.core.files.base import ContentFile
-                            
+
                             # Process new base64 images
                             pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
                             matches = re.finditer(pattern, value)
                             content_updated = False
                             processed_images = set()
-                        
+
                             for match in matches:
                                 img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
                                 base64_data = match.group(2)
                                 data_url = f'data:image/{img_type};base64,{base64_data}'
-                        
+
                                 if base64_data in processed_images:
                                     continue
-                                    
+
                                 try:
                                     # Decode the base64 image data
                                     image_data = base64.b64decode(base64_data)
                                     file_content = ContentFile(image_data)
-                                    
+
                                     # Create EditorImage instance with the document reference
                                     editor_image = EditorImage(document=document)
-                                    
+
                                     # Use proper extension based on image type
                                     ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
                                     filename = f'dynamic_field_{field.id}_image.{ext}'
-                                    
+
                                     # Save the image first
                                     editor_image.save()
                                     editor_image.image.save(filename, file_content, save=True)
-                                    
+
                                     # Get the image URL
                                     image_url = editor_image.url
-                                    
+
                                     # Replace the base64 data with the image URL
                                     value = value.replace(data_url, image_url)
                                     content_updated = True
                                     processed_images.add(base64_data)
-                                    
+
                                     # No need to track editor image IDs anymore since we're linking directly to the document
                                 except Exception as e:
                                     logger.error(f"Error processing image in dynamic field: {str(e)}")
@@ -993,11 +993,11 @@ def resubmit_document(request, pk):
         if not errors:
             # Save CC emails if provided
             document.resubmit(form.cleaned_data['title'], form.cleaned_data['content'])
-            
+
             # Process authorized users
             # First, clear existing authorized users
             document.authorized_users.clear()
-            
+
             # Add users from the selected recipients
             user_ids = request.POST.getlist('cc_user_ids', [])
             if user_ids:
@@ -1009,10 +1009,10 @@ def resubmit_document(request, pk):
                         pass
             # Save all the DynamicFieldValue objects and start async uploads
             from .tasks import upload_file_to_s3_task
-            
+
             # Track upload tasks
             upload_tasks = []
-            
+
             for field_value_data in dynamic_field_values:
                 if isinstance(field_value_data, tuple):
                     # This is a file field
@@ -1022,7 +1022,7 @@ def resubmit_document(request, pk):
                         field=field_value.field,
                         defaults={'file': None}  # Clear existing file before upload
                     )
-                    
+
                     # Start async upload task
                     task = upload_file_to_s3_task.delay(field_value.id, file_content, filename)
                     upload_tasks.append(task)
@@ -1036,25 +1036,25 @@ def resubmit_document(request, pk):
                             'json_value': field_value_data.json_value
                         }
                     )
-            
+
             # Store task IDs in session for status checking
             if upload_tasks:
                 request.session['upload_tasks'] = [task.id for task in upload_tasks]
-                
+
             custom_approvers = {}
             for step in workflow.steps.all():
                 if step.allow_custom_approver:
                     approver_id = request.POST.get(f'approver_{step.id}')
                     if approver_id:
-                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)                     
-                                    
-                                    
+                        custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
+
+
             if request.POST.get('save_draft'):
                 document.save()
                 document.save_draft()
-                
+
                 return render(request, 'partials/submit_success.html', {'document': document})
-            
+
             document.create_approvals(custom_approvers)
             messages.success(request, "Document re-submitted successfully")
 
@@ -1079,25 +1079,25 @@ def resubmit_document(request, pk):
         if step.allow_custom_approver:
             # Get current user's BU groups
             user_bu_groups = get_user_bu_groups(request.user)
-            
+
             # Get all approver groups for this step
             approver_groups = list(step.approver_groups.all())
-                
+
             if approver_groups:
                 # Get all users in any of the approver groups
                 approvers_query = CustomUser.objects.none()
                 for group in approver_groups:
                     approvers_query = approvers_query | CustomUser.objects.filter(groups=group)
                 approvers = approvers_query.distinct()
-                
+
                 potential_approvers = []
-                
+
                 # Filter approvers who share any BU with current user
                 for approver in approvers:
                     approver_bu_groups = get_user_bu_groups(approver)
                     if any(bu in user_bu_groups for bu in approver_bu_groups):
                         potential_approvers.append(approver)
-                
+
                 potential_approvers = CustomUser.objects.filter(id__in=[u.id for u in potential_approvers])
 
         if potential_approvers.exists():
@@ -1108,13 +1108,15 @@ def resubmit_document(request, pk):
                     'id': user.id,
                     'full_name': user.get_full_name() or user.username,
                     'username': user.username,
-                    'email': user.email
+                    'email': user.email,
+                    'job_title': user.job_title or ''
                 } for user in potential_approvers
             ]
             steps_with_approvers.append({
                 'step': step,
                 'potential_approvers': potential_approvers,
                 'potential_approvers_json': potential_approvers_json,
+                'step_id_str': str(step.id),
                 'previous_approver': previous_approver.approver if previous_approver else None
             })
 
@@ -1164,7 +1166,7 @@ def withdraw_document(request, document_id):
                     status_html +
                     '<div id="document-actions" hx-swap-oob="true">' + actions_html + '</div>'
                      '<div id="approval-form" hx-swap-oob="true">' + approval_form_html + '</div>'
-                     '<div id="user-approvals" hx-swap-oob="true"></div>' # remove approval step 
+                     '<div id="user-approvals" hx-swap-oob="true"></div>' # remove approval step
                 )
             else:
                 return redirect('document_approval:document_detail', reference_id=document.document_reference)
@@ -1247,27 +1249,27 @@ def submit_document(request, workflow_id):
             if field.field_type == 'table_list':
                 # Get the column names from the field in the correct order
                 columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
-                
+
                 # Initialize data structure for rows
                 rows = []
                 field_errors = []
-                
+
                 # Determine the number of rows by checking the first column's data
                 if columns:
                     first_col = columns[0].strip()
                     row_count = len(request.POST.getlist(f'table_{field.id}_{first_col}[]'))
-                    
+
                     # Process each row
                     for row_idx in range(row_count):
                         # Create a list of tuples to preserve column order
                         row_items = []
                         row_has_data = False
-                        
+
                         # Process each column in this row in the specified order
                         for col in columns:
                             col_name = col.strip()
                             col_values = request.POST.getlist(f'table_{field.id}_{col_name}[]')
-                            
+
                             if row_idx < len(col_values):
                                 col_value = col_values[row_idx]
                                 row_items.append((col_name, col_value))
@@ -1275,7 +1277,7 @@ def submit_document(request, workflow_id):
                                     row_has_data = True
                             else:
                                 row_items.append((col_name, ''))
-                        
+
                         # Only add rows that have at least some data
                         if row_has_data:
                             # Convert the list of tuples to a dictionary while preserving order
@@ -1283,7 +1285,7 @@ def submit_document(request, workflow_id):
                             for col_name, col_value in row_items:
                                 row_data[col_name] = col_value
                             rows.append(row_data)
-                
+
                 if rows:
                     dynamic_field_values.append(DynamicFieldValue(
                         field=field,
@@ -1291,10 +1293,10 @@ def submit_document(request, workflow_id):
                     ))
                 elif is_required_for_submission:
                     field_errors.append("At least one row is required")
-                
+
                 if field_errors:
                     errors[field.name] = field_errors
-                    
+
             elif field.field_type == 'product_list':
                 product_ids = request.POST.getlist(f'product_id_{field.id}[]')
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
@@ -1335,10 +1337,10 @@ def submit_document(request, workflow_id):
             elif field.name == 'Total Quantity':
                 # Try to get the value from the form first
                 form_total = request.POST.get(f'dynamic_{field.id}')
-                
+
                 # If not provided in the form, use the calculated total
                 final_total = form_total if form_total else str(total_quantity)
-                
+
                 dynamic_field_values.append(DynamicFieldValue(
                     field=field,
                     value=final_total
@@ -1349,19 +1351,19 @@ def submit_document(request, workflow_id):
                 if file:
                     try:
                         field.validate_file(file)
-                        
+
                         # Create DynamicFieldValue without file
                         field_value = DynamicFieldValue(
                             field=field,
                             document=None  # Will be set after document is created
                         )
-                        
+
                         # Read file content
                         file_content = file.read()
-                        
+
                         # Store the file info for async upload
                         dynamic_field_values.append((field_value, file_content, file.name))
-                        
+
                     except ValidationError as e:
                         errors[field.name] = [str(e)]
                 elif is_required_for_submission:
@@ -1398,45 +1400,45 @@ def submit_document(request, workflow_id):
                             import re
                             import base64
                             from django.core.files.base import ContentFile
-                            
+
                             # Process new base64 images
                             pattern = r'src="data:image/([a-zA-Z]+);base64,([^"]+)"'
                             matches = re.finditer(pattern, value)
                             content_updated = False
                             processed_images = set()
-                        
+
                             for match in matches:
                                 img_type = match.group(1).lower()  # Get the image type (png, jpeg, etc)
                                 base64_data = match.group(2)
                                 data_url = f'data:image/{img_type};base64,{base64_data}'
-                        
+
                                 if base64_data in processed_images:
                                     continue
-                                    
+
                                 try:
                                     # Decode the base64 image data
                                     image_data = base64.b64decode(base64_data)
                                     file_content = ContentFile(image_data)
-                                    
+
                                     # Create EditorImage instance with the document reference
                                     editor_image = EditorImage(document=document)
-                                    
+
                                     # Use proper extension based on image type
                                     ext = 'jpg' if img_type in ['jpg', 'jpeg'] else img_type
                                     filename = f'dynamic_field_{field.id}_image.{ext}'
-                                    
+
                                     # Save the image first
                                     editor_image.save()
                                     editor_image.image.save(filename, file_content, save=True)
-                                    
+
                                     # Get the image URL
                                     image_url = editor_image.url
-                                    
+
                                     # Replace the base64 data with the image URL
                                     value = value.replace(data_url, image_url)
                                     content_updated = True
                                     processed_images.add(base64_data)
-                                    
+
                                     # No need to track editor image IDs anymore since we're linking directly to the document
                                 except Exception as e:
                                     logger.error(f"Error processing image in dynamic field: {str(e)}")
@@ -1461,13 +1463,13 @@ def submit_document(request, workflow_id):
         document = form.save(commit=False)
         document.submitted_by = request.user
         document.workflow = workflow
-        
+
         document.save()
-        
+
         # Process authorized users
         # First, clear existing authorized users
         document.authorized_users.clear()
-        
+
         # Add users from the selected recipients
         user_ids = request.POST.getlist('cc_user_ids', [])
         if user_ids:
@@ -1480,10 +1482,10 @@ def submit_document(request, workflow_id):
 
         # Save all the DynamicFieldValue objects and start async uploads
         from .tasks import upload_file_to_s3_task
-        
+
         # Track upload tasks
         upload_tasks = []
-        
+
         # Update any editor images created for tiptap_editor fields
         if hasattr(document, '_editor_images_to_update') and document._editor_images_to_update:
             for image_id in document._editor_images_to_update:
@@ -1493,14 +1495,14 @@ def submit_document(request, workflow_id):
                     editor_image.save()
                 except Exception as e:
                     logger.error(f"Error updating editor image {image_id}: {str(e)}")
-        
+
         for field_value_data in dynamic_field_values:
             if isinstance(field_value_data, tuple):
                 # This is a file field
                 field_value, file_content, filename = field_value_data
                 field_value.document = document
                 field_value.save()
-                
+
                 # Start async upload task
                 task = upload_file_to_s3_task.delay(field_value.id, file_content, filename)
                 upload_tasks.append(task)
@@ -1508,7 +1510,7 @@ def submit_document(request, workflow_id):
                 # Regular field value
                 field_value_data.document = document
                 field_value_data.save()
-        
+
         # Store task IDs in session for status checking
         if upload_tasks:
             request.session['upload_tasks'] = [task.id for task in upload_tasks]
@@ -1521,20 +1523,20 @@ def submit_document(request, workflow_id):
                         custom_approvers[step.id] = CustomUser.objects.get(id=approver_id)
 
         try:
-            
+
             if request.POST.get('save_draft'):
                 document.save()
                 document.save_draft()
-                
+
                 return render(request, 'partials/submit_success.html', {'document': document})
-            
+
             else :
                 document.create_approvals(custom_approvers)
                 print(f"Approvals created for document {document.id}")
                 messages.success(request, "Document submitted successfully")
                 response = render(request, 'partials/submit_success.html', {'document': document})
                 return retarget(response, '#content-div')
-            
+
         except Exception as e:
             print(f"Error creating approvals for document {document.id}: {str(e)}")
             document.delete()
@@ -1551,17 +1553,17 @@ def submit_document(request, workflow_id):
 
         steps_with_approvers = []
         for step in workflow.steps.all():
-            if step.allow_custom_approver and step.approver_groups.exists():         
-                
+            if step.allow_custom_approver and step.approver_groups.exists():
+
                 # Get current user's BU groups
-                user_bu_groups = get_user_bu_groups(request.user)                
+                user_bu_groups = get_user_bu_groups(request.user)
                 # Get all users in the approver groups
                 approvers_query = CustomUser.objects.none()
                 for group in step.approver_groups.all():
                     approvers_query = approvers_query | CustomUser.objects.filter(groups=group)
                 approvers = approvers_query.distinct()
                 potential_approvers = []
-                
+
                 # Filter approvers who share any BU with current user
                 for approver in approvers:
                     approver_bu_groups = get_user_bu_groups(approver)
@@ -1571,12 +1573,14 @@ def submit_document(request, workflow_id):
                             'username': approver.username,
                             'first_name': approver.first_name,
                             'last_name': approver.last_name,
-                            'full_name': approver.get_full_name() or approver.username
+                            'full_name': approver.get_full_name() or approver.username,
+                            'job_title': approver.job_title or ''  # This line is crucial
                         })
-                
+
                 steps_with_approvers.append({
                     'step': step,
-                    'potential_approvers': potential_approvers
+                    'potential_approvers': potential_approvers,
+                    'step_id_str': str(step.id)
 
                 })
         context = {
@@ -1598,7 +1602,7 @@ from django.db import models
 @login_required
 def documents_to_approve_to_resubmit(request):
     from .utils_authorization import get_authorized_approvers
-    
+
     # Documents waiting for current user's approval
     documents_to_approve = Document.objects.filter(
         status='in_review',
@@ -1607,10 +1611,10 @@ def documents_to_approve_to_resubmit(request):
         approvals__approver=request.user,  # User is the approver
         approvals__is_approved__isnull=True  # Approval is pending
     )
-    
+
     # Get list of users who have authorized this user to approve on their behalf
     authorized_approvers = get_authorized_approvers(request.user)
-    
+
     # Documents waiting for approval by users who have authorized the current user
     authorized_documents = Document.objects.none()
     if authorized_approvers:
@@ -1622,7 +1626,7 @@ def documents_to_approve_to_resubmit(request):
             approver_id__in=authorized_approvers,
             is_approved__isnull=True
         ).values_list('document_id', flat=True).distinct()
-        
+
         # Then get the documents by ID
         if approval_document_ids:
             authorized_documents = Document.objects.filter(id__in=approval_document_ids)
@@ -1703,15 +1707,15 @@ def load_notifications(request):
     notifications = Notification.objects.filter(
         user=request.user
     ).order_by('-timestamp')[:10]
-    
+
     # Get unread count from database with debug info
     unread_notifications = Notification.objects.filter(
         user=request.user,
         is_read=False
     )
-    unread_count = unread_notifications.count()    
-  
-    
+    unread_count = unread_notifications.count()
+
+
     # Prepare notification data
     notification_data = [{
         'id': n.id,
@@ -1720,7 +1724,7 @@ def load_notifications(request):
         'url': n.url,
         'timestamp': n.timestamp.isoformat(),
         'is_read': n.is_read
-    } for n in notifications]    
+    } for n in notifications]
 
     return JsonResponse({
         'notifications': notification_data,
@@ -1735,13 +1739,13 @@ def mark_notification_read(request, notification_id):
         notification = get_object_or_404(Notification, id=notification_id, user=request.user)
         notification.is_read = True
         notification.save()
-        
+
         # Get updated unread count
         unread_count = Notification.objects.filter(
             user=request.user,
             is_read=False
         ).count()
-        
+
         return JsonResponse({
             'status': 'success',
             'unread_count': unread_count
@@ -1759,13 +1763,13 @@ def delete_notification(request, notification_id):
     try:
         notification = get_object_or_404(Notification, id=notification_id, user=request.user)
         notification.delete()
-        
+
         # Get updated unread count
         unread_count = Notification.objects.filter(
             user=request.user,
             is_read=False
         ).count()
-        
+
         return JsonResponse({
             'status': 'success',
             'message': 'Notification deleted',
@@ -1786,7 +1790,7 @@ def clear_all_notifications(request):
         deleted_count = Notification.objects.filter(
             user=request.user
         ).delete()[0]
-        
+
         return JsonResponse({
             'status': 'success',
             'message': f'Deleted {deleted_count} notifications',
@@ -1838,18 +1842,18 @@ def view_editor_image(request, image_id):
 def check_upload_status(request):
     """Check the status of file uploads"""
     from celery.result import AsyncResult
-    
+
     task_ids = request.session.get('upload_tasks', [])
     if not task_ids:
         return JsonResponse({
             'status': 'complete',
             'message': 'No uploads in progress'
         })
-    
+
     # Check each task
     results = []
     all_complete = True
-    
+
     for task_id in task_ids:
         result = AsyncResult(task_id)
         if result.ready():
@@ -1864,11 +1868,11 @@ def check_upload_status(request):
                 'status': 'in_progress',
                 'message': 'Upload in progress...'
             })
-    
+
     # Clear session if all complete
     if all_complete:
         del request.session['upload_tasks']
-    
+
     return JsonResponse({
         'status': 'complete' if all_complete else 'in_progress',
         'uploads': results
@@ -1880,10 +1884,10 @@ def check_upload_status(request):
 def search_users(request):
     """Search for users by name or email"""
     query = request.GET.get('q', '').strip()
-    
+
     if len(query) < 2:
         return JsonResponse({'users': []})
-    
+
     # Search for users by name or email
     users = CustomUser.objects.filter(
         Q(username__icontains=query) |
@@ -1891,7 +1895,7 @@ def search_users(request):
         Q(last_name__icontains=query) |
         Q(email__icontains=query)
     ).distinct()[:10]  # Limit to 10 results
-    
+
     # Format the response
     user_data = [{
         'id': user.id,
@@ -1899,7 +1903,7 @@ def search_users(request):
         'full_name': user.get_full_name(),
         'email': user.email
     } for user in users]
-    
+
     return JsonResponse({'users': user_data})
 
 @login_required
@@ -1923,16 +1927,16 @@ def get_document_authorized_users(request, document_id):
     try:
         # Get the document and check if the user has access to it
         document = get_object_or_404(Document, id=document_id)
-        
+
         # Check if the user has access to the document
         if document.submitted_by != request.user and not request.user.is_staff:
             # Check if the user is an authorized approver or authorized user
             if not is_authorized_approver(request.user, document) and not document.authorized_users.filter(id=request.user.id).exists():
                 return JsonResponse({'success': False, 'error': 'Access denied'}, status=403)
-        
+
         # Get all authorized users for the document
         authorized_users = document.authorized_users.all()
-        
+
         # Format the response
         user_data = [{
             'id': user.id,
@@ -1940,7 +1944,21 @@ def get_document_authorized_users(request, document_id):
             'full_name': user.get_full_name(),
             'email': user.email
         } for user in authorized_users]
-        
+
         return JsonResponse({'success': True, 'users': user_data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+from django.contrib.auth.decorators import user_passes_test
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def user_group_diagram(request):
+    """
+    Renders a page with a diagram explaining the user group and permission logic.
+    Access is restricted to superusers.
+    """
+    return render(request, 'document/user_group_diagram.html')
+

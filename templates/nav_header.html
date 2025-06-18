@@ -1,23 +1,23 @@
-<div class="flex h-16 items-center justify-between px-6 z-50">
+  <div class="flex z-50 justify-between items-center px-6 h-16">
     <div class="flex items-center">
         <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 focus:outline-none lg:hidden">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>        
     </div>
 
     {% if request.user.is_authenticated %}
-    <div  class="flex items-center space-x-4 z-50">
+    <div  class="flex z-50 items-center space-x-4">
       <!-- User dropdown menu using Alpine.js -->
       <div x-data="{ isOpen: false }" class="relative">
         <button @click="isOpen = !isOpen" class="flex items-center text-gray-700 focus:outline-none">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           <span class="font-medium">{{ user.username }}</span>
           <!-- Dropdown arrow -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
@@ -33,10 +33,10 @@
           x-transition:leave="transition ease-in duration-75" 
           x-transition:leave-start="transform opacity-100 scale-100" 
           x-transition:leave-end="transform opacity-0 scale-95"
-          class="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50"
+          class="absolute right-0 z-50 py-1 mt-2 w-64 bg-white rounded-md shadow-lg"
         >
           <!-- User info section -->
-          <div class="px-4 py-3 border-b border-gray-100 z-50">
+          <div class="z-50 px-4 py-3 border-b border-gray-100">
             <p class="text-sm leading-5 text-gray-900">Logged in as</p>
             <p class="text-sm font-medium leading-5 text-gray-900 truncate">{{ user.username }}</p>
             <p class="text-sm leading-5 text-gray-500 truncate">{{ user.email }}</p>
@@ -44,11 +44,11 @@
           
           <!-- Groups section -->
           {% if user_bu_groups %}
-          <div class="px-4 py-3 border-b border-gray-100 z-50">
-            <p class="text-sm leading-5 font-medium text-gray-900">Groups</p>
+          <div class="z-50 px-4 py-3 border-b border-gray-100">
+            <p class="text-sm font-medium leading-5 text-gray-900">Groups</p>
             {% for group in request.user.groups.all %}
-              <div class="mt-1 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div class="flex items-center mt-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p class="text-sm leading-5 text-gray-700">{{ group.name }}</p>
@@ -60,7 +60,7 @@
           <!-- Actions section -->
           <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               Sign out

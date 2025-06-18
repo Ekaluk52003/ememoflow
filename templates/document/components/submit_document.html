@@ -4,7 +4,7 @@
 <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
 
 <div class="flex flex-col justify-between items-start pb-6 mb-4 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row">
-    <h1 class="text-2xl font-semibold">Workflow: {{ workflow.name }}</h1>   
+    <h1 class="text-2xl font-semibold">Workflow: {{ workflow.name }}</h1>
 </div>
 
 <!-- Main form with formHandler -->
@@ -29,10 +29,10 @@
         return this.fieldValues[conditionFieldId] === true;
     }
 }"
-  method="post" 
-      hx-post="{% url 'document_approval:submit_document' workflow.id %}" 
-      hx-target="#content-div"   
-      enctype="multipart/form-data" 
+  method="post"
+      hx-post="{% url 'document_approval:submit_document' workflow.id %}"
+      hx-target="#content-div"
+      enctype="multipart/form-data"
       hx-indicator=".progress">
     {% csrf_token %}
 
@@ -45,7 +45,7 @@
     {% if workflow.content_editor %}
     {% include "document/components/editor.html" %}
     {% endif %}
-    
+
     <!-- CC Recipients Section -->
     <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
         {% for field in prepared_fields %}
@@ -109,7 +109,7 @@
                                         <td class="p-1">
                                             <button type="button"
                                                     class="flex justify-center items-center px-3 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600"
-                                                    style="width: 50px;"                                                    
+                                                    style="width: 50px;"
                                                     @click="removeRow(rowIndex)">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -257,7 +257,7 @@
 
     {% elif field.field_type  == 'textarea' %}
     <textarea name="dynamic_{{ field.id }}" class="block px-3 py-2 mt-1 w-full text-gray-700 rounded-md border border-gray-300 shadow-sm focus:outline-none" rows="{{ field.textarea_rows }}"></textarea>
-    
+
     {% elif field.field_type == 'tiptap_editor' %}
     <div x-data="editor('')" class="bg-white rounded-xl tiptap-editor">
       <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
@@ -284,23 +284,23 @@
                {% if field.required %}{% endif %}>
 
             {% elif field.field_type == 'boolean' %}
-          
-           
+
+
             <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
-                <input type="checkbox" 
-                       name="dynamic_{{ field.id }}" 
-                       id="dynamic_{{ field.id }}" 
-                       class="sr-only peer" 
+                <input type="checkbox"
+                       name="dynamic_{{ field.id }}"
+                       id="dynamic_{{ field.id }}"
+                       class="sr-only peer"
                        @change="updateFieldValue($event); isChecked = !isChecked"
-                       {% if field.value == 'on' %}checked{% endif %} 
+                       {% if field.value == 'on' %}checked{% endif %}
                        {% if field.required %}required{% endif %}>
                 <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
                 <span class="text-sm font-medium text-gray-900 ms-3 dark:text-gray-300" x-text="isChecked ? 'Yes' : 'No'"></span>
             </label>
 
             {% elif field.field_type == 'choice' %}
-            <select name="dynamic_{{ field.id }}" 
-                    class="w-full select select-bordered" 
+            <select name="dynamic_{{ field.id }}"
+                    class="w-full select select-bordered"
                     @change="updateFieldValue($event)"
                     {% if field.required %}required{% endif %}>
                 <option value="">Select an option</option>
@@ -321,11 +321,11 @@
 
             {% else %}
             <!-- Other field types remain unchanged -->
-            <input type="{{ field.field_type }}" 
-                   class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" 
-                   name="dynamic_{{ field.id }}" 
+            <input type="{{ field.field_type }}"
+                   class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"
+                   name="dynamic_{{ field.id }}"
                    id="dynamic_{{ field.id }}"
-                   value="{{ field.value }}" 
+                   value="{{ field.value }}"
                    {% if field.required %}required{% endif %}>
             {% endif %}
         </div>
@@ -336,102 +336,104 @@
     {% if steps_with_approvers %}
     <h3 class="mt-6 mb-4 text-lg font-medium">Select Approvers</h3>
     {% for step_info in steps_with_approvers %}
-        <div class="mt-6 mb-6"
-             x-data="userSearch({{ step_info.potential_approvers|safe }})"
-             x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
-            <div class="mb-2">
-                <span class="font-medium">{{ step_info.step.name }}</span>
-                <span class="text-gray-600">(
-                    {% if step_info.step.approver_groups.exists %}
-                        {% for group in step_info.step.approver_groups.all %}
-                            {{ group.name }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        No groups assigned
-                    {% endif %}
-                )</span>
-            </div>
-            
-            <!-- Hidden select for form submission -->
-            <select name="approver_{{ step_info.step.id }}"
-                    x-model="selected"
-                    class="hidden">
-                <option value="">Select an approver</option>
-                <template x-for="option in filteredOptions" :key="option.id">
-                    <option :value="option.id" x-text="option.full_name"></option>
-                </template>
-            </select>
-            
-            <div class="mb-4">              
-              <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
+    {% comment %}
+    The 'with' tag creates a variable `script_id` to hold the unique ID for our data.
+    We now use 'step_info.step_id_str' from the view to guarantee string concatenation.
+  {% endcomment %}
+  {% with script_id="potential-approvers-"|add:step_info.step_id_str %}
+  
+    {{ step_info.potential_approvers|json_script:script_id }}
+  
+    <div class="mt-6 mb-6"
+         x-data="userSearch('{{ script_id }}')"
+         x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
+  
+        <div class="mb-2">
+            <span class="font-medium">{{ step_info.step.name }}</span>
+            <span class="text-gray-600">
+                ({% if step_info.step.approver_groups.exists %}
+                    {% for group in step_info.step.approver_groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                {% else %}
+                    No groups assigned
+                {% endif %})
+            </span>
+        </div>
+  
+        <select name="approver_{{ step_info.step.id }}" x-model="selected" class="hidden">
+            <option value="">Select an approver</option>
+            <template x-for="option in options" :key="option.id">
+                <option :value="option.id" x-text="option.full_name"></option>
+            </template>
+        </select>
+  
+        <div class="mb-4">
+            <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
                 <template x-if="selected">
-                  <div class="flex items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
-                    <span x-text="search"></span>
-                    <button type="button" @click="reset()" class="ml-2 text-gray-500 hover:text-red-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </template>
-                
-                <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
-                  + Select Approver
-                </button>
-              </div>
-              
-              <!-- Only show error if section is visible and no approver selected -->
-              <p x-show="!selected" class="mt-1 text-sm text-red-500">
-                  Please select an approver
-              </p>
-              
-              <!-- Approver search dialog -->
-              <div x-show="showDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" @click.self="closeDialog">
-                <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
-                  <h3 class="mb-4 text-lg font-medium">Select Approver</h3>
-                  
-                  <div class="relative mb-4">
-                    <input 
-                      type="text" 
-                      id="user-search-dialog-input"
-                      x-model="search" 
-                      placeholder="Search by name..."
-                      class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                  </div>
-                  
-                  <div class="overflow-y-auto mb-4 max-h-60">
-                    <template x-if="filteredOptions.length === 0">
-                      <div class="py-2 text-sm text-gray-500">No approvers found</div>
-                    </template>
-                    
-                    <template x-for="option in filteredOptions" :key="option.id">
-                      <div 
-                        class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
-                        @click="selectUser(option)"
-                        :class="{ 'bg-blue-50': selected === option.id }"
-                      >
+                    <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
                         <div>
-                          <div x-text="option.full_name" class="font-medium"></div>
+                            <div x-text="selectedUser.full_name" class="font-medium"></div>
+                            <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500"></div>
                         </div>
-                        <div x-show="selected === option.id" class="text-blue-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                  
-                  <div class="flex justify-end">
-                    <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                      Close
-                    </button>
-                  </div>
+                        <button type="button" @click="reset()" class="self-start ml-2 text-gray-500 hover:text-red-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </template>
+  
+                <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
+                    + Select Approver
+                </button>
+            </div>
+  
+            <p x-show="!selected" class="mt-1 text-sm text-red-500">
+                Please select an approver
+            </p>
+        </div>
+  
+        <div x-show="showDialog" @click.self="closeDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" style="display: none;">
+            <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
+                <h3 class="mb-4 text-lg font-medium">Select Approver      <span x-text="'(' + options.length + ' selectable users)'" class="text-sm font-normal text-gray-500"></span></h3>
+          
+                <div class="relative mb-4">
+                    <input type="text"
+                           id="user-search-dialog-input"
+                           x-model="search"
+                           placeholder="Search by name or job title..."
+                           class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-              </div>
+  
+                <div class="overflow-y-auto mb-4 max-h-60">
+                    <template x-if="filteredOptions.length === 0 && search.length > 0">
+                        <div class="py-2 text-sm text-gray-500">No approvers found</div>
+                    </template>
+                    <template x-for="option in filteredOptions" :key="option.id">
+                        <div class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
+                             @click="selectUser(option)"
+                             :class="{ 'bg-blue-50': selected === option.id }">
+                            <div>
+                                <div x-text="option.full_name" class="font-medium"></div>
+                                <div x-show="option.job_title" x-text="option.job_title" class="text-sm text-gray-500"></div>
+                            </div>
+                            <div x-show="selected === option.id" class="text-blue-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+  
+                <div class="flex justify-end">
+                    <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
+  {% endwith %}
     {% endfor %}
     {% endif %}
 <!-- CC Recipients Section -->
@@ -440,9 +442,9 @@
         <span class="font-medium label-text">CC Recipients</span>
         <span class="ml-2 text-sm text-gray-500">(These users will receive email notifications when the document is approved)</span>
     </div>
-  
+
   <div x-data="ccRecipients" x-init="$nextTick(() => { loadDocumentAuthorizedUsers(); })">
-    <div class="mb-4">      
+    <div class="mb-4">
       <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
         <template x-for="user in selectedUsers" :key="user.id">
           <div class="flex items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
@@ -454,27 +456,27 @@
             </button>
           </div>
         </template>
-        
+
         <button type="button" @click="openDialog" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
           + Add User
         </button>
       </div>
-      
+
       <!-- Hidden container for user IDs -->
       <div id="cc-recipients-container"></div>
     </div>
-    
+
     <!-- User search dialog -->
     <div x-show="showDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" @click.self="closeDialog">
       <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
         <h3 class="mb-4 text-lg font-medium">Search Users</h3>
-        
+
         <div class="relative mb-4">
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="user-search-input"
-            x-model="searchQuery" 
-            @input="searchUsers" 
+            x-model="searchQuery"
+            @input="searchUsers"
             placeholder="Search by name, username, or email"
             class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
@@ -485,16 +487,16 @@
             </svg>
           </div>
         </div>
-        
+
         <div x-show="errorMessage" class="p-2 mb-4 text-sm text-red-700 bg-red-100 rounded-md" x-text="errorMessage"></div>
-        
+
         <div class="overflow-y-auto mb-4 max-h-60">
           <template x-if="searchResults.length === 0 && searchQuery.length >= 2">
             <div class="py-2 text-sm text-gray-500">No users found</div>
           </template>
-          
+
           <template x-for="user in searchResults" :key="user.id">
-            <div 
+            <div
               class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
               @click="selectUser(user)"
               :class="{ 'bg-blue-50': isUserSelected(user.id) }"
@@ -511,7 +513,7 @@
             </div>
           </template>
         </div>
-        
+
         <div class="flex justify-end">
           <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
             Close
@@ -521,14 +523,14 @@
     </div>
   </div>
 </div>
-     
+
 
     <div class="flex mt-4 space-x-2">
-        <button type="submit" name="save_draft" value="1" 
+        <button type="submit" name="save_draft" value="1"
                 class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2">
             Save Draft
         </button>
-        <button type="submit" 
+        <button type="submit"
                 class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">
             Submit Document
         </button>
