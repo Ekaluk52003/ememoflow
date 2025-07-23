@@ -132,7 +132,49 @@
       overflow-x: auto;
       max-width: 100%;
   }
+
+
+  #table-list-field-112 table {
+    table-layout: fixed !important;
+    min-width: 1200px !important; /* Ensure table has minimum width to trigger scrolling */
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+   /* Container for horizontal scrolling */
+   #table-list-field-112 .table-list-container {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+   /* Make second column extremely wide */
+   #table-list-field-112 table td:nth-of-type(2),
+   #table-list-field-112 table th:nth-of-type(2) {
+     width: 400px !important;
+     max-width: 700px !important;
+     min-width: 700px !important;
+   }
+
+    /* Force all other columns to be very narrow */
+  #table-list-field-112 table td:not(:nth-of-type(2)),
+  #table-list-field-112 table th:not(:nth-of-type(2)) {
+    width: 200px !important;
+    max-width: 280px !important;
+    min-width: 280px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   
+  /* Ensure inputs don't overflow their cells */
+  #table-list-field-112 input {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+
+   
   /* Tiptap Editor Table Styles */
   .ProseMirror table, .prose table, .tiptap-editor table {
     border-collapse: collapse;
@@ -202,5 +244,4 @@
   .tiptap-editor table td {
     min-width: 100px;
   }
-  
   
