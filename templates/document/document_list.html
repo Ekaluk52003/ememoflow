@@ -13,33 +13,39 @@
 <p class="mt-1 mb-4 max-w-2xl text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
 
 <!-- Search and Filter Form -->
-<form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter" hx-target="#document-list" hx-swap="innerHTML">
-            <div class="flex items-center space-x-2">
+<form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter, change from:#mine-filter" hx-target="#document-list" hx-swap="innerHTML">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input type="text" name="search" class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none" placeholder="Search documents..." value="{{ search_query }}">
-                <button class="px-5 py-2.5 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800" type="submit">Search</button>
+                <button class="px-4 py-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 sm:px-5 sm:py-2.5" type="submit">Search</button>
             </div>
 
             
 
-            <div class="flex justify-between mt-2">
-                <div>
-                    <select id="workflow-filter" name="workflow" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Workflows</option>
-                        {% for workflow in workflows %}
-                            <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
-                        {% endfor %}
-                    </select>
+            <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 w-full sm:w-auto">
+                    <div class="w-full sm:w-56">
+                        <select id="workflow-filter" name="workflow" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Workflows</option>
+                            {% for workflow in workflows %}
+                                <option value="{{ workflow.id }}" {% if selected_workflow == workflow.id %}selected{% endif %}>{{ workflow.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-40">
+                        <select id="status-filter" name="status" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All Statuses</option>
+                            {% for status, display in status_choices %}
+                                <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <select id="status-filter" name="status" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Statuses</option>
-                        {% for status, display in status_choices %}
-                            <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ display }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="inline-flex items-center self-end sm:self-auto w-full sm:w-auto">
+                    <label for="mine-filter" class="inline-flex items-center gap-2 w-full sm:w-auto px-3 py-2 rounded-md border shadow-sm cursor-pointer select-none bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
+                        <input id="mine-filter" type="checkbox" name="mine" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" {% if selected_mine %}checked{% endif %}>
+                        <span class="text-sm">My submissions</span>
+                    </label>
                 </div>
-
-
             </div>
 
 </form>

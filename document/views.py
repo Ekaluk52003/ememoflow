@@ -333,6 +333,7 @@ def document_list(request):
     search_query = request.GET.get('search', '')
     workflow_id = request.GET.get('workflow', '')
     status = request.GET.get('status', '')
+    mine = request.GET.get('mine', '')
     page_number = request.GET.get('page', 1)
 
     documents = get_allowed_documents(user)
@@ -355,6 +356,9 @@ def document_list(request):
 
     if status:
         documents = documents.filter(status=status)
+
+    if mine == '1':
+        documents = documents.filter(submitted_by=user)
 
     paginator = Paginator(documents, 5)  # Show 5 documents per page
     page_number = request.GET.get('page', 1)
@@ -389,6 +393,7 @@ def document_list(request):
         'search_query': search_query,
         'selected_workflow': int(workflow_id) if workflow_id else None,
         'selected_status': status,
+        'selected_mine': mine == '1',
         'workflows': workflows,
         'status_choices': Document.STATUS_CHOICES,  # Add this line
     }
