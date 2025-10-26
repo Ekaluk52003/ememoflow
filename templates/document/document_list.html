@@ -13,17 +13,14 @@
 <p class="mt-1 mb-4 max-w-2xl text-sm text-gray-500">Search support for search by reference id, title, content , all filed value</p>
 
 <!-- Search and Filter Form -->
-<form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter, change from:#mine-filter" hx-target="#document-list" hx-swap="innerHTML">
+<form id="search-form" class="mb-4" hx-get="{% url 'document_approval:document_list' %}" hx-trigger="submit, change from:#workflow-filter, change from:#status-filter, change from:#mine-filter, change from:#start-date, change from:#end-date" hx-target="#document-list" hx-swap="innerHTML">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input type="text" name="search" class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none" placeholder="Search documents..." value="{{ search_query }}">
                 <button class="px-4 py-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 sm:px-5 sm:py-2.5" type="submit">Search</button>
-            </div>
-
-            
-
-            <div class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 w-full sm:w-auto">
-                    <div class="w-full sm:w-56">
+            </div>           
+            <div class="mt-2 grid grid-cols-1 sm:grid-cols-5 gap-2 items-start">
+                    <div class="w-full">
+                        <label for="workflow-filter" class="block text-xs font-medium text-gray-600 mb-1">Workflow</label>
                         <select id="workflow-filter" name="workflow" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Workflows</option>
                             {% for workflow in workflows %}
@@ -31,7 +28,8 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="w-full sm:w-40">
+                    <div class="w-full">
+                        <label for="status-filter" class="block text-xs font-medium text-gray-600 mb-1">Status</label>
                         <select id="status-filter" name="status" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Statuses</option>
                             {% for status, display in status_choices %}
@@ -39,13 +37,21 @@
                             {% endfor %}
                         </select>
                     </div>
-                </div>
-                <div class="inline-flex items-center self-end sm:self-auto w-full sm:w-auto">
-                    <label for="mine-filter" class="inline-flex items-center gap-2 w-full sm:w-auto px-3 py-2 rounded-md border shadow-sm cursor-pointer select-none bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
+                    <div class="w-full">
+                        <label for="start-date" class="block text-xs font-medium text-gray-600 mb-1">Date from</label>
+                        <input id="start-date" name="start_date" type="date" value="{{ selected_start_date }}" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500" placeholder="Start date">
+                    </div>
+                    <div class="w-full">
+                        <label for="end-date" class="block text-xs font-medium text-gray-600 mb-1">Date to</label>
+                        <input id="end-date" name="end_date" type="date" value="{{ selected_end_date }}" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500" placeholder="End date">
+                    </div>
+                    <div class="w-full">
+                    <label for="mine-filter" class="block text-xs font-medium text-gray-600 mb-1">My submissions</label>
+                    <label for="mine-filter" class="flex items-center gap-2 p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border focus:ring-blue-500 focus:border-blue-500 cursor-pointer select-none">
                         <input id="mine-filter" type="checkbox" name="mine" value="1" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" {% if selected_mine %}checked{% endif %}>
-                        <span class="text-sm">My submissions</span>
+                        <span class="text-sm">By Me</span>
                     </label>
-                </div>
+                    </div>
             </div>
 
 </form>

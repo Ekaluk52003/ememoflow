@@ -334,6 +334,8 @@ def document_list(request):
     workflow_id = request.GET.get('workflow', '')
     status = request.GET.get('status', '')
     mine = request.GET.get('mine', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
     page_number = request.GET.get('page', 1)
 
     documents = get_allowed_documents(user)
@@ -359,6 +361,12 @@ def document_list(request):
 
     if mine == '1':
         documents = documents.filter(submitted_by=user)
+
+    # Date range filtering (expects YYYY-MM-DD from <input type="date">)
+    if start_date:
+        documents = documents.filter(created_at__date__gte=start_date)
+    if end_date:
+        documents = documents.filter(created_at__date__lte=end_date)
 
     paginator = Paginator(documents, 5)  # Show 5 documents per page
     page_number = request.GET.get('page', 1)
@@ -394,6 +402,8 @@ def document_list(request):
         'selected_workflow': int(workflow_id) if workflow_id else None,
         'selected_status': status,
         'selected_mine': mine == '1',
+        'selected_start_date': start_date,
+        'selected_end_date': end_date,
         'workflows': workflows,
         'status_choices': Document.STATUS_CHOICES,  # Add this line
     }
