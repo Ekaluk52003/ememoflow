@@ -1,7 +1,8 @@
 // Alpine.js is expected to be loaded on the page already
 document.addEventListener('alpine:init', () => {
     // Original userSearch component
-    Alpine.data('userSearch', (dataSourceId) => ({
+    // Signature: userSearch(dataSourceId, preselectedId = null, currentUserId = null)
+    Alpine.data('userSearch', (dataSourceId, preselectedId = null, currentUserId = null) => ({
         search: '',
         focused: false,
         selected: null,
@@ -9,12 +10,28 @@ document.addEventListener('alpine:init', () => {
         isEditing: true, // Start in editing mode
         showDialog: false, // For dialog-based selection
         selectedUser: null, // Store the selected user object
+        currentUserId: currentUserId,
+        preselectedId: preselectedId,
 
         init() {
           // Load data from the script tag after the component is initialized
           const dataEl = document.getElementById(dataSourceId);
           if (dataEl) {
-              this.options = JSON.parse(dataEl.textContent);
+              const allOptions = JSON.parse(dataEl.textContent);
+              // Exclude the current user if currentUserId is provided
+              this.options = Array.isArray(allOptions)
+                ? allOptions.filter(o => this.currentUserId === null || o.id !== this.currentUserId)
+                : [];
+
+              // If a preselected approver ID was provided, set it
+              if (this.preselectedId !== null) {
+                  const pre = this.options.find(o => o.id === this.preselectedId) || allOptions.find(o => o.id === this.preselectedId);
+                  if (pre) {
+                      this.selected = pre.id;
+                      this.selectedUser = pre;
+                      this.isEditing = false;
+                  }
+              }
           } else {
               console.error(`[userSearch] Data source element with ID '${dataSourceId}' not found.`);
           }

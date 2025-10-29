@@ -357,8 +357,8 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
          {{ step_info.potential_approvers_json|json_script:script_id }}
    
          <div class="mt-6 mb-6"
-              x-data="userSearch('{{ script_id }}', {{ step_info.previous_approver.id|default:'null' }})"
-              x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
+             x-data="userSearch('{{ script_id }}', {{ step_info.previous_approver.id|default:'null' }}, {{ request.user.id }})"
+             x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
            
              <div class="mb-2">
                  <span class="font-medium">{{ step_info.step.name }}</span>

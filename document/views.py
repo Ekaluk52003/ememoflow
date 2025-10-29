@@ -1909,7 +1909,7 @@ def search_users(request):
         Q(first_name__icontains=query) |
         Q(last_name__icontains=query) |
         Q(email__icontains=query)
-    ).distinct()[:10]  # Limit to 10 results
+    ).exclude(id=request.user.id).distinct()[:10]  # Exclude current user and limit to 10
 
     # Format the response
     user_data = [{
