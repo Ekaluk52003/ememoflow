@@ -856,10 +856,11 @@ def resubmit_document(request, pk):
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                product_remarks = request.POST.getlist(f'product_remark_{field.id}[]')
                 products = []
                 field_errors = []
 
-                for id,code, name, quantity in zip( product_ids,product_codes, product_names, product_quantities):
+                for id,code, name, quantity, remark in zip( product_ids,product_codes, product_names, product_quantities, product_remarks):
                     if id or code or name or quantity:
                         if not id:
                             field_errors.append("Id is required")
@@ -872,7 +873,7 @@ def resubmit_document(request, pk):
                         else:
                             try:
                                 qty = int(quantity)
-                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty})
+                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty, 'remark': remark or ''})
                                 total_quantity += qty
                             except ValueError:
                                 field_errors.append(f"Invalid quantity for product {name}")
@@ -1241,7 +1242,7 @@ def submit_document(request, workflow_id):
         if field.field_type in ['choice', 'multiple_choice']:
             field_data['choices'] = [choice.strip() for choice in field.choices.split(',') if choice.strip()]
         elif field.field_type == 'product_list':
-            field_data['default_products'] = [{'id':'','code':'','name': '', 'quantity': ''} for _ in range(2)]
+            field_data['default_products'] = [{'id':'','code':'','name': '', 'quantity': '', 'remark': ''} for _ in range(2)]
         elif field.field_type == 'table_list':
             field_data['table_columns'] = field.table_columns
         prepared_fields.append(field_data)
@@ -1317,10 +1318,11 @@ def submit_document(request, workflow_id):
                 product_codes = request.POST.getlist(f'product_code_{field.id}[]')
                 product_names = request.POST.getlist(f'product_name_{field.id}[]')
                 product_quantities = request.POST.getlist(f'product_quantity_{field.id}[]')
+                product_remarks = request.POST.getlist(f'product_remark_{field.id}[]')
                 products = []
                 field_errors = []
 
-                for id,code, name, quantity in zip( product_ids,product_codes, product_names, product_quantities):
+                for id,code, name, quantity, remark in zip( product_ids,product_codes, product_names, product_quantities, product_remarks):
                     if id or code or name or quantity:
                         if not id:
                             field_errors.append("Id is required")
@@ -1333,7 +1335,7 @@ def submit_document(request, workflow_id):
                         else:
                             try:
                                 qty = int(quantity)
-                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty})
+                                products.append({ 'id':id , 'code':code, 'name': name, 'quantity': qty, 'remark': remark or ''})
                                 total_quantity += qty
                             except ValueError:
                                 field_errors.append(f"Invalid quantity for product {name}")

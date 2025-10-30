@@ -105,6 +105,7 @@
                                             <th scope="col" class="px-6 py-3">รหัสสินค้า</th>
                                             <th scope="col" class="px-6 py-3">รายการ</th>
                                             <th scope="col" class="px-6 py-3">จำนวน (แผ่น)</th>
+                                            <th scope="col" class="px-6 py-3">หมายเหตุ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -114,6 +115,7 @@
                                                 <td class="px-6 py-4">{{ product.code }}</td>
                                                 <td class="px-6 py-4">{{ product.name }}</td>
                                                 <td class="px-6 py-4 text-center">{{ product.quantity }}</td>
+                                                <td class="px-6 py-4">{{ product.remark }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
