@@ -151,7 +151,9 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                 code: '{{ product.code|escapejs }}',
                 name: '{{ product.name|escapejs }}',
                 quantity: '{{ product.quantity|escapejs }}',
-                remark: '{{ product.remark|default:''|escapejs }}'
+                remark: '{{ product.remark|default:''|escapejs }}',
+                batch_no: '{{ product.batch_no|default:''|escapejs }}',
+                bin_location: '{{ product.bin_location|default:''|escapejs }}'
             }{% if not forloop.last %},{% endif %}
         {% endfor %}],
         addProduct() {
@@ -160,7 +162,9 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                 code: '',
                 name: '',
                 quantity: '',
-                remark: ''
+                remark: '',
+                batch_no: '',
+                bin_location: ''
             });
         },
         removeProduct(index) {
@@ -182,6 +186,8 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                     <div style="width: 150px;">Code</div>
                     <div style="width: 300px;">Product Name</div>
                     <div style="width: 100px;">Quantity</div>
+                    <div style="width: 200px;">Batch No</div>
+                    <div style="width: 200px;">Bin Location</div>
                     <div style="width: 250px;">Remark</div>
                     <div style="width: 100px;"></div>
                 </div>
@@ -222,6 +228,20 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                 required
                                 @input="calculateTotal()"
                                 >
+
+                            <input type="text"
+                                style="width: 200px;"
+                                class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                :name="`product_batch_no_{{ field.id }}[]`"
+                                x-model="product.batch_no"
+                                placeholder="Batch No">
+
+                            <input type="text"
+                                style="width: 200px;"
+                                class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                :name="`product_bin_location_{{ field.id }}[]`"
+                                x-model="product.bin_location"
+                                placeholder="Bin Location">
 
                             <input type="text"
                                 style="width: 250px;"

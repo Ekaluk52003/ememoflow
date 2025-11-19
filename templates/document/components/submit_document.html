@@ -145,7 +145,10 @@
                     id: '',
                     code: '',
                     name: '',
-                    quantity: ''
+                    quantity: '',
+                    remark: '',
+                    batch_no: '',
+                    bin_location: ''
                 });
             },
             removeProduct(index) {
@@ -170,6 +173,8 @@
                             <div style="width: 150px;">Code</div>
                             <div style="width: 300px;">Product Name</div>
                             <div style="width: 100px;">Quantity</div>
+                            <div style="width: 200px;">Batch No</div>
+                            <div style="width: 200px;">Bin Location</div>
                             <div style="width: 250px;">Remark</div>
                             <div style="width: 100px;"></div>
                         </div>
@@ -210,6 +215,20 @@
                                            placeholder="Qty"
                                            required
                                            @input="updateTotalQuantity()">
+
+                                    <input type="text"
+                                           style="width: 200px;"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                           :name="'product_batch_no_{{ field.id }}[]'"
+                                           x-model="product.batch_no"
+                                           placeholder="Batch No">
+
+                                    <input type="text"
+                                           style="width: 200px;"
+                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                           :name="'product_bin_location_{{ field.id }}[]'"
+                                           x-model="product.bin_location"
+                                           placeholder="Bin Location">
 
                                     <input type="text"
                                            style="width: 250px;"
