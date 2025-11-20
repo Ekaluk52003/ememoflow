@@ -42,7 +42,7 @@
         // If step is conditional, check the condition field value
         return this.fieldValues[conditionFieldId] === true;
     }
-}" 
+}"
 x-init="initializeFieldValues()"
 method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
     {% csrf_token %}
@@ -424,7 +424,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                          </div>
                      </template>
    
-                     <button type="button" @click="openDialog()" x-show="!selected" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
+                     <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
                          + Select Approver
                      </button>
                  </div>
@@ -576,7 +576,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
 <div class="flex mt-4 space-x-2">
     <button type="submit" name="save_draft" value="1" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2">Save Draft</button>
-    <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">Resubmit Document</button>
+    <button type="submit" id="resubmit-document-button" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 disabled:opacity-50 disabled:cursor-not-allowed me-2">Resubmit Document</button>
 </div>
 
 
@@ -589,4 +589,26 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             errorDiv.textContent = evt.detail.xhr.response;
         }
     });
+</script>
+<script>
+    (function() {
+        function updateResubmitDisabled() {
+            var submitBtn = document.getElementById('resubmit-document-button');
+            if (!submitBtn) return;
+
+            var triggers = document.querySelectorAll('[data-approver-trigger]');
+            var hasMissing = false;
+            triggers.forEach(function(btn) {
+                if (btn.offsetParent !== null) {
+                    hasMissing = true;
+                }
+            });
+
+            submitBtn.disabled = hasMissing;
+        }
+
+        // Run immediately when this snippet is loaded (works with HTMX swaps)
+        updateResubmitDisabled();
+        setInterval(updateResubmitDisabled, 300);
+    })();
 </script>

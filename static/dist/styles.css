@@ -3117,6 +3117,11 @@ video {
 }
 
 
+.disabled\:opacity-50:disabled {
+  opacity: 0.5;
+}
+
+
 .peer:checked ~ .peer-checked\:bg-blue-600 {
   --tw-bg-opacity: 1;
   background-color: rgb(37 99 235 / var(--tw-bg-opacity));

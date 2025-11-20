@@ -35,6 +35,11 @@ document.addEventListener('alpine:init', () => {
           } else {
               console.error(`[userSearch] Data source element with ID '${dataSourceId}' not found.`);
           }
+
+          // Notify parent that approver state may have changed
+          this.$nextTick(() => {
+              this.$dispatch('approver-changed');
+          });
       },
 
       get filteredOptions() {
@@ -52,6 +57,7 @@ document.addEventListener('alpine:init', () => {
       this.focused = false;
       this.isEditing = false;
       this.showDialog = false; // Close dialog after selection
+      this.$dispatch('approver-changed');
   },
 
   startEditing() {
@@ -70,6 +76,7 @@ document.addEventListener('alpine:init', () => {
             this.selectedUser = null;
             this.focused = false;
             this.isEditing = true; // Reset to editing mode
+            this.$dispatch('approver-changed');
         },
 
        
