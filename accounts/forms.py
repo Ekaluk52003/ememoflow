@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
-from allauth.account.forms import SignupForm
+from allauth.account.forms import SignupForm, LoginForm
 from .models import CustomUser
 import os
 
@@ -53,3 +53,11 @@ class CustomSignupForm(SignupForm):
         user.job_title = self.cleaned_data.get('job_title')
         user.save()
         return user
+
+
+class CustomLoginForm(LoginForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove the small inline "Forgot your password?" help text from the password field
+        if 'password' in self.fields:
+            self.fields['password'].help_text = ''

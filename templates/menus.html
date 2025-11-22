@@ -509,12 +509,6 @@
         Login
     </a>
 
-    <a href="{% url 'account_signup' %}" class="flex items-center px-4 py-2 text-gray-100 {% if request.resolver_match.url_name == 'account_signup' %}bg-gray-700{% endif %} hover:bg-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 0112 0 4 4 0 018 0v1H3v-1a4 4 0 01-4-4z" />
-        </svg>
-        Sign Up
-    </a>
     {% else %}
     <a href="{% url 'document_approval:approval_statistics' %}" class="flex items-center px-4 py-2 text-gray-100 {% if request.resolver_match.url_name == 'approval_statistics' %}bg-gray-700{% endif %} hover:bg-gray-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
