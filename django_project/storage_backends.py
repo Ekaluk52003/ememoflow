@@ -1,6 +1,7 @@
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.utils.timezone import now
 import os
+import re
 
 class CustomS3Storage(S3Boto3Storage):
     """
@@ -13,14 +14,31 @@ class CustomS3Storage(S3Boto3Storage):
         """
         dir_name, file_name = os.path.split(name)
         base_name, ext = os.path.splitext(file_name)
+
+        match = re.search(r"_(\d{14})$", base_name)
+        if match:
+            base_name = base_name[:match.start()]
+
+        MAX_BASE_LENGTH = 50
+        if len(base_name) > MAX_BASE_LENGTH:
+            base_name = base_name[:MAX_BASE_LENGTH]
+
+        if not base_name:
+            base_name = "file"
+
         timestamp = now().strftime("%Y%m%d%H%M%S")
-        name = os.path.join(dir_name, f"{base_name}_{timestamp}{ext}")
+        new_file_name = f"{base_name}_{timestamp}{ext.lower()}"
+        name = os.path.join(dir_name, new_file_name)
         return super().get_available_name(name, max_length)
 
     def generate_path(self, instance, filename):
         """
         Generate a dynamic file path based on the instance's attributes.
         """
-        document_reference = getattr(instance.document, 'document_reference', 'default') if hasattr(instance, 'document') else 'default'
+        if hasattr(instance, 'document') and getattr(instance.document, 'document_reference', None):
+            document_reference = instance.document.document_reference
+        else:
+            document_reference = 'default'
+
         base_path = f"documents/{document_reference}/{filename}"
-        return self.get_available_name(base_path)
+        return base_path
