@@ -62,11 +62,19 @@
             {% if field.field_type == 'table_list' %}
         <div id="table-list-field-{{ field.id }}" x-data="{
             rows: [],
-            columns: '{{ field.table_columns }}'.split('|').filter(col => col.trim() !== ''),
+            columns: '{{ field.table_columns|escapejs }}'
+                .split('|')
+                .filter(c => c.trim() !== '')
+                .map(spec => {
+                    const parts = spec.split(':');
+                    const label = parts[0].trim();
+                    const width = parts[1] ? parseInt(parts[1].trim(), 10) || 150 : 150;
+                    return { label, width };
+                }),
             addRow() {
                 const newRow = {};
                 this.columns.forEach(col => {
-                    newRow[col.trim()] = '';
+                    newRow[col.label] = '';
                 });
                 this.rows.push(newRow);
             },
@@ -82,44 +90,45 @@
             <div class="relative w-full">
                 <!-- Fixed width container that forces horizontal scroll -->
                 <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
-                    <div class="table-list-container"> <!-- Content with minimum width -->
-                        <!-- Table structure -->
-                        <table class="w-full" style="table-layout: fixed; min-width: 800px;">
-                            <thead>
-                                <tr>
-                                    <template x-for="(column, colIndex) in columns" :key="colIndex">
-                                        <th class="p-2 font-medium text-left text-gray-600" x-text="column.trim()"></th>
+                    <div class="table-list-container" style="min-width: 800px;">
+                        <!-- Header row -->
+                        <div class="flex px-1 mb-2 text-sm text-gray-600">
+                            <template x-for="(col, colIndex) in columns" :key="colIndex">
+                                <div class="p-2 font-medium truncate whitespace-nowrap"
+                                     :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'"
+                                     x-text="col.label"></div>
+                            </template>
+                            <!-- Delete column header placeholder -->
+                            <div class="p-2" style="flex: 0 0 100px;"></div>
+                        </div>
+
+                        <!-- Data rows -->
+                        <div class="space-y-2">
+                            <template x-for="(row, rowIndex) in rows" :key="rowIndex">
+                                <div class="flex">
+                                    <template x-for="(col, colIndex) in columns" :key="colIndex">
+                                        <div class="p-1"
+                                             :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'">
+                                            <input type="text"
+                                                   class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
+                                                   :name="'table_' + '{{ field.id }}' + '_' + col.label + '[]'"
+                                                   x-model="row[col.label]"
+                                                   :placeholder="col.label"
+                                                   required>
+                                        </div>
                                     </template>
-                                    <th class="w-24"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(row, rowIndex) in rows" :key="rowIndex">
-                                    <tr>
-                                        <template x-for="(column, colIndex) in columns" :key="colIndex">
-                                            <td class="p-1">
-                                                <input type="text"
-                                                       class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                                       :name="'table_' + '{{ field.id }}' + '_' + column.trim() + '[]'"
-                                                       x-model="row[column.trim()]"
-                                                       :placeholder="column.trim()"
-                                                       required>
-                                            </td>
-                                        </template>
-                                        <td class="p-1">
-                                            <button type="button"
-                                                    class="flex justify-center items-center px-3 py-2 w-full text-white bg-red-500 rounded hover:bg-red-600"
-                                                    style="width: 50px;"
-                                                    @click="removeRow(rowIndex)">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                    <div class="p-1" style="flex: 0 0 100px;">
+                                        <button type="button"
+                                                class="flex justify-center items-center w-full h-10 text-white bg-red-500 rounded hover:bg-red-600"
+                                                @click="removeRow(rowIndex)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
 

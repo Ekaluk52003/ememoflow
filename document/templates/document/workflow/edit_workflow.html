@@ -494,7 +494,17 @@
                         
                         <!-- Table Columns -->
                         <div x-show="fieldType === 'table_list'">
-                          <label class="block text-sm font-medium text-gray-700">Table Columns (pipe-separated)</label>
+                          <label class="block text-sm font-medium text-gray-700">
+                            Table Columns
+                            <span class="block text-xs font-normal text-gray-500">
+                              Use <strong>Label</strong> or <strong>Label:width</strong> (in pixels), separated by <code>|</code>.
+                              If <code>:width</code> is omitted, the default is <strong>150px</strong>.
+                            </span>
+                            <span class="block mt-1 text-xs font-normal text-gray-500">
+                              Example:&nbsp;
+                              <code>ลำดับ:80|CODE:120|รายการ:500|จำนวน:80|เฉด|อ้างถึง INV|เหตุผลที่คืน:260|เลขที่ใบลดหนี้:260</code>
+                            </span>
+                          </label>
                           <input type="text" x-model="tableColumns" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         </div>
                         

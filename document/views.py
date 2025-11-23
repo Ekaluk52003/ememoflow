@@ -46,6 +46,25 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 
+def get_table_columns(field):
+    """Return ordered list of column labels for a table_list field.
+
+    Supports optional width in the admin definition using the format
+    "Label" or "Label:Width" (e.g. "เลขที่ใบลดหนี้:260"). Only the label
+    part is used for keys and ordering; width is handled on the frontend.
+    """
+    columns = []
+    table_columns = getattr(field, 'table_columns', '') or ''
+    for spec in table_columns.split('|'):
+        spec = spec.strip()
+        if not spec:
+            continue
+        label = spec.split(':', 1)[0].strip()
+        if label:
+            columns.append(label)
+    return columns
+
+
 @login_required
 @require_POST
 def toggle_favorite(request, document_id):
@@ -234,8 +253,8 @@ def generate_pdf_report(request, reference_id, template_id):
             prepared_value['products'] = products
             prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
         elif value.field.field_type == 'table_list':
-            # Get the column order from the field
-            columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
+            # Get the column order from the field (labels only, widths ignored)
+            columns = get_table_columns(value.field)
 
             # Prepare the rows with ordered columns
             ordered_rows = []
@@ -457,8 +476,8 @@ def document_detail(request, reference_id):
                 prepared_value['total_quantity'] = sum(product['quantity'] for product in products)
                 prepared_value['products'] = products  # Add this for template compatibility
             elif value.field.field_type == 'table_list':
-                # Get the column order from the field
-                columns = [col.strip() for col in value.field.table_columns.split('|') if col.strip()]
+                # Get the column order from the field (labels only, widths ignored)
+                columns = get_table_columns(value.field)
 
                 # Prepare the rows with ordered columns
                 ordered_rows = []
@@ -513,7 +532,8 @@ def document_detail(request, reference_id):
                     if field.field_type == 'attachment':
                         file = request.FILES.get(field_name)
                         existing_file = DynamicFieldValue.objects.filter(document=document, field=field).first()
-                        if field.required and not file and not (existing_file and existing_file.file):
+                        # Only enforce attachment requirement when approving
+                        if is_approved and field.required and not file and not (existing_file and existing_file.file):
                             errors[field.name] = ["This attachment is required."]
                         elif file:
                             try:
@@ -547,7 +567,8 @@ def document_detail(request, reference_id):
                         value = request.POST.get(field_name)
                         if value:
                             edited_values[field_name] = value
-                        elif field.required:
+                        # Only enforce non-attachment required fields when approving
+                        elif is_approved and field.required:
                             errors[field.name] = ["This field is required."]
 
             if errors:
@@ -760,7 +781,10 @@ def resubmit_document(request, pk):
             field_data['products'] = field_value.json_value if field_value else []
         elif field.field_type == 'table_list':
             field_data['table_columns'] = field.table_columns
-            field_data['rows'] = field_value.json_value if field_value else []
+            # Provide both the Python structure and a JSON string for safe JS usage
+            rows = field_value.json_value if field_value else []
+            field_data['rows'] = rows
+            field_data['rows_json'] = json.dumps(rows, cls=DjangoJSONEncoder)
         elif field.field_type == 'attachment' and field_value and field_value.file:
             file_url = reverse('document_approval:view_file', args=[field_value.id])
             full_file_name = os.path.basename(field_value.file.name)
@@ -801,8 +825,8 @@ def resubmit_document(request, pk):
             is_required_for_submission = field.required and field not in editable_fields
 
             if field.field_type == 'table_list':
-                # Get the column names from the field in the correct order
-                columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
+                # Get the column names from the field in the correct order (labels only)
+                columns = get_table_columns(field)
 
                 # Initialize data structure for rows
                 rows = []
@@ -1289,8 +1313,8 @@ def submit_document(request, workflow_id):
             is_required_for_submission = field.required and field not in editable_fields
 
             if field.field_type == 'table_list':
-                # Get the column names from the field in the correct order
-                columns = [col.strip() for col in field.table_columns.split('|') if col.strip()]
+                # Get the column order from the field (labels only, widths ignored)
+                columns = get_table_columns(field)
 
                 # Initialize data structure for rows
                 rows = []
