@@ -395,12 +395,7 @@
             </span>
         </div>
   
-        <select name="approver_{{ step_info.step.id }}" x-model="selected" class="hidden">
-            <option value="">Select an approver</option>
-            <template x-for="option in options" :key="option.id">
-                <option :value="option.id" x-text="option.full_name"></option>
-            </template>
-        </select>
+        <input type="hidden" name="approver_{{ step_info.step.id }}" x-model="selected">
   
         <div class="mb-4">
             <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
