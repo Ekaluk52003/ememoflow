@@ -5,6 +5,7 @@
     "watch": "webpack --mode=development --progress"
   },
   "dependencies": {
+    "@alpinejs/collapse": "^3.15.2",
     "@tiptap/core": "^2.2.4",
     "@tiptap/extension-bold": "^2.6.6",
     "@tiptap/extension-bullet-list": "^2.6.6",

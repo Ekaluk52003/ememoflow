@@ -1,339 +1,440 @@
 {% load document_filters %}
 
-<div class="mt-4">
+<div class="mt-4 space-y-6">
 
-
-
-    <div class="justify-between items-center md:flex">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h3 class="text-lg font-medium leading-6 text-base-content">Document Ref: {{document.document_reference}}</h3>
-            <p class="text-sm text-gray-600">Workflow: {{document.workflow.name}}</p>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Document Ref: <span class="font-mono text-neon-violet">{{document.document_reference}}</span></h3>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="text-sm text-gray-500 dark:text-gray-400">Workflow:</span>
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300">{{document.workflow.name}}</span>
+            </div>
         </div>
 
-
-            <div class="flex items-center space-x-2">
+        <div class="flex items-center gap-3">
             {% include 'partials/favorite_button.html' with document=document is_favorite=is_favorite %}
-            <div>
-                <a href="{% url 'document_approval:generate_pdf_report' document.document_reference 1 %}" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2" target="_blank">PDF Report</a>
-            </div>
-            </div>
+            <a href="{% url 'document_approval:generate_pdf_report' document.document_reference 1 %}" 
+               class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 dark:hover:bg-white/10 transition-colors" 
+               target="_blank">
+               <i data-lucide="file-text" class="w-4 h-4"></i>
+               PDF Report
+            </a>
+        </div>
+    </div>
 
-
-
-
-
-
-    <div class="p-6 mt-6 mb-6 bg-white border shadow-sm">
+    <!-- Content Card -->
+    <div class="glass-card rounded-xl p-6 md:p-8 border border-gray-200 dark:border-white/10">
         {% if error_message %}
-            <div class="alert alert-danger" role="alert">
+            <div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400">
                 {{ error_message }}
             </div>
         {% endif %}
-        <h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Title :
-            <span class="text-xl text-gray-600">{{ document.title }} </span>
-            <article class="max-w-none prose-sm prose">{{ document.content|safe}}</article>
-    </div>
 
-
-    <div class="p-6 mt-6 mb-6 bg-white border shadow-sm">
-                {% include "partials/document_status.html" %}
-  <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">Submitted by:
-    <span class="font-bold text-primary text-md">{{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</span>
-    {% if document.submitted_by.job_title %}
-    <span class="mt-1 text-sm text-gray-600"><small>{{ document.submitted_by.job_title }}</small></span>
-    {% endif %}
-
-
-  <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">Submitted at:
-    <span class="font-bold text-primary text-md">{{ document.created_at }}</span>
-    
-  <!-- CC Recipients Section -->
-  <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">CC Recipients:</h5>
-  <div class="mt-2">
-    {% if document.authorized_users.exists %}
-      <div class="flex flex-wrap gap-2">
-        <!-- Display authorized users -->
-        {% for user in document.authorized_users.all %}
-          <div class="flex items-center px-3 py-1 text-blue-800 bg-blue-100 rounded-md">
-            <span>{{ user.get_full_name|default:user.username }}</span>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <span class="text-gray-500">No CC recipients</span>
-    {% endif %}
-  </div>
-
-                {% for value in prepared_values %}
-
-                <h5 class="mt-3 text-lg font-medium leading-6 text-base-content">{{ value.name }}:
-                        {% if value.field.field_type == 'table_list' %}
-                            <div class="overflow-x-auto my-4 shadow-md sm:rounded-lg">
-                                <table class="w-full text-sm text-left text-gray-700">
-                                    <thead class="text-xs text-white uppercase bg-blue-600">
-                                        <tr>
-                                            {% for column in value.columns %}
-                                                <th scope="col" class="px-6 py-3">{{ column }}</th>
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for row in value.value %}
-                                            <tr class="bg-white border-b hover:bg-gray-50">
-                                                {% for column_name, column_value in row %}
-                                                    <td class="px-6 py-4">{{ column_value }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% empty %}
-                                            <tr class="bg-white border-b">
-                                                <td colspan="{{ value.columns|length }}" class="px-6 py-4 text-center">No data available</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% elif value.field_type == 'tiptap_editor' %}
-                            <div class="mt-2">
-                                <article class="max-w-none prose">{{ value.value|safe }}</article>
-                            </div>
-                        {% elif value.field_type == 'product_list' %}
-                            <div class="overflow-x-auto my-4 shadow-md sm:rounded-lg">
-                                <table class="w-full text-sm text-left text-gray-700">
-                                    <thead class="text-xs text-white uppercase bg-blue-600">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3">ลำดับ</th>
-                                            <th scope="col" class="px-6 py-3">รหัสสินค้า</th>
-                                            <th scope="col" class="px-6 py-3">รายการ</th>
-                                            <th scope="col" class="px-6 py-3">จำนวน (แผ่น)</th>
-                                            <th scope="col" class="px-6 py-3">Batch No</th>
-                                            <th scope="col" class="px-6 py-3">Bin Location</th>
-                                            <th scope="col" class="px-6 py-3">หมายเหตุ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for product in value.value %}
-                                            <tr class="bg-white border-b hover:bg-gray-50">
-                                                <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ product.id }}</td>
-                                                <td class="px-6 py-4">{{ product.code }}</td>
-                                                <td class="px-6 py-4">{{ product.name }}</td>
-                                                <td class="px-6 py-4 text-center">{{ product.quantity }}</td>
-                                                <td class="px-6 py-4">{{ product.batch_no }}</td>
-                                                <td class="px-6 py-4">{{ product.bin_location }}</td>
-                                                <td class="px-6 py-4">{{ product.remark }}</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% elif value.field_type == 'attachment' %}
-                            {% if value.file_url %}
-                                 {% if value.is_image %}
-                                     <div class="w-full">
-                                        <img src="{{ value.file_url }}" alt="Attachment"class="rounded-lg">
-                                        <div class="px-2.5 py-0.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-sm me-2"> <a href="{{ value.file_url }}"  target="_blank">
-                                            {{ value.original_file_name }}</a></div>
-                                     </div>
-                                  {% else %}
-                                  <div class="mt-2">
-                                        <div class="px-2.5 py-0.5 text-sm font-medium text-blue-800 bg-blue-100 rounded-sm me-2"> <a href="{{ value.file_url }}"  target="_blank">
-                                            File:{{ value.original_file_name }}</a>
-                                        </div>
-                                  </div>
-                                  {% endif %}
-                            {% else %}
-                                <p>No file attached.</p>
-                            {% endif %}
-                        {% elif value.field_type == 'boolean' %}
-                            <p>{% if value.value %}Yes{% else %}No{% endif %}</p>
-
-                        {% elif value.field_type == 'textarea' %}
-                            <span class="font-bold text-primary text-md">{{ value.value|linebreaks }}</span></h5>
-                        {% else %}
-                        <span class="font-bold text-primary text-md">{{ value.value }}</span></h5>
-                        {% endif %}
-                {% endfor %}
-
+        <div class="mb-6">
+            <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Title</h5>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ document.title }}</div>
         </div>
 
-        
-        {% if document.approvals.all|length > 0  %}
-        <div id="user-approvals" class="p-6 mt-6 mb-6 bg-white border shadow-sm">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Approval Steps</h3>
-            {% endif %}
-                {% for approval in ordered_approvals %}
-                    <div class="p-4 rounded my-2 {% if document.current_step and approval.is_approved is None  %}bg-gray-50{% endif %}{% if approval.is_approved == False %} bg-red-50{% endif %}{% if approval.is_approved == True%} bg-green-50{% endif %}">
-                        <div class="flex justify-between">
-                            <div>
-                                <span class="font-medium">{{ approval.step.name }} - {{ approval.approver.first_name }} {{ approval.approver.last_name }}</span>
-                                <p class="mt-2 text-sm text-gray-600"><small>{{ approval.approver.job_title }}</small></p>
-                                <!-- Pending time moved to status area -->
-                                {% if approval.on_behalf_of %}
-                                <p class="mt-2 text-sm text-blue-600">
-                                    <small><span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded">Approved on behalf by {{ approval.on_behalf_of.get_full_name|default:approval.on_behalf_of.username }}</span></small>
-                                </p>
-                                <p class="mt-1 text-sm text-blue-600"><small>{{ approval.on_behalf_of.job_title }}</small></p>
-                                {% endif %}
-                                {% if approval.comment %}
-                                <div class="mt-2 text-sm text-gray-600"><small>Comment: {{ approval.comment|linebreaks }}</small></div>
-                                {% endif %}
-                                {% if approval.recorded_at %}
-                                <p class="mt-2 text-sm text-gray-600"><small>Record at: {{ approval.recorded_at|date:"F d, Y H:i" }}</small></p>
-                                {% endif %}
+        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+            {{ document.content|safe }}
+        </div>
+    </div>
+
+    <!-- Details Card -->
+    <div class="glass-card rounded-xl p-6 md:p-8 border border-gray-200 dark:border-white/10">
+        <div class="mb-8">
+            {% include "partials/document_status.html" %}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div>
+                <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Submitted By</h5>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-neon-violet/10 flex items-center justify-center text-neon-violet font-bold border border-neon-violet/20">
+                        {{ document.submitted_by.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-900 dark:text-white">{{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</div>
+                        {% if document.submitted_by.job_title %}
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ document.submitted_by.job_title }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Submitted At</h5>
+                <div class="font-mono text-gray-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i>
+                    {{ document.created_at|date:"F d, Y H:i" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- CC Recipients -->
+        <div class="mb-8">
+            <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">CC Recipients</h5>
+            {% if document.authorized_users.exists %}
+                <div class="flex flex-wrap gap-2">
+                    {% for user in document.authorized_users.all %}
+                        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-700 dark:text-gray-300">
+                            <div class="w-5 h-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[10px] font-bold">
+                                {{ user.username|slice:":1"|upper }}
                             </div>
-                            <div>
-                              {% if approval.is_approved == True %}
-                                <span class="flex items-center px-2 py-1 text-sm text-white bg-green-500 rounded">Approved</span>
+                            <span>{{ user.get_full_name|default:user.username }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-500 dark:text-gray-400 italic">No CC recipients</p>
+            {% endif %}
+        </div>
+
+        <div class="h-px bg-gray-200 dark:bg-white/10 my-8"></div>
+
+        <!-- Dynamic Fields -->
+        <div class="space-y-8">
+            {% for value in prepared_values %}
+                <div>
+                    <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{{ value.name }}</h5>
+                    
+                    {% if value.field.field_type == 'table_list' %}
+                        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-white/10">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-white/10">
+                                    <tr>
+                                        {% for column in value.columns %}
+                                            <th scope="col" class="px-6 py-3 font-semibold">{{ column }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-white/5">
+                                    {% for row in value.value %}
+                                        <tr class="bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                            {% for column_name, column_value in row %}
+                                                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ column_value }}</td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="{{ value.columns|length }}" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400 italic">No data available</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                    {% elif value.field_type == 'tiptap_editor' %}
+                        <div class="prose prose-sm dark:prose-invert max-w-none p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                            {{ value.value|safe }}
+                        </div>
+
+                    {% elif value.field_type == 'product_list' %}
+                        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-white/10">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs uppercase bg-neon-violet text-white">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 font-semibold">ลำดับ</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold">รหัสสินค้า</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold">รายการ</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold text-center">จำนวน (แผ่น)</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold">Batch No</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold">Bin Location</th>
+                                        <th scope="col" class="px-6 py-3 font-semibold">หมายเหตุ</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+                                    {% for product in value.value %}
+                                        <tr class="bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ product.id }}</td>
+                                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300 font-mono">{{ product.code }}</td>
+                                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ product.name }}</td>
+                                            <td class="px-6 py-4 text-center font-medium text-neon-violet">{{ product.quantity }}</td>
+                                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300 font-mono">{{ product.batch_no }}</td>
+                                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ product.bin_location }}</td>
+                                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ product.remark }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                    {% elif value.field_type == 'attachment' %}
+                        {% if value.file_url %}
+                            {% if value.is_image %}
+                                <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-2 max-w-sm">
+                                    <img src="{{ value.file_url }}" alt="Attachment" class="rounded-lg w-full h-auto mb-2">
+                                    <a href="{{ value.file_url }}" target="_blank" class="flex items-center gap-2 text-sm font-medium text-neon-violet hover:text-neon-purple px-2">
+                                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                                        {{ value.original_file_name }}
+                                    </a>
+                                </div>
+                            {% else %}
+                                <a href="{{ value.file_url }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors group">
+                                    <div class="p-2 rounded-lg bg-white dark:bg-white/10 text-neon-violet group-hover:scale-110 transition-transform">
+                                        <i data-lucide="file" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ value.original_file_name }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Click to download</div>
+                                    </div>
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-sm text-gray-500 dark:text-gray-400 italic">No file attached.</p>
+                        {% endif %}
+
+                    {% elif value.field_type == 'boolean' %}
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                            <div class="w-2 h-2 rounded-full {% if value.value %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% if value.value %}Yes{% else %}No{% endif %}</span>
+                        </div>
+
+                    {% else %}
+                        <div class="text-base text-gray-900 dark:text-white font-medium">
+                            {{ value.value|linebreaks }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Approval History -->
+    {% if document.approvals.all|length > 0 %}
+    <div id="user-approvals" class="glass-card rounded-xl p-6 md:p-8 border border-gray-200 dark:border-white/10">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-neon-violet"></i>
+            Approval History
+        </h3>
+        
+        <div class="space-y-4">
+            {% for approval in ordered_approvals %}
+                <div class="p-4 rounded-xl border transition-colors
+                    {% if document.current_step and approval.is_approved is None %}bg-blue-50/50 dark:bg-blue-500/5 border-blue-100 dark:border-blue-500/20{% endif %}
+                    {% if approval.is_approved == False %}bg-red-50/50 dark:bg-red-500/5 border-red-100 dark:border-red-500/20{% endif %}
+                    {% if approval.is_approved == True %}bg-green-50/50 dark:bg-green-500/5 border-green-100 dark:border-green-500/20{% endif %}
+                    {% if approval.is_approved is None and not document.current_step %}bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5{% endif %}">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between gap-4">
+                        <div>
+                            <div class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                {{ approval.step.name }}
+                                <i data-lucide="arrow-right" class="w-3 h-3 text-gray-400"></i>
+                                {{ approval.approver.first_name }} {{ approval.approver.last_name }}
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ approval.approver.job_title }}</p>
+
+                            {% if approval.on_behalf_of %}
+                            <div class="mt-2 flex items-start gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg inline-block">
+                                <i data-lucide="shield-check" class="w-4 h-4 mt-0.5"></i>
+                                <div>
+                                    <span class="font-medium">Approved on behalf by</span>
+                                    <div>{{ approval.on_behalf_of.get_full_name|default:approval.on_behalf_of.username }}</div>
+                                    <div class="text-xs opacity-75">{{ approval.on_behalf_of.job_title }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if approval.comment %}
+                            <div class="mt-3 text-sm text-gray-600 dark:text-gray-300 bg-white/50 dark:bg-black/20 p-3 rounded-lg border border-gray-100 dark:border-white/5 italic">
+                                "{{ approval.comment }}"
+                            </div>
+                            {% endif %}
+
+                            {% if approval.recorded_at %}
+                            <div class="mt-2 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 font-mono">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                {{ approval.recorded_at|date:"F d, Y H:i" }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="shrink-0">
+                            {% if approval.is_approved == True %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-green-500 rounded-full shadow-lg shadow-green-500/30">
+                                    <i data-lucide="check" class="w-3 h-3"></i> Approved
+                                </span>
                             {% elif approval.is_approved == False %}
-                                <span class="flex items-center px-2 py-1 text-sm text-white bg-red-500 rounded">Rejected</span>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-lg shadow-red-500/30">
+                                    <i data-lucide="x" class="w-3 h-3"></i> Rejected
+                                </span>
                             {% else %}
                                 {% if document.current_step == approval.step and document.status == 'in_review' and current_step_pending_since %}
-                                    <div class="flex flex-col items-end">
-                                        <span class="flex items-center px-2 py-1 text-sm text-white bg-blue-500 rounded">Pending</span>
-                                        <span class="flex items-center px-2 py-1 mt-1 text-xs text-amber-600 bg-amber-50 rounded-md shadow-sm">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
+                                    <div class="flex flex-col items-end gap-1">
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-blue-500 rounded-full shadow-lg shadow-blue-500/30 animate-pulse">
+                                            <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Pending
+                                        </span>
+                                        <span class="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/30">
                                             {{ current_step_pending_since|precise_timesince }} ago
                                         </span>
                                     </div>
                                 {% else %}
-                                    <span class="flex items-center px-2 py-1 text-sm text-white bg-blue-500 rounded">Pending</span>
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-gray-400 dark:bg-gray-600 rounded-full">
+                                        <i data-lucide="clock" class="w-3 h-3"></i> Waiting
+                                    </span>
                                 {% endif %}
                             {% endif %}
-                            </div>
                         </div>
                     </div>
-                {% endfor %}
-        </div>
-        {% if can_approve %}
-<div id="approval-form" class="p-6 mt-6 bg-white rounded-xl">
-    <h3 class="mb-6 text-lg font-medium leading-6 text-gray-900">Approve Review</h3>
-    
-    {% if on_behalf_of %}
-    <div class="p-4 mb-4 text-blue-800 bg-blue-50 rounded-lg border border-blue-300">
-        <div class="flex items-center">
-            <svg class="mr-2 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-            <h3 class="text-lg font-medium">Acting on behalf of {{ on_behalf_of.get_full_name|default:on_behalf_of.username }}</h3>
-        </div>
-        <div class="mt-2 text-sm">
-            You are authorized to approve this document on behalf of {{ on_behalf_of.get_full_name|default:on_behalf_of.username }}.
-        </div>
-    </div>
-    {% endif %}
-    
-    {% if authorized_approvers and not on_behalf_of %}
-    <div class="p-4 mb-4 text-green-800 bg-green-50 rounded-lg border border-green-300">
-        <div class="flex items-center">
-            <svg class="mr-2 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1zm1-4a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"></path></svg>
-            <h3 class="text-lg font-medium">You can approve on behalf of:</h3>
-        </div>
-        <div class="mt-2 text-sm">
-            <p>You are authorized to approve this document on behalf of the following users:</p>
-            <ul class="mt-1 ml-5 list-disc">
-                {% for approver in authorized_approvers %}
-                <li>{{ approver.get_full_name|default:approver.username }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    {% endif %}
-    
-    <form hx-post="{% url 'document_approval:document_detail' document.document_reference %}" hx-target="#content-div" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div id="form-errors">
-            <!-- Errors will be displayed here -->
-        </div>
-        {% if user_approval.step.requires_edit %}
-        <h3 class="mt-3 mb-3 text-lg font-medium leading-6 text-gray-900">User Input</h3>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {% for editable_field in editable_fields %}
-        <div class="{% if editable_field.input_width == 'quarter' %}md:col-span-1{% elif editable_field.input_width == 'half' %}md:col-span-2{% elif editable_field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
-                <label class="w-full max-w-xs">
-                    <div class="label">
-                        <span class="label-text">{{ editable_field.name }}{% if editable_field.required %}
-                            <span class="text-error">*</span>
-                        {% endif %}</span>
-                         </div>
-                </label>
-                {% if editable_field.field_type == 'attachment' %}
-
-                       <input type="file" name="dynamic_{{ editable_field.id }}" id="dynamic_{{ editable_field.id }}" class="w-full file-input file-input-bordered" >
-
-                    {% elif editable_field.field_type == 'choice' %}
-                    <select name="dynamic_{{ editable_field.id }}" class="w-full select select-bordered" {% if editable_field.required %}required{% endif %}>
-                        <option value="">Select an option</option>
-                        {% for choice in editable_field.get_choices %}
-                            <option value="{{ choice }}">{{ choice }}</option>
-                        {% endfor %}
-                    </select>
-
-
-                    {% elif editable_field.field_type == 'multiple_choice' %}
-                    <div class="checkbox-group">
-
-                            {% for choice in editable_field.get_choices %}
-                                <div class="checkbox-item">
-                                    <input type="checkbox"
-                                           id="dynamic_{{ editable_field.id }}_{{ forloop.counter }}"
-                                           name="dynamic_{{ editable_field.id }}[]"
-                                           value="{{ choice }}"
-                                           class="checkbox"
-                                           {% if choice in current_values %}checked{% endif %}>
-                                    <label for="dynamic_{{ editable_field.id }}_{{ forloop.counter }}">{{ choice }}</label>
-                                </div>
-                            {% endfor %}
-
-                    </div>
-
-
-                {% elif editable_field.field_type == 'textarea' %}
-                <textarea name="dynamic_{{ editable_field.id }}" class="block px-3 py-2 mt-1 w-full text-gray-700 rounded-md border border-gray-300 shadow-sm focus:outline-none" rows="{{ editable_field.textarea_rows }}"></textarea>
-                
-                {% elif editable_field.field_type == 'tiptap_editor' %}
-                <div x-data="editor('{{ current_value|default:''|escapejs }}')" class="bg-white rounded-xl tiptap-editor">
-                  <input type="hidden" name="dynamic_{{ editable_field.id }}" x-model="htmlContent" />
-                  <div id="editorToolbar_{{ editable_field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-white rounded-t-lg border-t border-x">
-                    {% include "document/components/editor_toolbar.html" %}
-                  </div>
-                  <article class="max-w-none prose">
-                    <div x-ref="element"></div>
-                  </article>
                 </div>
-
-                {% elif editable_field.field_type == 'text' %}
-                    <input type="text" name="dynamic_{{ editable_field.id }}" class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"  >
-                {% elif editable_field.field_type == 'number' %}
-                    <input type="number" name="dynamic_{{ editable_field.id }}"class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500">
-                {% elif editable_field.field_type == 'date' %}
-                    <input type="date" name="dynamic_{{ editable_field.id }}"class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" >
-                {% elif editable_field.field_type == 'boolean' %}
-                    <input type="checkbox" name="dynamic_{{ editable_field.id }}" class="mt-1">
-                {% endif %}
-            </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     </div>
+    {% endif %}
+
+    {% if can_approve %}
+    <div id="approval-form" class="glass-card rounded-xl p-6 md:p-8 border border-neon-violet/30 shadow-[0_0_30px_rgba(255, 95, 31,0.1)] relative overflow-hidden">
+        <!-- Glow Effect -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-violet to-neon-purple"></div>
+        
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i data-lucide="pen-tool" class="w-5 h-5 text-neon-violet"></i>
+            Approve Review
+        </h3>
+        
+        {% if on_behalf_of %}
+        <div class="p-4 mb-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400">
+            <div class="flex items-center gap-2 font-bold mb-1">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                Acting on behalf of {{ on_behalf_of.get_full_name|default:on_behalf_of.username }}
+            </div>
+            <div class="text-sm opacity-90 ml-7">
+                You are authorized to approve this document on behalf of {{ on_behalf_of.get_full_name|default:on_behalf_of.username }}.
+            </div>
+        </div>
         {% endif %}
-
-        <div class="mb-3 text-xl">
-            <div class="flex items-center mb-4">
-                <input class="w-8 h-8 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500" type="radio" name="is_approved" id="approve" value="true" required checked>
-                <label class="pl-4 font-medium text-gray-900" for="approve">Approve</label>
+        
+        {% if authorized_approvers and not on_behalf_of %}
+        <div class="p-4 mb-6 rounded-lg bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400">
+            <div class="flex items-center gap-2 font-bold mb-1">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                Authorized Proxy
             </div>
-            <div class="flex items-center mb-4">
-                <input class="w-8 h-8 text-red-500 bg-gray-100 rounded border-gray-300 focus:ring-red-500"  type="radio" name="is_approved" id="reject" value="false" required>
-                <label class="pl-4 font-medium text-red-500" for="reject">Reject</label>
+            <div class="text-sm opacity-90 ml-7">
+                <p class="mb-1">You can approve on behalf of:</p>
+                <ul class="list-disc ml-4 space-y-0.5">
+                    {% for approver in authorized_approvers %}
+                    <li>{{ approver.get_full_name|default:approver.username }}</li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
-        <div class="mb-3">
-            <label for="comment" class="form-label">Comment:</label>
-            <textarea  rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500" name="comment" id="comment"></textarea>
-        </div>
+        {% endif %}
+        
+        <form hx-post="{% url 'document_approval:document_detail' document.document_reference %}" hx-target="#content-div" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div id="form-errors"></div>
 
+            {% if user_approval.step.requires_edit %}
+            <div class="mb-8">
+                <h4 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-200 dark:border-white/10 pb-2">User Input Required</h4>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
+                {% for editable_field in editable_fields %}
+                    <div class="{% if editable_field.input_width == 'quarter' %}md:col-span-1{% elif editable_field.input_width == 'half' %}md:col-span-2{% elif editable_field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ editable_field.name }}
+                            {% if editable_field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        
+                        {% if editable_field.field_type == 'attachment' %}
+                            <input type="file" name="dynamic_{{ editable_field.id }}" class="block w-full text-sm text-gray-500 dark:text-gray-400
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-full file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-neon-violet/10 file:text-neon-violet
+                                hover:file:bg-neon-violet/20" >
 
-        <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 me-2">Submit</button>
-    </form>
-</div>
-{% endif %}
+                        {% elif editable_field.field_type == 'choice' %}
+                            <select name="dynamic_{{ editable_field.id }}" class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent" {% if editable_field.required %}required{% endif %}>
+                                <option value="">Select an option</option>
+                                {% for choice in editable_field.get_choices %}
+                                    <option value="{{ choice }}">{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+
+                        {% elif editable_field.field_type == 'multiple_choice' %}
+                            <div class="space-y-2">
+                                {% for choice in editable_field.get_choices %}
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox"
+                                               name="dynamic_{{ editable_field.id }}[]"
+                                               value="{{ choice }}"
+                                               class="rounded border-gray-300 dark:border-white/10 text-neon-violet focus:ring-neon-violet bg-gray-50 dark:bg-white/5"
+                                               {% if choice in current_values %}checked{% endif %}>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">{{ choice }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+
+                        {% elif editable_field.field_type == 'textarea' %}
+                            <textarea name="dynamic_{{ editable_field.id }}" rows="{{ editable_field.textarea_rows }}" class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"></textarea>
+                        
+                        {% elif editable_field.field_type == 'tiptap_editor' %}
+                            <!-- Note: Tiptap editor might need specific dark mode CSS adjustments -->
+                            <div x-data="editor('{{ current_value|default:''|escapejs }}')" class="bg-white dark:bg-[#1a1a1a] rounded-xl tiptap-editor border border-gray-200 dark:border-white/10">
+                                <input type="hidden" name="dynamic_{{ editable_field.id }}" x-model="htmlContent" />
+                                <div id="editorToolbar_{{ editable_field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-gray-50 dark:bg-white/5 rounded-t-lg border-b border-gray-200 dark:border-white/10">
+                                    {% include "document/components/editor_toolbar.html" %}
+                                </div>
+                                <article class="max-w-none prose prose-sm dark:prose-invert p-4">
+                                    <div x-ref="element"></div>
+                                </article>
+                            </div>
+
+                        {% elif editable_field.field_type == 'text' %}
+                            <input type="text" name="dynamic_{{ editable_field.id }}" class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent">
+                        {% elif editable_field.field_type == 'number' %}
+                            <input type="number" name="dynamic_{{ editable_field.id }}" class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent">
+                        {% elif editable_field.field_type == 'date' %}
+                            <input type="date" name="dynamic_{{ editable_field.id }}" class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent">
+                        {% elif editable_field.field_type == 'boolean' %}
+                            <input type="checkbox" name="dynamic_{{ editable_field.id }}" class="rounded border-gray-300 dark:border-white/10 text-neon-violet focus:ring-neon-violet bg-gray-50 dark:bg-white/5">
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <label class="relative flex cursor-pointer group">
+                    <input type="radio" name="is_approved" value="true" class="peer sr-only" required checked>
+                    <div class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-all peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-500 peer-checked:border-green-500 peer-checked:bg-green-500 flex items-center justify-center">
+                                <div class="w-2.5 h-2.5 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                            </div>
+                            <span class="font-bold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Approve</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="relative flex cursor-pointer group">
+                    <input type="radio" name="is_approved" value="false" class="peer sr-only" required>
+                    <div class="w-full p-4 rounded-xl border-2 border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 transition-all peer-checked:border-red-500 peer-checked:bg-red-50 dark:peer-checked:bg-red-900/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-500 peer-checked:border-red-500 peer-checked:bg-red-500 flex items-center justify-center">
+                                <div class="w-2.5 h-2.5 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                            </div>
+                            <span class="font-bold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Reject</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="mb-6">
+                <label for="comment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comment (Optional)</label>
+                <textarea name="comment" id="comment" rows="4" class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600" placeholder="Add your remarks here..."></textarea>
+            </div>
+
+            <button type="submit" class="w-full px-6 py-3.5 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-xl shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5">
+                Submit Decision
+            </button>
+        </form>
+    </div>
+    {% endif %}
 
     {% include "partials/document_actions.html" %}
 </div>

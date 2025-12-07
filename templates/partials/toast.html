@@ -1,26 +1,48 @@
 
-<div class="toast toast-center toast-middle" id="toasts"
-hx-get="{% url 'document_approval:clear_toasts' %}"
-hx-trigger="load delay:2s"
- hx-swap="outerHTML swap:1s"
- >
-  <div class="alert">
-    <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    class="stroke-info h-6 w-6 shrink-0">
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-  </svg>
-  {% for message in messages %}
-  <div>
-    <h3 class="font-bold">{{ message.tags }}</h3>
-    <div class="text-xs">   {{ message.message }}</div>
-  </div>
-  {% endfor %}
-  </div>
+<div id="toasts" 
+     class="fixed bottom-6 right-6 z-[100] flex flex-col-reverse gap-4 pointer-events-none"
+     hx-get="{% url 'document_approval:clear_toasts' %}"
+     hx-trigger="load delay:4s"
+     hx-swap="outerHTML swap:0.5s">
+    {% for message in messages %}
+    <div class="glass-card pointer-events-auto min-w-[320px] max-w-md p-4 rounded-xl border-l-4 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-[#0f0f0f]/95 animate-in fade-in slide-in-from-right-8 duration-300 flex gap-3
+                {% if 'success' in message.tags %}border-green-500 shadow-green-500/10{% elif 'error' in message.tags %}border-red-500 shadow-red-500/10{% else %}border-neon-violet shadow-neon-violet/10{% endif %}">
+        
+        <!-- Icon -->
+        <div class="shrink-0 mt-0.5">
+            {% if 'success' in message.tags %}
+            <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+            </div>
+            {% elif 'error' in message.tags %}
+            <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            {% else %}
+            <div class="w-8 h-8 rounded-full bg-neon-violet/10 flex items-center justify-center text-neon-violet">
+                <i data-lucide="info" class="w-5 h-5"></i>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 pt-1">
+            {% if message.tags %}
+            <h4 class="text-xs font-bold uppercase tracking-wider mb-1 
+                       {% if 'success' in message.tags %}text-green-600 dark:text-green-400{% elif 'error' in message.tags %}text-red-600 dark:text-red-400{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                {{ message.tags }}
+            </h4>
+            {% endif %}
+            <p class="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+                {{ message.message }}
+            </p>
+        </div>
+        
+        <!-- Close -->
+        <button onclick="this.parentElement.remove()" class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors self-start">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
+    {% endfor %}
+    <script>lucide.createIcons();</script>
 </div>

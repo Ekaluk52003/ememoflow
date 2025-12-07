@@ -1,25 +1,41 @@
 {% extends "_base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
 
 {% block content %}
-<!-- Global Notification -->
+<style>
+  .workflow-select-btn { background-color: white; border-color: #e5e7eb; color: #111827; }
+  .dark .workflow-select-btn { background-color: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); color: white; }
+  
+  .workflow-dropdown-bg { background-color: white; border-color: #e5e7eb; }
+  .dark .workflow-dropdown-bg { background-color: #1e1e1e; border-color: rgba(255, 255, 255, 0.1); }
+  
+  .workflow-text { color: #111827; }
+  .dark .workflow-text { color: white; }
+  
+  .workflow-dropdown-item:hover { background-color: #f3f4f6; }
+  .dark .workflow-dropdown-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+</style>
+
+<!-- Global Notification (Fixed & Themed) -->
 <div x-data="{ show: false, message: '', type: 'success' }" 
      @show-notification.window="show = true; message = $event.detail.message; type = $event.detail.type; setTimeout(() => show = false, 3000)"
      x-show="show"
      x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0 transform scale-90"
-     x-transition:enter-end="opacity-100 transform scale-100"
-     x-transition:leave="transition ease-in duration-300"
-     x-transition:leave-start="opacity-100 transform scale-100"
-     x-transition:leave-end="opacity-0 transform scale-90"
-     class="fixed top-4 right-4 z-50 max-w-md" 
+     x-transition:enter-start="opacity-0 transform translate-y-2"
+     x-transition:enter-end="opacity-100 transform translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 transform translate-y-0"
+     x-transition:leave-end="opacity-0 transform translate-y-2"
+     class="fixed top-4 right-4 z-50 max-w-md w-full" 
      x-cloak>
   <div :class="{
-    'bg-green-50 border-green-200 text-green-800': type === 'success',
-    'bg-red-50 border-red-200 text-red-800': type === 'error'
-  }" class="flex items-center p-4 rounded-md border shadow-lg">
+    'bg-green-500/10 border-green-500/20 text-green-400': type === 'success',
+    'bg-red-500/10 border-red-500/20 text-red-400': type === 'error'
+  }" class="flex items-center p-4 rounded-xl border backdrop-blur-md shadow-lg">
     <div :class="{
-      'text-green-500': type === 'success',
-      'text-red-500': type === 'error'
+      'text-green-400': type === 'success',
+      'text-red-400': type === 'error'
     }" class="flex-shrink-0">
       <svg x-show="type === 'success'" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -34,200 +50,201 @@
   </div>
 </div>
 
-<!-- Field Preview Modal -->
-<div x-data="{ showPreview: false, previewUrl: '' }" 
-     @preview-field.window="showPreview = true; previewUrl = '/document/fields/' + $event.detail.fieldId + '/preview/?embed=true';"
-     x-show="showPreview" 
-     class="overflow-y-auto fixed inset-0 z-50" 
-     x-cloak>
-  <div class="flex fixed inset-0 z-50 flex-col bg-white">
-    <!-- Header with close button -->
-    <div class="flex justify-between items-center p-4 border-b border-gray-200">
-      <h3 class="text-xl font-medium text-gray-900">Field Preview</h3>
-      <button type="button" @click="showPreview = false" class="inline-flex justify-center items-center p-2 text-gray-400 rounded-md hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
-        <span class="sr-only">Close</span>
-        <!-- Heroicon name: outline/x -->
-        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-    
-    <!-- Main content area with iframe -->
-    <div class="overflow-hidden flex-grow">
-      <iframe :src="previewUrl" class="w-full h-full border-0"></iframe>
-    </div>
-    </div>
-  </div>
-</div>
-<div class="container px-4 py-8 mx-auto">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Edit Workflow: {{ workflow.name }}</h1>
-    <p class="text-gray-600">Modify workflow settings, dynamic fields, and email notifications</p>
-  </div>
 
-  {% if messages %}
-  <div class="mb-4">
-    {% for message in messages %}
-    <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded-md">
-      {{ message }}
+<!-- Main Content Container -->
+    <!-- Hero Section -->
+    <div class="mb-10 relative z-10">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3 relative">
+            Edit Workflow: <br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-violet to-fuchsia-500 text-glow">{{ workflow.name }}</span>
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
+            Configure workflow settings, manage dynamic fields, and customize email notifications.
+        </p>
+        <!-- Background Glow -->
+        <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
     </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
-  <!-- Alpine.js Form -->
-  <div x-data="{
-    name: '{{ workflow.name|escapejs }}',
-    contentEditor: {% if workflow.content_editor %}true{% else %}false{% endif %},
-    
-    // Email settings
-    sendRejectEmail: {% if workflow.send_reject_email %}true{% else %}false{% endif %},
-    rejectEmailSubject: '{{ workflow.reject_email_subject|default:'Your document has been rejected'|escapejs }}',
-    rejectEmailBody: '{{ workflow.reject_email_body|default:'Your document has been rejected. Please review the comments and resubmit.'|escapejs }}',
-    
-    sendWithdrawEmail: {% if workflow.send_withdraw_email %}true{% else %}false{% endif %},
-    withdrawEmailSubject: '{{ workflow.withdraw_email_subject|default:'Document has been withdrawn'|escapejs }}',
-    withdrawEmailBody: '{{ workflow.withdraw_email_body|default:'The document has been withdrawn by the submitter.'|escapejs }}',
-    
-    sendApprovedEmail: {% if workflow.send_approved_email %}true{% else %}false{% endif %},
-    approvedEmailSubject: '{{ workflow.email_approved_subject|default:'Your document has been fully approved'|escapejs }}',
-    approvedEmailBody: '{{ workflow.email_approved_body_template|default:'Congratulations! Your document has been approved by all required approvers.'|escapejs }}',
-    
-    ccEmails: '{{ workflow.cc_emails|default:''|escapejs }}',
-    
-    // Groups and fields
-    selectedGroups: [{% for group in workflow.authorized_groups.all %}{{ group.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-    selectedFields: [{% for field in workflow.dynamic_fields.all %}{{ field.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-    
-    // Tabs
-    activeTab: 'basic',
-    
-    // Validation
-    errors: {},
-    
-    validateForm() {
-      this.errors = {};
+    <div class="max-w-5xl mx-auto relative z-10">
+    {% if messages %}
+    <div class="mb-8 space-y-4">
+      {% for message in messages %}
+      <div class="p-4 rounded-xl border backdrop-blur-md flex items-start {% if message.tags == 'success' %}bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400{% elif message.tags == 'error' %}bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400{% else %}bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Alpine Form -->
+    <div x-data="{
+      name: '{{ workflow.name|escapejs }}',
+      contentEditor: {% if workflow.content_editor %}true{% else %}false{% endif %},
       
-      if (!this.name) this.errors.name = 'Workflow name is required';
+      // Email settings
+      sendRejectEmail: {% if workflow.send_reject_email %}true{% else %}false{% endif %},
+      rejectEmailSubject: '{{ workflow.reject_email_subject|default:'Your document has been rejected'|escapejs }}',
+      rejectEmailBody: '{{ workflow.reject_email_body|default:'Your document has been rejected. Please review the comments and resubmit.'|escapejs }}',
       
-      if (this.sendRejectEmail) {
-        if (!this.rejectEmailSubject) this.errors.rejectEmailSubject = 'Subject is required';
-        if (!this.rejectEmailBody) this.errors.rejectEmailBody = 'Body is required';
+      sendWithdrawEmail: {% if workflow.send_withdraw_email %}true{% else %}false{% endif %},
+      withdrawEmailSubject: '{{ workflow.withdraw_email_subject|default:'Document has been withdrawn'|escapejs }}',
+      withdrawEmailBody: '{{ workflow.withdraw_email_body|default:'The document has been withdrawn by the submitter.'|escapejs }}',
+      
+      sendApprovedEmail: {% if workflow.send_approved_email %}true{% else %}false{% endif %},
+      approvedEmailSubject: '{{ workflow.email_approved_subject|default:'Your document has been fully approved'|escapejs }}',
+      approvedEmailBody: '{{ workflow.email_approved_body_template|default:'Congratulations! Your document has been approved by all required approvers.'|escapejs }}',
+      
+      ccEmails: '{{ workflow.cc_emails|default:''|escapejs }}',
+      
+      // Groups and fields
+      selectedGroups: [{% for group in workflow.authorized_groups.all %}{{ group.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+      selectedFields: [{% for field in workflow.dynamic_fields.all %}{{ field.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+      
+      // Tabs
+      activeTab: 'basic',
+      
+      // Validation
+      errors: {},
+      
+      validateForm() {
+        this.errors = {};
+        
+        if (!this.name) this.errors.name = 'Workflow name is required';
+        
+        if (this.sendRejectEmail) {
+          if (!this.rejectEmailSubject) this.errors.rejectEmailSubject = 'Subject is required';
+          if (!this.rejectEmailBody) this.errors.rejectEmailBody = 'Body is required';
+        }
+        
+        if (this.sendWithdrawEmail) {
+          if (!this.withdrawEmailSubject) this.errors.withdrawEmailSubject = 'Subject is required';
+          if (!this.withdrawEmailBody) this.errors.withdrawEmailBody = 'Body is required';
+        }
+        
+        if (this.sendApprovedEmail) {
+          if (!this.approvedEmailSubject) this.errors.approvedEmailSubject = 'Subject is required';
+          if (!this.approvedEmailBody) this.errors.approvedEmailBody = 'Body is required';
+        }
+        
+        return Object.keys(this.errors).length === 0;
       }
+    }" class="space-y-8">
       
-      if (this.sendWithdrawEmail) {
-        if (!this.withdrawEmailSubject) this.errors.withdrawEmailSubject = 'Subject is required';
-        if (!this.withdrawEmailBody) this.errors.withdrawEmailBody = 'Body is required';
-      }
-      
-      if (this.sendApprovedEmail) {
-        if (!this.approvedEmailSubject) this.errors.approvedEmailSubject = 'Subject is required';
-        if (!this.approvedEmailBody) this.errors.approvedEmailBody = 'Body is required';
-      }
-      
-      return Object.keys(this.errors).length === 0;
-    }
-  }" class="space-y-6">
-    <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
-      {% csrf_token %}
-      
-      <!-- Tabs -->
-      <div class="flex justify-center mb-6">
-        <div class="inline-flex p-1 bg-gray-100 rounded-md shadow-sm">
+      <form method="POST" action="" @submit.prevent="if(validateForm()) $el.submit()">
+        {% csrf_token %}
+        
+        <!-- Tabs Navigation (Filing Style) -->
+        <div class="flex justify-start items-end pl-6 space-x-2 overflow-x-auto scrollbar-hide">
           <button type="button" @click="activeTab = 'basic'" 
-                  :class="{'bg-white text-blue-600 shadow': activeTab === 'basic', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'basic'}"
-                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  :class="{'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-neon-violet border-t border-x border-gray-200 dark:border-white/10 rounded-t-xl z-10': activeTab === 'basic', 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-transparent hover:bg-gray-200 dark:hover:bg-white/10 rounded-t-lg mb-1': activeTab !== 'basic'}"
+                  class="relative flex items-center px-6 py-3 text-sm font-bold transition-all duration-200 -mb-px">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Basic Information
+            Basic Info
           </button>
+          
           <button type="button" @click="activeTab = 'fields'" 
-                  :class="{'bg-white text-blue-600 shadow': activeTab === 'fields', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'fields'}"
-                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  :class="{'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-neon-violet border-t border-x border-gray-200 dark:border-white/10 rounded-t-xl z-10': activeTab === 'fields', 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-transparent hover:bg-gray-200 dark:hover:bg-white/10 rounded-t-lg mb-1': activeTab !== 'fields'}"
+                  class="relative flex items-center px-6 py-3 text-sm font-bold transition-all duration-200 -mb-px">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
             </svg>
-            Dynamic Fields
+            Fields
           </button>
+          
           <button type="button" @click="activeTab = 'email'" 
-                  :class="{'bg-white text-blue-600 shadow': activeTab === 'email', 'bg-transparent text-gray-600 hover:bg-gray-200': activeTab !== 'email'}"
-                  class="inline-flex relative items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  :class="{'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl text-neon-violet border-t border-x border-gray-200 dark:border-white/10 rounded-t-xl z-10': activeTab === 'email', 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 border border-transparent hover:bg-gray-200 dark:hover:bg-white/10 rounded-t-lg mb-1': activeTab !== 'email'}"
+                  class="relative flex items-center px-6 py-3 text-sm font-bold transition-all duration-200 -mb-px">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            Email Settings
+            Emails
           </button>
         </div>
-      </div>
-      
-      <!-- Basic Information Tab -->
-      <div x-show="activeTab === 'basic'" class="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
-          <div class="mt-5 space-y-6">
-            <!-- Workflow Name -->
-            <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">Workflow Name</label>
-              <input type="text" name="name" id="name" x-model="name" 
-                     class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                     :class="{'border-red-500': errors.name}">
-              <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-600"></p>
-            </div>
-            
-            <!-- Content Editor -->
-            <div class="flex relative items-start">
-              <div class="flex items-center h-5">
-                <input id="content_editor" name="content_editor" type="checkbox" x-model="contentEditor"
-                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                <input type="hidden" :value="contentEditor ? 'true' : 'false'" name="content_editor">
+        
+        <!-- Basic Information Tab -->
+        <div x-show="activeTab === 'basic'" 
+             x-transition:enter="transition ease-out duration-300"
+             class="glass-card rounded-xl overflow-hidden shadow-xl">
+          <div class="p-8">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20">
+                <i data-lucide="info" class="w-5 h-5"></i>
               </div>
-              <div class="ml-3 text-sm">
-                <label for="content_editor" class="font-medium text-gray-700">Enable Content Editor</label>
-                <p class="text-gray-500">Allow users to edit document content using a rich text editor</p>
-              </div>
-            </div>
-            
-            <!-- Authorized Groups -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Authorized Groups</label>
-              <p class="mb-2 text-sm text-gray-500">Select groups that have full access to documents in this workflow</p>
-              <div class="overflow-y-auto p-2 max-h-60 rounded-md border border-gray-300">
-                {% for group in groups %}
-                <label class="flex items-center p-2 rounded hover:bg-gray-100">
-                  <input type="checkbox" name="authorized_groups[]" value="{{ group.id }}" 
-                         {% if group in workflow.authorized_groups.all %}checked{% endif %}
-                         x-model="selectedGroups" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                  <span class="ml-2 text-sm text-gray-700">{{ group.name }}</span>
+              Basic Information
+            </h3>
+            <div class="space-y-6">
+              <!-- Workflow Name -->
+              <div>
+                <label for="name" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <i data-lucide="type" class="w-4 h-4 text-neon-violet"></i>
+                  Workflow Name
                 </label>
-                {% endfor %}
+                <input type="text" name="name" id="name" x-model="name" 
+                       class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600"
+                       :class="{'border-red-500': errors.name}">
+                <p x-show="errors.name" x-text="errors.name" class="mt-1 text-sm text-red-500"></p>
+              </div>
+              
+              <!-- Content Editor -->
+              <div class="flex items-start p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                <div class="flex items-center h-5">
+                  <input id="content_editor" name="content_editor" type="checkbox" x-model="contentEditor"
+                         class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
+                  <input type="hidden" :value="contentEditor ? 'true' : 'false'" name="content_editor">
+                </div>
+                <div class="ml-3">
+                  <label for="content_editor" class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="file-edit" class="w-4 h-4 text-neon-violet"></i>
+                    Enable Content Editor
+                  </label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Allow users to edit document content using a rich text editor</p>
+                </div>
+              </div>
+              
+              <!-- Authorized Groups -->
+              <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <i data-lucide="users" class="w-4 h-4 text-neon-violet"></i>
+                  Authorized Groups
+                </label>
+                <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Select groups that have full access to documents in this workflow</p>
+                <div class="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 max-h-60 overflow-y-auto custom-scrollbar space-y-2">
+                  {% for group in groups %}
+                  <label class="flex items-center p-3 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-neon-violet/50 transition-all cursor-pointer group shadow-sm">
+                    <input type="checkbox" name="authorized_groups[]" value="{{ group.id }}" 
+                           {% if group in workflow.authorized_groups.all %}checked{% endif %}
+                           x-model="selectedGroups" class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
+                    <span class="ml-3 text-sm text-gray-700 dark:text-gray-200">{{ group.name }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Dynamic Fields Tab -->
-      <div x-show="activeTab === 'fields'" class="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <div class="flex justify-between items-center">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Dynamic Fields</h3>
-            <a href="{% url 'document_approval:create_field' %}?next=document_approval:edit_workflow&id={{ workflow.id }}" 
-               class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              <svg class="mr-1 -ml-1 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create New Field
-            </a>
-          </div>
-          <div class="mt-5">
-            <p class="mb-2 text-sm text-gray-500">Dynamic fields associated with this workflow</p>
+        
+        <!-- Dynamic Fields Tab -->
+        <div x-show="activeTab === 'fields'" 
+             x-transition:enter="transition ease-out duration-300"
+             class="glass-card rounded-xl overflow-hidden shadow-xl">
+          <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Dynamic Fields</h3>
+              <a href="{% url 'document_approval:create_field' %}?next=document_approval:edit_workflow&id={{ workflow.id }}" 
+                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet rounded-xl hover:bg-neon-violet/90 transition-all shadow-lg shadow-neon-violet/20">
+                <svg class="mr-2 -ml-1 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New Field
+              </a>
+            </div>
             
             {% if dynamic_fields %}
-            <div class="overflow-y-auto p-2 max-h-96 rounded-md border border-gray-300">
+            <div class="space-y-4">
               {% for field in dynamic_fields %}
-              <div class="p-3 border-b border-gray-200 hover:bg-gray-50 last:border-b-0" 
+              <div class="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 hover:border-neon-violet/30 transition-all duration-300" 
                    x-data="{
                      isEditing: false,
                      fieldId: {{ field.id }},
@@ -238,7 +255,6 @@
                      inputWidth: '{{ field.input_width|escapejs }}',
                      widthDisplay: '',
                      init() {
-                       // Initialize widthDisplay based on inputWidth
                        const widthMap = {
                          'quarter': 'Quarter Width',
                          'half': 'Half Width',
@@ -248,7 +264,6 @@
                        this.widthDisplay = widthMap[this.inputWidth] || this.inputWidth;
                      },
                      updateWidthDisplay() {
-                       // Map width values to display text
                        const widthMap = {
                          'quarter': 'Quarter Width',
                          'half': 'Half Width',
@@ -258,9 +273,9 @@
                        this.widthDisplay = widthMap[this.inputWidth] || this.inputWidth;
                      },
                      order: {{ field.order }},
-                     choices: '{{ field.choices|default:""|escapejs }}',
-                     tableColumns: '{{ field.table_columns|default:""|escapejs }}',
-                     allowedExtensions: '{{ field.allowed_extensions|default:""|escapejs }}',
+                     choices: '{{ field.choices|default:''|escapejs }}',
+                     tableColumns: '{{ field.table_columns|default:''|escapejs }}',
+                     allowedExtensions: '{{ field.allowed_extensions|default:''|escapejs }}',
                      textareaRows: {{ field.textarea_rows|default:4 }},
                      multipleFiles: {% if field.multiple_files %}true{% else %}false{% endif %},
                      showSuccess: false,
@@ -288,7 +303,6 @@
                        .then(response => response.json())
                        .then(data => {
                          if (data.success) {
-                           // Update the local data with the response from the server
                            this.name = data.field.name;
                            this.fieldType = data.field.field_type;
                            this.fieldTypeDisplay = data.field.field_type_display;
@@ -302,10 +316,7 @@
                            this.textareaRows = data.field.textarea_rows || 4;
                            this.multipleFiles = data.field.multiple_files || false;
                            
-                           // Close the edit form
                            this.isEditing = false;
-                           
-                           // Show success message
                            this.showSuccess = true;
                            setTimeout(() => {
                              this.showSuccess = false;
@@ -332,7 +343,6 @@
                          .then(response => response.json())
                          .then(data => {
                            if (data.success) {
-                             // Show a success notification
                              const successEvent = new CustomEvent('show-notification', {
                                detail: {
                                  message: data.message,
@@ -340,9 +350,6 @@
                                }
                              });
                              window.dispatchEvent(successEvent);
-                             
-                             // Force a page reload to update the UI
-                             // This ensures the field is completely removed from the list
                              window.location.reload();
                            } else {
                              alert('Error: ' + data.error);
@@ -355,197 +362,185 @@
                        }
                      }
                    }">
-                <div class="flex justify-between items-start">
+                
+                <!-- View Mode -->
+                <div x-show="!isEditing" class="flex justify-between items-start">
                   <div class="flex-1">
-                    <!-- View Mode -->
-                    <div x-show="!isEditing">
-                      <!-- Success Message -->
-                      <div x-show="showSuccess" class="flex items-center px-4 py-2 mb-3 text-green-700 bg-green-50 rounded-md border border-green-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Field updated successfully!</span>
-                      </div>
-                      
-                      <div class="flex justify-between items-center">
-                        <h4 class="font-medium text-gray-700" x-text="name"></h4>
-                        <div class="flex items-center space-x-2">
-                    
-                          <button @click="isEditing = true; inputWidth = '{{ field.input_width|escapejs }}'; updateWidthDisplay()" type="button" class="inline-flex items-center p-1.5 text-white bg-blue-600 rounded-full border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                          </button>
-                          <button @click="$dispatch('preview-field', { fieldId: fieldId })" type="button" class="inline-flex items-center p-1.5 text-white bg-green-500 rounded-full border border-transparent shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div class="flex flex-wrap gap-2 items-center mt-1">
-                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-blue-800 bg-blue-100 rounded-full" x-text="fieldTypeDisplay">
-                        </span>
-                        <template x-if="required">
-                          <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-red-800 bg-red-100 rounded-full">
-                            Required
-                          </span>
-                        </template>
-                        
-                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-full" x-text="'Width: ' + widthDisplay">
-                        </span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
-                          Order: <span x-text="order" class="ml-1"></span>
-                        </span>
-                      </div>
-                      
-                      <!-- Field-specific details -->
-                      <template x-if="fieldType === 'choice' || fieldType === 'multiple_choice'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Options:</span> <span x-text="choices"></span>
-                        </div>
-                      </template>
-                      <template x-if="fieldType === 'table_list'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Columns:</span> <span x-text="tableColumns"></span>
-                        </div>
-                      </template>
-                      <template x-if="fieldType === 'product_list'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Columns:</span> <span x-text="tableColumns"></span>
-                        </div>
-                      </template>
-                      <template x-if="fieldType === 'attachment'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Allowed Extensions:</span> <span x-text="allowedExtensions"></span>
-                        </div>
-                      </template>
-                      <template x-if="fieldType === 'textarea'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Rows:</span> <span x-text="textareaRows"></span>
-                        </div>
-                      </template>
-                      
-                      <template x-if="fieldType === 'attachment'">
-                        <div class="mt-1 text-sm text-gray-500">
-                          <span class="font-medium">Multiple Files:</span> <span x-text="multipleFiles ? 'Yes' : 'No'"></span>
-                        </div>
-                      </template>
+                    <!-- Success Message -->
+                    <div x-show="showSuccess" class="flex items-center px-4 py-2 mb-3 text-green-400 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span class="text-sm">Field updated successfully!</span>
                     </div>
                     
-                    <!-- Edit Mode -->
-                    <div x-show="isEditing" class="p-4">
-                      <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-medium text-gray-700">Edit Field</h4>
-                        <button @click="isEditing = false" type="button" class="inline-flex items-center p-1 text-gray-700 bg-white rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      
-                      <div class="space-y-4">
-                        <!-- Field Name -->
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700">Field Name</label>
-                          <input type="text" x-model="name" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        
-                        <!-- Field Type -->
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700">Field Type</label>
-                          <select x-model="fieldType" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                            {% for value, label in field_types %}
-                            <option value="{{ value }}">{{ label }}</option>
-                            {% endfor %}
-                          </select>
-                        </div>
-                        
-                        <!-- Required -->
-                        <div class="flex items-center">
-                          <input id="required_{{ field.id }}" type="checkbox" x-model="required" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                          <label for="required_{{ field.id }}" class="block ml-2 text-sm text-gray-700">Required</label>
-                        </div>
-                        
-                        <!-- Input Width -->
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700">Input Width</label>
+                    <div class="flex items-center gap-3 mb-2">
+                        <h4 class="text-base font-bold text-gray-900 dark:text-white" x-text="name"></h4>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-neon-violet/10 text-neon-violet border border-neon-violet/20" x-text="fieldTypeDisplay"></span>
+                        <template x-if="required">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">Required</span>
+                        </template>
+                    </div>
 
-                          <select x-model="inputWidth" @change="updateWidthDisplay()" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                            {% for value, label in width_choices %}
-                            <option value="{{ value }}">{{ label }}</option>
-                            {% endfor %}
-                          </select>
+                    <div class="flex flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <span x-text="'Width: ' + widthDisplay"></span>
+                        <span class="text-gray-300 dark:text-gray-600">•</span>
+                        <span x-text="'Order: ' + order"></span>
+                    </div>
+                    
+                    <!-- Field Details -->
+                    <template x-if="fieldType === 'choice' || fieldType === 'multiple_choice'">
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span class="font-medium">Options:</span> <span x-text="choices"></span>
+                      </div>
+                    </template>
+                    <template x-if="fieldType === 'table_list' || fieldType === 'product_list'">
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span class="font-medium">Columns:</span> <span x-text="tableColumns"></span>
+                      </div>
+                    </template>
+                    <template x-if="fieldType === 'attachment'">
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span class="font-medium">Allowed Extensions:</span> <span x-text="allowedExtensions"></span>
+                      </div>
+                    </template>
+                    <template x-if="fieldType === 'textarea'">
+                      <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span class="font-medium">Rows:</span> <span x-text="textareaRows"></span>
+                      </div>
+                    </template>
+                    <template x-if="fieldType === 'attachment'">
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          <span class="font-medium">Multiple Files:</span> <span x-text="multipleFiles ? 'Yes' : 'No'"></span>
                         </div>
+                    </template>
+                  </div>
+
+                  <div class="flex items-center gap-2 ml-4">
+                    <button @click="$dispatch('preview-field', { fieldId: fieldId })" type="button" class="p-2 text-gray-400 hover:text-neon-violet dark:hover:text-neon-violet transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5" title="Preview">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                    <button @click="isEditing = true; inputWidth = '{{ field.input_width|escapejs }}'; updateWidthDisplay()" type="button" class="p-2 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5" title="Edit">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Edit Mode -->
+                <div x-show="isEditing" class="mt-4 pt-4 border-t border-gray-200 dark:border-white/10">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Field Name</label>
+                      <input type="text" x-model="name" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Field Type</label>
+                      <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button type="button" @click="open = !open"
+                                class="workflow-select-btn relative w-full px-3 py-2 text-left rounded-lg border text-sm focus:ring-2 focus:ring-neon-violet focus:border-transparent flex items-center justify-between">
+                          <span x-text="fieldTypeDisplay"></span>
+                          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
                         
-                        <!-- Order -->
-                        <div>
-                          <label class="block text-sm font-medium text-gray-700">Order</label>
-                          <input type="number" x-model="order" min="0" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <div x-show="open" x-transition class="workflow-dropdown-bg absolute z-50 w-full mt-1 overflow-auto rounded-lg shadow-lg max-h-60 border">
+                          {% for value, label in field_types %}
+                          <div @click="fieldType = '{{ value }}'; fieldTypeDisplay = '{{ label|escapejs }}'; open = false"
+                               class="workflow-dropdown-item workflow-text px-4 py-2 text-sm cursor-pointer">
+                            {{ label }}
+                          </div>
+                          {% endfor %}
                         </div>
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center pt-6">
+                      <input id="required_{{ field.id }}" type="checkbox" x-model="required" class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
+                      <label for="required_{{ field.id }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Required</label>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Input Width</label>
+                      <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button type="button" @click="open = !open"
+                                class="workflow-select-btn relative w-full px-3 py-2 text-left rounded-lg border text-sm focus:ring-2 focus:ring-neon-violet focus:border-transparent flex items-center justify-between">
+                          <span x-text="widthDisplay"></span>
+                          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
                         
-                        <!-- Type-specific fields -->
-                        <!-- Choice Options -->
-                        <div x-show="fieldType === 'choice' || fieldType === 'multiple_choice'">
-                          <label class="block text-sm font-medium text-gray-700">Options (comma-separated)</label>
-                          <input type="text" x-model="choices" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <div x-show="open" x-transition class="workflow-dropdown-bg absolute z-50 w-full mt-1 overflow-auto rounded-lg shadow-lg max-h-60 border">
+                          {% for value, label in width_choices %}
+                          <div @click="inputWidth = '{{ value }}'; updateWidthDisplay(); open = false"
+                               class="workflow-dropdown-item workflow-text px-4 py-2 text-sm cursor-pointer">
+                            {{ label }}
+                          </div>
+                          {% endfor %}
                         </div>
-                        
-                        <!-- Table Columns -->
-                        <div x-show="fieldType === 'table_list'">
-                          <label class="block text-sm font-medium text-gray-700">
-                            Table Columns
-                            <span class="block text-xs font-normal text-gray-500">
-                              Use <strong>Label</strong> or <strong>Label:width</strong> (in pixels), separated by <code>|</code>.
-                              If <code>:width</code> is omitted, the default is <strong>150px</strong>.
-                            </span>
-                            <span class="block mt-1 text-xs font-normal text-gray-500">
-                              Example:&nbsp;
-                              <code>ลำดับ:80|CODE:120|รายการ:500|จำนวน:80|เฉด|อ้างถึง INV|เหตุผลที่คืน:260|เลขที่ใบลดหนี้:260</code>
-                            </span>
-                          </label>
-                          <input type="text" x-model="tableColumns" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        
-                        <!-- Product List Columns -->
-                        <div x-show="fieldType === 'product_list'">
-                          <label class="block text-sm font-medium text-gray-700">Product List Columns (pipe-separated)</label>
-                          <input type="text" x-model="tableColumns" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        
-                        <!-- Attachment Extensions -->
-                        <div x-show="fieldType === 'attachment'">
-                          <label class="block text-sm font-medium text-gray-700">Allowed Extensions (comma-separated)</label>
-                          <input type="text" x-model="allowedExtensions" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        
-                        <!-- Textarea Rows -->
-                        <div x-show="fieldType === 'textarea'">
-                          <label class="block text-sm font-medium text-gray-700">Textarea Rows</label>
-                          <input type="number" x-model="textareaRows" min="1" max="20" class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                        </div>
-                        
-                        <!-- Multiple Files -->
-                        <div x-show="fieldType === 'attachment'" class="flex items-center">
-                          <input id="multiple_files_{{ field.id }}" type="checkbox" x-model="multipleFiles" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                          <label for="multiple_files_{{ field.id }}" class="block ml-2 text-sm text-gray-700">Allow Multiple Files</label>
-                        </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="flex justify-end space-x-3">
-                          <button @click="deleteField()" type="button" class="items-center px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md border border-transparent shadow-sm inline-600-flex hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            Delete
-                          </button>
-                      
-                          <button @click="saveField()" type="button" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Order</label>
+                      <input type="number" x-model="order" min="0" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <!-- Type Specific Fields -->
+                    <div x-show="fieldType === 'choice' || fieldType === 'multiple_choice'" class="md:col-span-2">
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Options (comma-separated)</label>
+                      <input type="text" x-model="choices" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div x-show="fieldType === 'table_list'" class="md:col-span-2">
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Table Columns
+                        <span class="block text-[10px] font-normal text-gray-500 dark:text-gray-400 mt-0.5">
+                          Format: Label:width|Label2:width (e.g. Item:150|Qty:50)
+                        </span>
+                      </label>
+                      <input type="text" x-model="tableColumns" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div x-show="fieldType === 'product_list'" class="md:col-span-2">
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Product List Columns (pipe-separated)</label>
+                      <input type="text" x-model="tableColumns" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div x-show="fieldType === 'attachment'" class="md:col-span-2">
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Allowed Extensions (comma-separated)</label>
+                      <input type="text" x-model="allowedExtensions" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div x-show="fieldType === 'textarea'">
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Rows</label>
+                      <input type="number" x-model="textareaRows" min="1" max="20" class="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:ring-neon-violet focus:border-transparent text-gray-900 dark:text-white">
+                    </div>
+                    
+                    <div x-show="fieldType === 'attachment'" class="flex items-center pt-6">
+                      <input id="multiple_files_{{ field.id }}" type="checkbox" x-model="multipleFiles" class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
+                      <label for="multiple_files_{{ field.id }}" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Allow Multiple Files</label>
+                    </div>
+                  </div>
+                  
+                  <div class="flex justify-end gap-3 mt-6">
+                    <button @click="deleteField()" type="button" class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-500/10 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-500/30">
+                        Delete Field
+                    </button>
+                  
+                    <div class="flex gap-2">
+                        <button @click="isEditing = false" type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 dark:bg-white/5 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors border border-transparent">
+                            Cancel
+                        </button>
+                        <button @click="saveField()" type="button" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet rounded-lg hover:bg-neon-violet/90 transition-colors shadow-lg shadow-neon-violet/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
                             Save Changes
-                          </button>
-                        </div>
-                      </div>
+                        </button>
                     </div>
                   </div>
                 </div>
@@ -553,164 +548,224 @@
               {% endfor %}
             </div>
             {% else %}
-            <div class="py-4 text-center rounded-md border border-gray-300">
-              <p class="text-gray-500">No dynamic fields available. Create some fields first.</p>
+            <div class="text-center py-16 rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+              <p class="text-gray-500 dark:text-gray-400 mb-4 text-lg">No dynamic fields available yet</p>
               <a href="{% url 'document_approval:create_field' %}?next=document_approval:edit_workflow&id={{ workflow.id }}" 
-                 class="inline-flex items-center px-3 py-1.5 mt-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <svg class="mr-1 -ml-1 w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Create New Field
+                 class="text-neon-violet hover:text-neon-purple font-medium hover:underline">
+                 Create your first field
               </a>
             </div>
             {% endif %}
           </div>
         </div>
-      </div>
-      
-      <!-- Email Settings Tab -->
-      <div x-show="activeTab === 'email'" class="overflow-hidden bg-white shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-          <h3 class="text-lg font-medium leading-6 text-gray-900">Email Settings</h3>
-          <div class="mt-5 space-y-6">
-            <!-- Rejection Email Settings -->
-            <div class="p-4 rounded-md border border-gray-200">
-              <div class="flex justify-between items-center">
-                <h4 class="text-base font-medium text-gray-900">Rejection Email</h4>
-                <div class="flex relative items-start">
-                  <div class="flex items-center h-5">
-                    <input id="send_reject_email" name="send_reject_email" type="checkbox" x-model="sendRejectEmail"
-                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                    <input type="hidden" :value="sendRejectEmail ? 'true' : 'false'" name="send_reject_email">
+        
+        <!-- Email Settings Tab -->
+        <div x-show="activeTab === 'email'" 
+             x-transition:enter="transition ease-out duration-300"
+             class="glass-card rounded-xl overflow-hidden shadow-xl">
+          <div class="p-8 space-y-8">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-purple-500/10 text-purple-500 dark:text-purple-400 border border-purple-500/20">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+              </div>
+              Email Settings
+            </h3>
+            
+            <!-- Rejection Email -->
+            <div class="p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 transition-all hover:border-neon-violet/20">
+              <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                  <div class="p-1.5 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i>
                   </div>
-                  <div class="ml-3 text-sm">
-                    <label for="send_reject_email" class="font-medium text-gray-700">Enable</label>
-                  </div>
+                  <h4 class="text-base font-bold text-gray-900 dark:text-white">Rejection Email</h4>
+                </div>
+                <div class="flex items-center">
+                  <input id="send_reject_email" name="send_reject_email" type="checkbox" x-model="sendRejectEmail"
+                         class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
+                  <input type="hidden" :value="sendRejectEmail ? 'true' : 'false'" name="send_reject_email">
+                  <label for="send_reject_email" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Enable</label>
                 </div>
               </div>
               
-              <div x-show="sendRejectEmail" class="mt-4 space-y-4">
+              <div x-show="sendRejectEmail" x-transition class="space-y-4">
                 <div>
-                  <label for="reject_email_subject" class="block text-sm font-medium text-gray-700">Subject</label>
-                  <input type="text" name="reject_email_subject" id="reject_email_subject" x-model="rejectEmailSubject"
-                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                  <input type="text" name="reject_email_subject" x-model="rejectEmailSubject"
+                         class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
                          :class="{'border-red-500': errors.rejectEmailSubject}">
-                  <p x-show="errors.rejectEmailSubject" x-text="errors.rejectEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                  <p x-show="errors.rejectEmailSubject" x-text="errors.rejectEmailSubject" class="mt-1 text-sm text-red-500"></p>
                 </div>
                 <div>
-                  <label for="reject_email_body" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="reject_email_body" id="reject_email_body" rows="12" x-model="rejectEmailBody"
-                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Body</label>
+                  <textarea name="reject_email_body" rows="8" x-model="rejectEmailBody"
+                            class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent font-mono text-sm"
                             :class="{'border-red-500': errors.rejectEmailBody}"></textarea>
-                  <p x-show="errors.rejectEmailBody" x-text="errors.rejectEmailBody" class="mt-1 text-sm text-red-600"></p>
-                  <p class="mt-1 text-xs text-gray-500">Use {document}, {approver}, and {step} as placeholders</p>
+                  <p x-show="errors.rejectEmailBody" x-text="errors.rejectEmailBody" class="mt-1 text-sm text-red-500"></p>
+                  <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Available placeholders: {document}, {approver}, {step}</p>
                 </div>
               </div>
             </div>
             
-            <!-- Withdrawal Email Settings -->
-            <div class="p-4 rounded-md border border-gray-200">
-              <div class="flex justify-between items-center">
-                <h4 class="text-base font-medium text-gray-900">Withdrawal Email</h4>
-                <div class="flex relative items-start">
-                  <div class="flex items-center h-5">
+            <!-- Withdrawal Email -->
+            <div class="p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 transition-all hover:border-neon-violet/20">
+                <div class="flex justify-between items-center mb-6">
+                  <div class="flex items-center gap-3">
+                    <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </div>
+                    <h4 class="text-base font-bold text-gray-900 dark:text-white">Withdrawal Email</h4>
+                  </div>
+                  <div class="flex items-center">
                     <input id="send_withdraw_email" name="send_withdraw_email" type="checkbox" x-model="sendWithdrawEmail"
-                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                           class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
                     <input type="hidden" :value="sendWithdrawEmail ? 'true' : 'false'" name="send_withdraw_email">
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label for="send_withdraw_email" class="font-medium text-gray-700">Enable</label>
+                    <label for="send_withdraw_email" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Enable</label>
                   </div>
                 </div>
-              </div>
-              
-              <div x-show="sendWithdrawEmail" class="mt-4 space-y-4">
-                <div>
-                  <label for="withdraw_email_subject" class="block text-sm font-medium text-gray-700">Subject</label>
-                  <input type="text" name="withdraw_email_subject" id="withdraw_email_subject" x-model="withdrawEmailSubject"
-                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                         :class="{'border-red-500': errors.withdrawEmailSubject}">
-                  <p x-show="errors.withdrawEmailSubject" x-text="errors.withdrawEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                
+                <div x-show="sendWithdrawEmail" x-transition class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                    <input type="text" name="withdraw_email_subject" x-model="withdrawEmailSubject"
+                           class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
+                           :class="{'border-red-500': errors.withdrawEmailSubject}">
+                    <p x-show="errors.withdrawEmailSubject" x-text="errors.withdrawEmailSubject" class="mt-1 text-sm text-red-500"></p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Body</label>
+                    <textarea name="withdraw_email_body" rows="8"  x-model="withdrawEmailBody"
+                              class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent font-mono text-sm"
+                              :class="{'border-red-500': errors.withdrawEmailBody}"></textarea>
+                    <p x-show="errors.withdrawEmailBody" x-text="errors.withdrawEmailBody" class="mt-1 text-sm text-red-500"></p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Available placeholders: {document}, {submitter}</p>
+                  </div>
                 </div>
-                <div>
-                  <label for="withdraw_email_body" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="withdraw_email_body" id="withdraw_email_body" rows="12"  x-model="withdrawEmailBody"
-                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            :class="{'border-red-500': errors.withdrawEmailBody}"></textarea>
-                  <p x-show="errors.withdrawEmailBody" x-text="errors.withdrawEmailBody" class="mt-1 text-sm text-red-600"></p>
-                  <p class="mt-1 text-xs text-gray-500">Use {document} and {submitter} as placeholders</p>
-                </div>
-              </div>
             </div>
-            
-            <!-- Approved Email Settings -->
-            <div class="p-4 rounded-md border border-gray-200">
-              <div class="flex justify-between items-center">
-                <h4 class="text-base font-medium text-gray-900">Approval Email</h4>
-                <div class="flex relative items-start">
-                  <div class="flex items-center h-5">
+
+            <!-- Approved Email -->
+            <div class="p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 transition-all hover:border-neon-violet/20">
+                <div class="flex justify-between items-center mb-6">
+                  <div class="flex items-center gap-3">
+                    <div class="p-1.5 rounded-lg bg-green-500/10 text-green-500 border border-green-500/20">
+                      <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    </div>
+                    <h4 class="text-base font-bold text-gray-900 dark:text-white">Approval Email</h4>
+                  </div>
+                  <div class="flex items-center">
                     <input id="send_approved_email" name="send_approved_email" type="checkbox" x-model="sendApprovedEmail"
-                           class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                           class="w-4 h-4 text-neon-violet rounded border-gray-300 dark:border-white/20 focus:ring-neon-violet bg-transparent">
                     <input type="hidden" :value="sendApprovedEmail ? 'true' : 'false'" name="send_approved_email">
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label for="send_approved_email" class="font-medium text-gray-700">Enable</label>
+                    <label for="send_approved_email" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Enable</label>
                   </div>
                 </div>
-              </div>
-              
-              <div x-show="sendApprovedEmail" class="mt-4 space-y-4">
-                <div>
-                  <label for="email_approved_subject" class="block text-sm font-medium text-gray-700">Subject</label>
-                  <input type="text" name="email_approved_subject" id="email_approved_subject" x-model="approvedEmailSubject"
-                         class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                         :class="{'border-red-500': errors.approvedEmailSubject}">
-                  <p x-show="errors.approvedEmailSubject" x-text="errors.approvedEmailSubject" class="mt-1 text-sm text-red-600"></p>
+                
+                <div x-show="sendApprovedEmail" x-transition class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                    <input type="text" name="email_approved_subject" x-model="approvedEmailSubject"
+                           class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
+                           :class="{'border-red-500': errors.approvedEmailSubject}">
+                    <p x-show="errors.approvedEmailSubject" x-text="errors.approvedEmailSubject" class="mt-1 text-sm text-red-500"></p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Body</label>
+                    <textarea name="email_approved_body_template" rows="8" x-model="approvedEmailBody"
+                              class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent font-mono text-sm"
+                              :class="{'border-red-500': errors.approvedEmailBody}"></textarea>
+                    <p x-show="errors.approvedEmailBody" x-text="errors.approvedEmailBody" class="mt-1 text-sm text-red-500"></p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Available placeholders: {document}, {approvers}</p>
+                  </div>
                 </div>
-                <div>
-                  <label for="email_approved_body_template" class="block text-sm font-medium text-gray-700">Body</label>
-                  <textarea name="email_approved_body_template" id="email_approved_body_template" rows="12" x-model="approvedEmailBody"
-                            class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            :class="{'border-red-500': errors.approvedEmailBody}"></textarea>
-                  <p x-show="errors.approvedEmailBody" x-text="errors.approvedEmailBody" class="mt-1 text-sm text-red-600"></p>
-                  <p class="mt-1 text-xs text-gray-500">Use {document} and {approvers} as placeholders</p>
-                </div>
-              </div>
             </div>
-            
+
             <!-- CC Emails -->
-            <div>
-              <label for="cc_emails" class="block text-sm font-medium text-gray-700">CC Emails</label>
-              <input type="text" name="cc_emails" id="cc_emails" x-model="ccEmails"
-                     class="block px-3 py-2 mt-1 w-full rounded-md border border-gray-300 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-              <p class="mt-1 text-xs text-gray-500">Comma-separated email addresses for CC</p>
+            <div class="p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5">
+                <label for="cc_emails" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <i data-lucide="users" class="w-4 h-4 text-neon-violet"></i>
+                  CC Emails
+                </label>
+                <input type="text" name="cc_emails" id="cc_emails" x-model="ccEmails"
+                       class="w-full px-4 py-2.5 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
+                       placeholder="email1@example.com, email2@example.com">
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Comma-separated email addresses for CC</p>
             </div>
           </div>
         </div>
+        
+        <!-- Form Actions (Sticky Bottom) -->
+        <div class="flex items-center justify-between mt-8 p-4 glass-card rounded-xl border border-gray-200 dark:border-white/10 sticky bottom-4 z-40 shadow-2xl">
+            <a href="{% url 'document_approval:workflow_list' %}" 
+               class="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-colors border border-transparent">
+              Cancel
+            </a>
+            <div class="flex gap-3">
+              <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
+                 class="px-6 py-2.5 text-sm font-medium text-neon-violet bg-neon-violet/10 hover:bg-neon-violet/20 rounded-xl transition-colors border border-neon-violet/20">
+                Manage Steps
+              </a>
+              <button type="button" @click="activeTab = (activeTab === 'basic' ? 'fields' : (activeTab === 'fields' ? 'email' : 'basic'))"
+                      class="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition-colors">
+                <span x-text="activeTab === 'basic' ? 'Next: Dynamic Fields' : (activeTab === 'fields' ? 'Next: Email Settings' : 'Back to Basic Info')"></span>
+              </button>
+              <button type="submit" 
+                      class="px-6 py-2.5 text-sm font-bold text-white bg-neon-violet hover:bg-neon-violet/90 rounded-xl shadow-lg shadow-neon-violet/20 transition-all">
+                Save Changes
+              </button>
+            </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block modals %}
+<!-- Field Preview Modal (Themed) -->
+<div x-data="{ showPreview: false, previewUrl: '' }" 
+     @preview-field.window="showPreview = true; previewUrl = '/document/fields/' + $event.detail.fieldId + '/preview/?embed=true';"
+     x-show="showPreview" 
+     class="fixed inset-0 z-[100] overflow-y-auto"
+     style="display: none;" 
+     x-cloak>
+  
+  <!-- Backdrop -->
+  <div x-show="showPreview" 
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        @click="showPreview = false"></div>
+
+  <!-- Modal Panel -->
+  <div class="relative min-h-screen flex items-center justify-center p-4">
+    <div x-show="showPreview"
+          x-transition:enter="transition ease-out duration-300"
+          x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+          x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+          x-transition:leave="transition ease-in duration-200"
+          x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+          x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+          class="glass-card relative w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="height: 90vh;">
+      
+      <!-- Header -->
+      <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 backdrop-blur-xl">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white font-heading">Field Preview</h3>
+        <button type="button" @click="showPreview = false" class="p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5">
+          <span class="sr-only">Close</span>
+          <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
       
-      <!-- Form Actions -->
-      <div class="flex justify-between">
-        <a href="{% url 'document_approval:workflow_list' %}" 
-           class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          Cancel
-        </a>
-        <div class="flex space-x-3">
-          <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
-             class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            Manage Steps
-          </a>
-          <button type="button" @click="activeTab = (activeTab === 'basic' ? 'fields' : (activeTab === 'fields' ? 'email' : 'basic'))"
-                  class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <span x-text="activeTab === 'basic' ? 'Next: Dynamic Fields' : (activeTab === 'fields' ? 'Next: Email Settings' : 'Back to Basic Info')"></span>
-          </button>
-          <button type="submit" 
-                  class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            Save Changes
-          </button>
-        </div>
+      <!-- Content -->
+      <div class="flex-grow bg-gray-100 dark:bg-black/20 relative">
+        <iframe :src="previewUrl" class="w-full border-0" style="height: 100%;"></iframe>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 {% endblock %}

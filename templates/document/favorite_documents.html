@@ -2,55 +2,112 @@
 
 {% block content %}
 
-<div class="flex flex-col justify-between items-start pb-6 mb-4 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row">
-    <h1 class="text-2xl font-semibold">My Favorite Documents</h1>   
-  </div>
+<!-- Hero Section -->
+<div class="mb-10 relative z-10">
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3 relative">
+        Favorite <br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-violet to-fuchsia-500 text-glow">Documents</span>
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
+        Quick access to your pinned and important documents.
+    </p>
+    <!-- Background Glow -->
+    <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+</div>
 
-
+{% if favorite_documents %}
+<div class="space-y-4 relative z-10">
     {% for document, is_favorite in favorite_documents %}
-    <ul class="p-4 my-2 rounded-xl border shadow-sm transition-shadow cursor-pointer">
-        <li class="my-2">
-                <a hx-get="{% url 'document_approval:document_detail'  document.document_reference %}" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress" class="block">
-                    <div class="px-4 py-4 mb-2 bg-white rounded-2xl sm:px-6">
-                        <div class="flex justify-between items-center">
-                            <p class="font-semibold text-gray-700 text-md md:truncate">
-                                {{ document.title }}
-                            </p>
-                            <div class="flex flex-shrink-0 ml-2">
-                                <p class="{% if document.status == 'approved' %}bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'rejected' %}bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'in_review' %}bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% elif document.status == 'cancel' %}bg-purple-100 text-purple-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% else %}bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm{% endif %}">
-                                 {{ document.get_status_display }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-
-                            <p class="flex items-center font-medium text-sky-500 text-md">
-                                    <small>Step: {{ document.current_step.name|default:"N/A" }}</small>
-                                </p>
-                                <div class="mt-2">
-
-                                    <span class="px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-md me-2">Reference:{{document.document_reference}}</span>
-                                    <span class="px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-md me-2">Workflow: {{ document.workflow.name }}</span>
-    
-                                    <span class="px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-md me-2">Submitted by: {{ document.submitted_by.get_full_name|default:document.submitted_by.username }}</span>
-                                    <span class="px-2.5 py-0.5 text-xs font-medium text-gray-800 bg-gray-100 rounded-md me-2">Last updated: {{ document.updated_at|date:"F d, Y H:i" }}</span>
-                                </div>
-                        </div>
+    <a hx-get="{% url 'document_approval:document_detail' document.document_reference %}" 
+       hx-target="#content-div" 
+       hx-push-url="true"  
+       hx-indicator=".progress" 
+       class="block group cursor-pointer">
+       
+        <div class="glass-card rounded-xl p-5 transition-all duration-300 hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] hover:border-neon-violet/30 border border-gray-200 dark:border-white/10 relative overflow-hidden">
+            
+            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 relative z-10">
+                
+                <!-- Left Side -->
+                <div class="flex-1 min-w-0">
+                    <!-- Title & Badge -->
+                    <div class="flex flex-wrap items-center gap-3 mb-2">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-500 fill-current"></i>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate pr-2 group-hover:text-neon-violet transition-colors">
+                            {{ document.title }}
+                        </h3>
+                        
+                        <!-- Status Badge -->
+                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm
+                            {% if document.status == 'approved' %}
+                                bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20
+                            {% elif document.status == 'rejected' %}
+                                bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20
+                            {% elif document.status == 'in_review' %}
+                                bg-[#FCD34D]/10 text-[#D97706] dark:text-[#FCD34D] border border-[#FCD34D]/20
+                            {% elif document.status == 'cancel' %}
+                                bg-gray-500/10 text-gray-600 dark:text-gray-300 border border-gray-500/20
+                            {% else %}
+                                bg-gray-500/10 text-gray-600 dark:text-gray-300 border border-gray-500/20
+                            {% endif %}
+                        ">
+                            {{ document.get_status_display }}
+                        </span>
                     </div>
 
-        </a>
+                    <!-- Metadata (Ref & Step) -->
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm font-mono text-gray-500 dark:text-gray-300">
+                        <div class="flex items-center gap-2">
+                            <span class="opacity-60 dark:opacity-50">REF:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">#{{ document.document_reference }}</span>
+                        </div>
+                        <div class="hidden sm:block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                        
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="opacity-60 dark:opacity-50">Flow:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ document.workflow.name }}</span>
+                        </div>
+                        <div class="hidden sm:block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></div>
 
-        </li>
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="opacity-60 dark:opacity-50">Step:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200 truncate">{{ document.current_step.name|default:"N/A" }}</span>
+                        </div>
+                    </div>
+                </div>
 
-    </ul>
-
-
-
-    {% empty %}
-
-
-
-        <button type="button" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 rounded-lg hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2">You haven't favorited any documents yet..</button>
+                <!-- Right Side -->
+                <div class="flex flex-row md:flex-col justify-between md:items-end gap-2 md:gap-1 mt-2 md:mt-0 shrink-0 border-t md:border-t-0 border-gray-100 dark:border-white/5 pt-2 md:pt-0">
+                    <!-- User -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">By</span>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300 border border-white/10">
+                                {{ document.submitted_by.username|slice:":1"|upper }}
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                {{ document.submitted_by.first_name|default:document.submitted_by.username }} {{ document.submitted_by.last_name|slice:":1" }}.
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Date -->
+                    <div class="text-xs font-mono text-gray-400 dark:text-gray-400 tracking-tight">
+                        {{ document.updated_at|date:"d M • H:i"|upper }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </a>
     {% endfor %}
-</ul>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-20 glass-card rounded-xl border border-gray-200 dark:border-white/10 text-center relative z-10">
+    <div class="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+        <i data-lucide="star" class="w-8 h-8 text-gray-400"></i>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No favorites yet</h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm">Mark documents as favorite to access them quickly here.</p>
+</div>
+{% endif %}
 {% endblock %}

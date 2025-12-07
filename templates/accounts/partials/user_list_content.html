@@ -1,25 +1,35 @@
 <!-- Users by group -->
 {% if users_by_group %}
     {% for group_name, users in users_by_group.items %}
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4 text-blue-700">{{ group_name }}</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-white">
-                <thead>
-                    <tr class="bg-gray-100 text-gray-700">
-                        <th class="py-3 px-4 text-left">Username</th>
-                        <th class="py-3 px-4 text-left">Full Name</th>
-                        <th class="py-3 px-4 text-left">Email</th>
-                        <th class="py-3 px-4 text-left">Job Title</th>
+    <div class="glass-card rounded-xl p-6 mb-6 border border-gray-200 dark:border-white/10">
+        <h2 class="text-xl font-bold mb-4 text-neon-violet flex items-center gap-2">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            {{ group_name }}
+        </h2>
+        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-white/10">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+                <thead class="bg-gray-50 dark:bg-white/5">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Username</th>
+                        <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Full Name</th>
+                        <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                        <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Job Title</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200 dark:divide-white/10 bg-transparent">
                     {% for user in users %}
-                    <tr class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-4">{{ user.username }}</td>
-                        <td class="py-3 px-4">{{ user.get_full_name }}</td>
-                        <td class="py-3 px-4">{{ user.email }}</td>
-                        <td class="py-3 px-4">{{ user.job_title|default:"-" }}</td>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                        <td class="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                    {{ user.username|slice:":1"|upper }}
+                                </div>
+                                {{ user.username }}
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{{ user.get_full_name }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ user.email }}</td>
+                        <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">{{ user.job_title|default:"-" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -31,25 +41,35 @@
 
 <!-- Users with no group -->
 {% if users_with_no_group %}
-<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <h2 class="text-xl font-semibold mb-4 text-gray-700">No Group Assigned</h2>
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead>
-                <tr class="bg-gray-100 text-gray-700">
-                    <th class="py-3 px-4 text-left">Username</th>
-                    <th class="py-3 px-4 text-left">Full Name</th>
-                    <th class="py-3 px-4 text-left">Email</th>
-                    <th class="py-3 px-4 text-left">Job Title</th>
+<div class="glass-card rounded-xl p-6 mb-6 border border-gray-200 dark:border-white/10">
+    <h2 class="text-xl font-bold mb-4 text-gray-500 dark:text-gray-400 flex items-center gap-2">
+        <i data-lucide="user-minus" class="w-5 h-5"></i>
+        No Group Assigned
+    </h2>
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-white/10">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+            <thead class="bg-gray-50 dark:bg-white/5">
+                <tr>
+                    <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Username</th>
+                    <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Full Name</th>
+                    <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                    <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Job Title</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-gray-200 dark:divide-white/10 bg-transparent">
                 {% for user in users_with_no_group %}
-                <tr class="border-b border-gray-200 hover:bg-gray-50">
-                    <td class="py-3 px-4">{{ user.username }}</td>
-                    <td class="py-3 px-4">{{ user.get_full_name }}</td>
-                    <td class="py-3 px-4">{{ user.email }}</td>
-                    <td class="py-3 px-4">{{ user.job_title|default:"-" }}</td>
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td class="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                {{ user.username|slice:":1"|upper }}
+                            </div>
+                            {{ user.username }}
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{{ user.get_full_name }}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ user.email }}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">{{ user.job_title|default:"-" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -60,7 +80,11 @@
 
 <!-- No users message -->
 {% if not users_by_group and not users_with_no_group %}
-<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <p class="text-center text-gray-600 py-8">No users found matching the selected criteria.</p>
+<div class="glass-card rounded-xl p-12 mb-6 border border-gray-200 dark:border-white/10 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+        <i data-lucide="users" class="w-8 h-8 text-gray-400"></i>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No users found</h3>
+    <p class="text-gray-500 dark:text-gray-400 text-sm">Try adjusting your filter to see more results.</p>
 </div>
 {% endif %}

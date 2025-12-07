@@ -1,392 +1,277 @@
 {% load crispy_forms_tags %}
 
+<div id="form-errors"></div>
 
-<h5 class="mt-4 text-lg font-medium leading-6 text-base-content">Submit New Document</h5>
+<div class="glass-card rounded-2xl p-8 md:p-10">
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-3">
+            <div class="p-2 rounded-xl bg-neon-violet/10 border border-neon-violet/20 text-neon-violet">
+                <i data-lucide="file-plus" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Submit New Document</h3>
+        </div>
+        <div class="flex items-center gap-3 ml-14 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/5">Workflow: {{ workflow.name }}</span>
+            <span class="px-3 py-1 rounded-full bg-neon-violet/10 border border-neon-violet/20 text-neon-violet shadow-[0_0_10px_rgba(255, 95, 31,0.2)]">New Request</span>
+        </div>
+    </div>
 
-<div class="flex flex-col justify-between items-start pb-6 mb-4 space-y-4 border-b lg:items-center lg:space-y-0 lg:flex-row">
-    <h1 class="text-2xl font-semibold">Workflow: {{ workflow.name }}</h1>
-</div>
-
-<!-- Main form with formHandler -->
-<form x-data="{
-    fieldValues: {},
-    updateFieldValue(event) {
-        const input = event.target;
-        const fieldId = input.getAttribute('name').replace('dynamic_', '');
-        const value = input.type === 'checkbox' ? input.checked : input.value;
-        this.fieldValues[fieldId] = value;
-    },
-    shouldShowApprover(isConditional, conditionFieldId) {
-        // If step is not conditional, always show it
-        if (!isConditional) {
-            return true;
+    <!-- Main form with formHandler -->
+    <form x-data="{
+        fieldValues: {},
+        updateFieldValue(event) {
+            const input = event.target;
+            const fieldId = input.getAttribute('name').replace('dynamic_', '');
+            const value = input.type === 'checkbox' ? input.checked : input.value;
+            this.fieldValues[fieldId] = value;
+        },
+        shouldShowApprover(isConditional, conditionFieldId) {
+            if (!isConditional) return true;
+            if (conditionFieldId === '8' || conditionFieldId === 8) return true;
+            return this.fieldValues[conditionFieldId] === true;
         }
-        // Special case for field ID 8 (Total Quantity field)
-        if (conditionFieldId === '8' || conditionFieldId === 8) {
-            return true;
-        }
-        // If step is conditional, check the condition field value
-        return this.fieldValues[conditionFieldId] === true;
-    }
-}"
-  method="post"
+    }"
+      method="post"
       hx-post="{% url 'document_approval:submit_document' workflow.id %}"
       hx-target="#content-div"
       enctype="multipart/form-data"
       hx-indicator=".progress">
-    {% csrf_token %}
+        {% csrf_token %}
 
-    <div id="form-errors">
-        <!-- Errors will be displayed here -->
-    </div>
-
-    {{ form.title|as_crispy_field }}
-
-    {% if workflow.content_editor %}
-    {% include "document/components/editor.html" %}
-    {% endif %}
-
-    <!-- CC Recipients Section -->
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {% for field in prepared_fields %}
-        {% if field.name != 'Total Quantity' %}
-        <div class="{% if field.input_width == 'quarter' %}md:col-span-1{% elif field.input_width == 'half' %}md:col-span-2{% elif field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
-            <label for="dynamic_{{ field.id }}" class="w-full max-xs">
-                <div class="label">
-                    <span class="label-text">{{ field.name }} {% if field.required %}
-                        <span class="font-bold text-red-500">*</span>
-                    {% endif %}</span>
-                </div>
+        <div class="mb-6">
+            <label for="id_title" class="block w-full mb-2">
+                <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">
+                    Title <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
+                </span>
             </label>
-
-            {% if field.field_type == 'table_list' %}
-        <div id="table-list-field-{{ field.id }}" x-data="{
-            rows: [],
-            columns: '{{ field.table_columns|escapejs }}'
-                .split('|')
-                .filter(c => c.trim() !== '')
-                .map(spec => {
-                    const parts = spec.split(':');
-                    const label = parts[0].trim();
-                    const width = parts[1] ? parseInt(parts[1].trim(), 10) || 150 : 150;
-                    return { label, width };
-                }),
-            addRow() {
-                const newRow = {};
-                this.columns.forEach(col => {
-                    newRow[col.label] = '';
-                });
-                this.rows.push(newRow);
-            },
-            removeRow(index) {
-                this.rows.splice(index, 1);
-            },
-            init() {
-                // Add a default row when component initializes
-                this.addRow();
-            }
-        }">
-            <!-- Main container with relative positioning -->
-            <div class="relative w-full">
-                <!-- Fixed width container that forces horizontal scroll -->
-                <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
-                    <div class="table-list-container" style="min-width: 800px;">
-                        <!-- Header row -->
-                        <div class="flex px-1 mb-2 text-sm text-gray-600">
-                            <template x-for="(col, colIndex) in columns" :key="colIndex">
-                                <div class="p-2 font-medium truncate whitespace-nowrap"
-                                     :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'"
-                                     x-text="col.label"></div>
-                            </template>
-                            <!-- Delete column header placeholder -->
-                            <div class="p-2" style="flex: 0 0 100px;"></div>
-                        </div>
-
-                        <!-- Data rows -->
-                        <div class="space-y-2">
-                            <template x-for="(row, rowIndex) in rows" :key="rowIndex">
-                                <div class="flex">
-                                    <template x-for="(col, colIndex) in columns" :key="colIndex">
-                                        <div class="p-1"
-                                             :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'">
-                                            <input type="text"
-                                                   class="p-2 w-full rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                                   :name="'table_' + '{{ field.id }}' + '_' + col.label + '[]'"
-                                                   x-model="row[col.label]"
-                                                   :placeholder="col.label"
-                                                   required>
-                                        </div>
-                                    </template>
-                                    <div class="p-1" style="flex: 0 0 100px;">
-                                        <button type="button"
-                                                class="flex justify-center items-center w-full h-10 text-white bg-red-500 rounded hover:bg-red-600"
-                                                @click="removeRow(rowIndex)">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions section -->
-                <div class="flex gap-4 justify-between items-center mt-4">
-                    <button type="button"
-                    class="flex justify-center items-center px-4 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2"
-                            @click="addRow()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-1 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>Add Row</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-            {% elif field.field_type == 'product_list' %}
-        <div x-data="{
-            products: {{ field.default_products|default:'[]'|safe }},
-            addProduct() {
-                this.products.push({
-                    id: '',
-                    code: '',
-                    name: '',
-                    quantity: '',
-                    remark: '',
-                    batch_no: '',
-                    bin_location: ''
-                });
-            },
-            removeProduct(index) {
-                this.products.splice(index, 1);
-                this.updateTotalQuantity();
-            },
-            updateTotalQuantity() {
-                const total = this.products.reduce((sum, product) => {
-                    return sum + (parseInt(product.quantity) || 0);
-                }, 0);
-                this.$refs.totalQuantity.textContent = total;
-            }
-        }">
-            <!-- Main container with relative positioning -->
-            <div class="relative w-full">
-                <!-- Fixed width container that forces horizontal scroll -->
-                <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
-                    <div class="min-w-[800px]" style="width: fit-content;"> <!-- Content with minimum width -->
-                        <!-- Headers -->
-                        <div class="flex gap-2 px-1 mb-2 text-sm text-gray-600">
-                            <div style="width: 80px;">ID</div>
-                            <div style="width: 150px;">Code</div>
-                            <div style="width: 300px;">Product Name</div>
-                            <div style="width: 100px;">Quantity</div>
-                            <div style="width: 200px;">Batch No</div>
-                            <div style="width: 200px;">Bin Location</div>
-                            <div style="width: 250px;">Remark</div>
-                            <div style="width: 100px;"></div>
-                        </div>
-
-                        <!-- Product rows -->
-                        <div class="space-y-2">
-                            <template x-for="(product, index) in products" :key="index">
-                                <div class="flex gap-2">
-                                    <input type="number"
-                                           style="width: 80px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_id_{{ field.id }}[]'"
-                                           x-model="product.id"
-                                           placeholder="ID"
-                                           required>
-
-                                    <input type="text"
-                                           style="width: 150px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_code_{{ field.id }}[]'"
-                                           x-model="product.code"
-                                           placeholder="CODE"
-                                           required>
-
-                                    <input type="text"
-                                           style="width: 300px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_name_{{ field.id }}[]'"
-                                           x-model="product.name"
-                                           placeholder="Product Name"
-                                           required>
-
-                                    <input type="number"
-                                           style="width: 100px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_quantity_{{ field.id }}[]'"
-                                           x-model="product.quantity"
-                                           placeholder="Qty"
-                                           required
-                                           @input="updateTotalQuantity()">
-
-                                    <input type="text"
-                                           style="width: 200px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_batch_no_{{ field.id }}[]'"
-                                           x-model="product.batch_no"
-                                           placeholder="Batch No">
-
-                                    <input type="text"
-                                           style="width: 200px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_bin_location_{{ field.id }}[]'"
-                                           x-model="product.bin_location"
-                                           placeholder="Bin Location">
-
-                                    <input type="text"
-                                           style="width: 250px;"
-                                           class="p-2 rounded-md border-2 border-gray-200 focus:border-blue-500 focus:outline-none"
-                                           :name="'product_remark_{{ field.id }}[]'"
-                                           x-model="product.remark"
-                                           placeholder="Remark">
-
-                                    <button type="button"
-                                            style="width: 100px;"
-                                            class="px-4 h-9 text-white bg-red-500 rounded hover:bg-red-600"
-                                            @click="removeProduct(index)">
-                                        Delete
-                                    </button>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions section -->
-                <div class="flex gap-4 justify-between items-center mt-4">
-                    <button type="button"
-                    class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2"
-                            @click="addProduct()">
-                        Add Product
-                    </button>
-
-                    <div class="text-lg text-gray-600">
-                        Total Quantity: <span x-ref="totalQuantity" class="font-bold">0</span>
-                    </div>
-                    {% for field in workflow.dynamic_fields.all %}
-                        {% if field.name == 'Total Quantity' %}
-                            <input type="hidden" name="dynamic_{{ field.id }}" :value="products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0)">
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        {% elif field.field_type == 'attachment' %}
-        {% if field.file %}
-            <p>Current file: {{ field.file.name }}</p>
-            <button type="button" class="text-sm overflow-clip border rounded-radius border-outline bg-surface-alt/50 text-on-surface file:mr-4 file:border-none file:bg-surface-alt file:px-4 file:py-2 file:font-medium file:text-on-surface-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-75"
-                    hx-delete="{% url 'delete_attachment' field.id  %}"
-                    hx-target="#dynamic_{{ field.id }}-container"
-                    hx-swap="outerHTML">
-                Delete File
-            </button>
-        {% endif %}
-        <input type="file" class="text-sm overflow-clip border rounded-radius border-outline bg-surface-alt/50 text-on-surface file:mr-4 file:border-none file:bg-surface-alt file:px-4 file:py-2 file:font-medium file:text-on-surface-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-75" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-               {% if field.required and not field.file %}{% endif %}>
-
-    {% elif field.field_type  == 'textarea' %}
-    <textarea name="dynamic_{{ field.id }}" class="block px-3 py-2 mt-1 w-full text-gray-700 rounded-md border border-gray-300 shadow-sm focus:outline-none" rows="{{ field.textarea_rows }}"></textarea>
-
-    {% elif field.field_type == 'tiptap_editor' %}
-    <div x-data="editor('')" class="bg-white rounded-xl tiptap-editor">
-      <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
-      <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-white rounded-t-lg border-t border-x">
-        {% include "document/components/editor_toolbar.html" %}
-      </div>
-      <article class="max-w-none prose">
-        <div x-ref="element"></div>
-      </article>
-    </div>
-
-    {% elif field.field_type == 'number' %}
-        <input type="number" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-               value="{{ field.value }}" {% if field.required %}{% endif %}>
-    {% elif field.field_type == 'text' %}
-        <input type="text" class="px-3 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-
-
-               {% if field.required %}{% endif %}>
-    {% elif field.field_type == 'date' %}
-
-        <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
-        class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 ps-10" placeholder="Select date"
-               {% if field.required %}{% endif %}>
-
-            {% elif field.field_type == 'boolean' %}
-
-
-            <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
-                <input type="checkbox"
-                       name="dynamic_{{ field.id }}"
-                       id="dynamic_{{ field.id }}"
-                       class="sr-only peer"
-                       @change="updateFieldValue($event); isChecked = !isChecked"
-                       {% if field.value == 'on' %}checked{% endif %}
-                       {% if field.required %}required{% endif %}>
-                <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-                <span class="text-sm font-medium text-gray-900 ms-3 dark:text-gray-300" x-text="isChecked ? 'Yes' : 'No'"></span>
-            </label>
-
-            {% elif field.field_type == 'choice' %}
-            <select name="dynamic_{{ field.id }}"
-                    class="w-full select select-bordered"
-                    @change="updateFieldValue($event)"
-                    {% if field.required %}required{% endif %}>
-                <option value="">Select an option</option>
-                {% for choice in field.choices %}
-                    <option value="{{ choice }}">{{ choice }}</option>
-                {% endfor %}
-            </select>
-
-            {% elif field.field_type == 'multiple_choice' %}
-            <div class="flex flex-col space-y-2">
-                {% for choice in field.choices %}
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="checkbox" >
-                        <span>{{ choice }}</span>
-                    </label>
-                {% endfor %}
-            </div>
-
-            {% else %}
-            <!-- Other field types remain unchanged -->
-            <input type="{{ field.field_type }}"
-                   class="px-2 py-2 w-full leading-tight text-gray-700 rounded border-2 focus:outline-none focus:bg-white focus:border-blue-500"
-                   name="dynamic_{{ field.id }}"
-                   id="dynamic_{{ field.id }}"
-                   value="{{ field.value }}"
-                   {% if field.required %}required{% endif %}>
+            <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white placeholder-gray-500" required placeholder="Enter document title">
+            {% if form.title.errors %}
+                <p class="mt-1 text-sm text-red-500">{{ form.title.errors.0 }}</p>
             {% endif %}
         </div>
+
+        {% if workflow.content_editor %}
+        {% include "document/components/editor.html" %}
         {% endif %}
-        {% endfor %}
-    </div>
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
+            {% for field in prepared_fields %}
+            {% if field.name != 'Total Quantity' %}
+            <div class="{% if field.input_width == 'quarter' %}md:col-span-1{% elif field.input_width == 'half' %}md:col-span-2{% elif field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
+                <label for="dynamic_{{ field.id }}" class="block w-full mb-2">
+                    <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">
+                        {{ field.name }} 
+                        {% if field.required %}
+                            <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
+                        {% endif %}
+                    </span>
+                </label>
+
+                {% if field.field_type == 'table_list' %}
+                <div id="table-list-field-{{ field.id }}" x-data="{
+                    rows: [],
+                    columns: '{{ field.table_columns|escapejs }}'.split('|').filter(c => c.trim() !== '').map(spec => {
+                        const parts = spec.split(':');
+                        return { label: parts[0].trim(), width: parts[1] ? parseInt(parts[1].trim(), 10) || 150 : 150 };
+                    }),
+                    addRow() {
+                        const newRow = {};
+                        this.columns.forEach(col => newRow[col.label] = '');
+                        this.rows.push(newRow);
+                        this.$nextTick(() => { lucide.createIcons(); });
+                    },
+                    removeRow(index) { this.rows.splice(index, 1); },
+                    init() { this.addRow(); }
+                }">
+                    <div class="relative w-full">
+                        <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
+                            <div class="table-list-container" style="min-width: 800px;">
+                                <div class="flex px-1 mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <template x-for="(col, colIndex) in columns" :key="colIndex">
+                                        <div class="p-2 font-medium truncate whitespace-nowrap" :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'" x-text="col.label"></div>
+                                    </template>
+                                    <div class="p-2" style="flex: 0 0 100px;"></div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <template x-for="(row, rowIndex) in rows" :key="rowIndex">
+                                        <div class="flex">
+                                            <template x-for="(col, colIndex) in columns" :key="colIndex">
+                                                <div class="p-1" :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'">
+                                                    <input type="text"
+                                                           class="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 transition-all"
+                                                           :name="'table_' + '{{ field.id }}' + '_' + col.label + '[]'"
+                                                           x-model="row[col.label]"
+                                                           :placeholder="col.label"
+                                                           required>
+                                                </div>
+                                            </template>
+                                            <div class="p-1" style="flex: 0 0 100px;">
+                                                <button type="button" class="flex justify-center items-center w-full h-10 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" @click="removeRow(rowIndex)">
+                                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 justify-between items-center mt-4">
+                            <button type="button" class="flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] transition-all" @click="addRow()">
+                                <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Row
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {% elif field.field_type == 'product_list' %}
+                <div x-data="{
+                    products: {{ field.default_products|default:'[]'|safe }},
+                    addProduct() {
+                        this.products.push({ id: '', code: '', name: '', quantity: '', remark: '', batch_no: '', bin_location: '' });
+                        this.$nextTick(() => { lucide.createIcons(); });
+                    },
+                    removeProduct(index) {
+                        this.products.splice(index, 1);
+                        this.updateTotalQuantity();
+                    },
+                    updateTotalQuantity() {
+                        const total = this.products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0);
+                        if (this.$refs.totalQuantity) {
+                            this.$refs.totalQuantity.textContent = total;
+                        }
+                    }
+                }">
+                    <div class="relative w-full">
+                        <div class="overflow-x-auto relative" style="max-width: 100%; overflow-y: hidden;">
+                            <div class="min-w-[800px]" style="width: fit-content;">
+                                <div class="flex gap-2 px-1 mb-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div style="width: 80px;">ID</div>
+                                    <div style="width: 150px;">Code</div>
+                                    <div style="width: 300px;">Product Name</div>
+                                    <div style="width: 100px;">Quantity</div>
+                                    <div style="width: 200px;">Batch No</div>
+                                    <div style="width: 200px;">Bin Location</div>
+                                    <div style="width: 250px;">Remark</div>
+                                    <div style="width: 100px;"></div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <template x-for="(product, index) in products" :key="index">
+                                        <div class="flex gap-2 py-1">
+                                            <input type="number" style="width: 80px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_id_{{ field.id }}[]'" x-model="product.id" placeholder="ID" required>
+                                            <input type="text" style="width: 150px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_code_{{ field.id }}[]'" x-model="product.code" placeholder="CODE" required>
+                                            <input type="text" style="width: 300px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_name_{{ field.id }}[]'" x-model="product.name" placeholder="Product Name" required>
+                                            <input type="number" style="width: 100px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_quantity_{{ field.id }}[]'" x-model="product.quantity" placeholder="Qty" required @input="updateTotalQuantity()">
+                                            <input type="text" style="width: 200px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_batch_no_{{ field.id }}[]'" x-model="product.batch_no" placeholder="Batch No">
+                                            <input type="text" style="width: 200px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_bin_location_{{ field.id }}[]'" x-model="product.bin_location" placeholder="Bin Location">
+                                            <input type="text" style="width: 250px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_remark_{{ field.id }}[]'" x-model="product.remark" placeholder="Remark">
+                                            <button type="button" style="width: 100px;" class="flex justify-center items-center gap-2 px-3 h-9 text-sm text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-md font-medium transition-colors" @click="removeProduct(index)">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 justify-between items-center mt-4">
+                            <button type="button" class="flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] transition-all" @click="addProduct()">
+                                <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Row
+                            </button>
+                            {% for field in workflow.dynamic_fields.all %}
+                                {% if field.name == 'Total Quantity' %}
+                                    <div class="text-lg text-gray-600 dark:text-gray-300">
+                                        Total Quantity: <span x-ref="totalQuantity" class="font-bold text-neon-violet">0</span>
+                                    </div>
+                                    <input type="hidden" name="dynamic_{{ field.id }}" :value="products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0)">
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% elif field.field_type == 'attachment' %}
+                {% if field.file %}
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Current file: {{ field.file.name }}</p>
+                    <button type="button" class="flex items-center gap-2 px-4 py-2 text-sm text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
+                            hx-delete="{% url 'delete_attachment' field.id  %}"
+                            hx-target="#dynamic_{{ field.id }}-container"
+                            hx-swap="outerHTML">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        Delete File
+                    </button>
+                {% endif %}
+                <input type="file" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-violet/10 file:text-neon-violet hover:file:bg-neon-violet/20" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}">
+
+                {% elif field.field_type  == 'textarea' %}
+                <textarea name="dynamic_{{ field.id }}" class="block w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white placeholder-gray-500" rows="{{ field.textarea_rows }}"></textarea>
+
+                {% elif field.field_type == 'tiptap_editor' %}
+                <div x-data="editor('')" class="bg-white dark:bg-[#1a1a1a] rounded-xl tiptap-editor border border-gray-200 dark:border-white/10">
+                  <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
+                  <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-transparent border-b border-gray-200 dark:border-white/10 rounded-t-lg">
+                    {% include "document/components/editor_toolbar.html" %}
+                  </div>
+                  <article class="max-w-none prose prose-sm dark:prose-invert p-4">
+                    <div x-ref="element"></div>
+                  </article>
+                </div>
+
+                {% elif field.field_type == 'number' %}
+                    <input type="number" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                
+                {% elif field.field_type == 'text' %}
+                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" {% if field.required %}{% endif %}>
+                
+                {% elif field.field_type == 'date' %}
+                    <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" {% if field.required %}{% endif %}>
+
+                {% elif field.field_type == 'boolean' %}
+                    <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
+                        <input type="checkbox" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="sr-only peer" @change="updateFieldValue($event); isChecked = !isChecked" {% if field.value == 'on' %}checked{% endif %} {% if field.required %}required{% endif %}>
+                        <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-neon-violet/30 dark:peer-focus:ring-neon-violet/30 dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-neon-violet"></div>
+                        <span class="text-sm font-medium text-gray-900 ms-3 dark:text-gray-300" x-text="isChecked ? 'Yes' : 'No'"></span>
+                    </label>
+
+                {% elif field.field_type == 'choice' %}
+                    <select name="dynamic_{{ field.id }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" @change="updateFieldValue($event)" {% if field.required %}required{% endif %}>
+                        <option value="">Select an option</option>
+                        {% for choice in field.choices %}
+                            <option value="{{ choice }}">{{ choice }}</option>
+                        {% endfor %}
+                    </select>
+
+                {% elif field.field_type == 'multiple_choice' %}
+                    <div class="flex flex-col space-y-2">
+                        {% for choice in field.choices %}
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="rounded border-gray-300 dark:border-white/10 text-neon-violet focus:ring-neon-violet bg-gray-50 dark:bg-white/5" >
+                                <span class="text-gray-700 dark:text-gray-300">{{ choice }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                {% else %}
+                    <input type="{{ field.field_type }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
 
     {% if steps_with_approvers %}
-    <h3 class="mt-6 mb-4 text-lg font-medium">Select Approvers</h3>
+    <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900 dark:text-white">Select Approvers</h3>
     {% for step_info in steps_with_approvers %}
-    {% comment %}
-    The 'with' tag creates a variable `script_id` to hold the unique ID for our data.
-    We now use 'step_info.step_id_str' from the view to guarantee string concatenation.
-  {% endcomment %}
-  {% with script_id="potential-approvers-"|add:step_info.step_id_str %}
-  
+    {% with script_id="potential-approvers-"|add:step_info.step_id_str %}
     {{ step_info.potential_approvers|json_script:script_id }}
-  
     <div class="mt-6 mb-6"
          x-data="userSearch('{{ script_id }}', null, {{ request.user.id }})"
          x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
-  
         <div class="mb-2">
-            <span class="font-medium">{{ step_info.step.name }}</span>
-            <span class="text-gray-600">
+            <span class="font-medium text-gray-900 dark:text-white">{{ step_info.step.name }}</span>
+            <span class="text-gray-600 dark:text-gray-400">
                 ({% if step_info.step.approver_groups.exists %}
                     {% for group in step_info.step.approver_groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                 {% else %}
@@ -394,200 +279,134 @@
                 {% endif %})
             </span>
         </div>
-  
         <input type="hidden" name="approver_{{ step_info.step.id }}" x-model="selected">
-  
         <div class="mb-4">
-            <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
+            <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
                 <template x-if="selected">
-                    <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
+                    <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
                         <div>
-                            <div x-text="selectedUser.full_name" class="font-medium"></div>
-                            <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500"></div>
+                            <div x-text="selectedUser.full_name" class="font-medium text-gray-900 dark:text-white"></div>
+                            <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500 dark:text-gray-400"></div>
                         </div>
-                        <button type="button" @click="reset()" class="self-start ml-2 text-gray-500 hover:text-red-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <button type="button" @click="reset()" class="self-start ml-2 text-gray-500 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>
                 </template>
-  
-                <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
+                <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">
                     + Select Approver
                 </button>
             </div>
-  
-            <p x-show="!selected" class="mt-1 text-sm text-red-500">
-                Please select an approver
-            </p>
+            <p x-show="!selected" class="mt-1 text-sm text-red-500 opacity-80">Please select an approver</p>
         </div>
-  
-        <div x-show="showDialog" @click.self="closeDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" style="display: none;">
-            <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
-                <h3 class="mb-4 text-lg font-medium">Select Approver      <span x-text="'(' + options.length + ' selectable users)'" class="text-sm font-normal text-gray-500"></span></h3>
-          
-                <div class="relative mb-4">
-                    <input type="text"
-                           id="user-search-dialog-input"
-                           x-model="search"
-                           placeholder="Search by name or job title..."
-                           class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-  
-                <div class="overflow-y-auto mb-4 max-h-60">
-                    <template x-if="filteredOptions.length === 0 && search.length > 0">
-                        <div class="py-2 text-sm text-gray-500">No approvers found</div>
-                    </template>
-                    <template x-for="option in filteredOptions" :key="option.id">
-                        <div class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
-                             @click="selectUser(option)"
-                             :class="{ 'bg-blue-50': selected === option.id }">
-                            <div>
-                                <div x-text="option.full_name" class="font-medium"></div>
-                                <div x-show="option.job_title" x-text="option.job_title" class="text-sm text-gray-500"></div>
+        <!-- Dialog -->
+        <template x-teleport="body">
+            <div x-show="showDialog" @click.self="closeDialog" class="flex fixed inset-0 z-[999] justify-center items-center bg-black/80 backdrop-blur-sm" style="display: none;">
+                <div class="p-6 w-full max-w-md bg-white dark:bg-[#111] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10" @click.stop>
+                    <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Select Approver</h3>
+                    <div class="relative mb-4">
+                        <input type="text" id="user-search-dialog-input" x-model="search" placeholder="Search..." class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
+                    </div>
+                    <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
+                        <template x-if="filteredOptions.length === 0 && search.length > 0">
+                            <div class="py-2 text-sm text-gray-500">No approvers found</div>
+                        </template>
+                        <template x-for="option in filteredOptions" :key="option.id">
+                            <div class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" @click="selectUser(option)" :class="{ 'bg-neon-violet/10': selected === option.id }">
+                                <div>
+                                    <div x-text="option.full_name" class="font-medium text-gray-900 dark:text-white"></div>
+                                    <div x-show="option.job_title" x-text="option.job_title" class="text-sm text-gray-500 dark:text-gray-400"></div>
+                                </div>
+                                <div x-show="selected === option.id" class="text-neon-violet"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg></div>
                             </div>
-                            <div x-show="selected === option.id" class="text-blue-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-  
-                <div class="flex justify-end">
-                    <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-                        Close
-                    </button>
+                        </template>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">Close</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
-  {% endwith %}
+    {% endwith %}
     {% endfor %}
     {% endif %}
-<!-- CC Recipients Section -->
-<div class="mb-6">
-    <div class="flex items-center mb-2">
-        <span class="font-medium label-text">CC Recipients</span>
-        <span class="ml-2 text-sm text-gray-500">(These users will receive email notifications when the document is approved)</span>
-    </div>
 
-  <div x-data="ccRecipients" x-init="$nextTick(() => { loadDocumentAuthorizedUsers(); })">
-    <div class="mb-4">
-      <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white rounded-md border border-gray-300 min-h-10">
-        <template x-for="user in selectedUsers" :key="user.id">
-          <div class="flex items-center px-2 py-1 text-sm bg-blue-100 rounded-md">
-            <span x-text="user.full_name || user.username"></span>
-            <button type="button" @click="removeUser(user.id)" class="ml-2 text-gray-500 hover:text-red-500">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </template>
-
-        <button type="button" @click="openDialog" class="px-2 py-1 text-sm text-blue-500 rounded-md border border-blue-300 hover:bg-blue-50">
-          + Add User
-        </button>
-      </div>
-
-      <!-- Hidden container for user IDs -->
-      <div id="cc-recipients-container"></div>
-    </div>
-
-    <!-- User search dialog -->
-    <div x-show="showDialog" class="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50" @click.self="closeDialog">
-      <div class="p-4 w-full max-w-md bg-white rounded-lg shadow-lg" @click.stop>
-        <h3 class="mb-4 text-lg font-medium">Search Users</h3>
-
-        <div class="relative mb-4">
-          <input
-            type="text"
-            id="user-search-input"
-            x-model="searchQuery"
-            @input="searchUsers"
-            placeholder="Search by name, username, or email"
-            class="px-3 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-          <div x-show="isLoading" class="flex absolute inset-y-0 right-0 items-center pr-3">
-            <svg class="w-5 h-5 text-gray-400 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
+    <!-- CC Recipients Section -->
+    <div class="mb-6">
+        <div class="flex items-center mb-2">
+            <span class="font-medium label-text text-gray-900 dark:text-white">CC Recipients</span>
+            <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">(Optional notification receivers)</span>
         </div>
-
-        <div x-show="errorMessage" class="p-2 mb-4 text-sm text-red-700 bg-red-100 rounded-md" x-text="errorMessage"></div>
-
-        <div class="overflow-y-auto mb-4 max-h-60">
-          <template x-if="searchResults.length === 0 && searchQuery.length >= 2">
-            <div class="py-2 text-sm text-gray-500">No users found</div>
-          </template>
-
-          <template x-for="user in searchResults" :key="user.id">
-            <div
-              class="flex justify-between items-center p-2 cursor-pointer hover:bg-gray-100"
-              @click="selectUser(user)"
-              :class="{ 'bg-blue-50': isUserSelected(user.id) }"
-            >
-              <div>
-                <div x-text="user.full_name || user.username" class="font-medium"></div>
-                <div x-text="user.email" class="text-sm text-gray-500"></div>
-              </div>
-              <div x-show="isUserSelected(user.id)" class="text-blue-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+        <div x-data="ccRecipients" x-init="$nextTick(() => { loadDocumentAuthorizedUsers(); })">
+            <div class="mb-4">
+                <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
+                    <template x-for="user in selectedUsers" :key="user.id">
+                        <div class="flex items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
+                            <span x-text="user.full_name || user.username" class="text-gray-900 dark:text-white"></span>
+                            <button type="button" @click="removeUser(user.id)" class="ml-2 text-gray-500 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                        </div>
+                    </template>
+                    <button type="button" @click="openDialog" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">+ Add User</button>
+                </div>
+                <div id="cc-recipients-container"></div>
             </div>
-          </template>
+            <!-- CC Dialog -->
+            <template x-teleport="body">
+                <div x-show="showDialog" class="flex fixed inset-0 z-[999] justify-center items-center bg-black/80 backdrop-blur-sm" @click.self="closeDialog" style="display:none;">
+                    <div class="p-6 w-full max-w-md bg-white dark:bg-[#111] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10" @click.stop>
+                        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Search Users</h3>
+                        <div class="relative mb-4">
+                            <input type="text" id="user-search-input" x-model="searchQuery" @input="searchUsers" placeholder="Search..." class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
+                        </div>
+                        <div x-show="errorMessage" class="p-2 mb-4 text-sm text-white bg-red-500/80 rounded-md" x-text="errorMessage"></div>
+                        <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
+                            <template x-if="searchResults.length === 0 && searchQuery.length >= 2">
+                                <div class="py-2 text-sm text-gray-500">No users found</div>
+                            </template>
+                            <template x-for="user in searchResults" :key="user.id">
+                                <div class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" @click="selectUser(user)" :class="{ 'bg-neon-violet/10': isUserSelected(user.id) }">
+                                    <div>
+                                        <div x-text="user.full_name || user.username" class="font-medium text-gray-900 dark:text-white"></div>
+                                        <div x-text="user.email" class="text-sm text-gray-500 dark:text-gray-400"></div>
+                                    </div>
+                                    <div x-show="isUserSelected(user.id)" class="text-neon-violet"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><polyline points="20 6 9 17 4 12"/></svg></div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
-
-        <div class="flex justify-end">
-          <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
-            Close
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
 
-
-    <div class="flex mt-4 space-x-2">
-        <button type="submit" name="save_draft" value="1"
-                class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-teal-200 to-lime-200 rounded-lg hover:bg-gradient-to-l hover:from-teal-200 hover:to-lime-200 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-teal-700 me-2">
+    <div class="flex mt-10 space-x-4">
+        <button type="submit" name="save_draft" value="1" class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:text-white hover:bg-white/10 transition-colors">
+            <i data-lucide="save" class="w-4 h-4"></i>
             Save Draft
         </button>
-        <button type="submit" id="submit-document-button"
-                class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 disabled:opacity-50 disabled:cursor-not-allowed me-2">
+        <button type="submit" id="submit-document-button" class="flex items-center gap-2 px-8 py-2.5 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] hover:shadow-[0_0_20px_rgba(255, 95, 31,0.6)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+            <i data-lucide="send" class="w-4 h-4"></i>
             Submit Document
         </button>
     </div>
-
 </form>
+
 <script>
     (function() {
         function updateSubmitDisabled() {
             var submitBtn = document.getElementById('submit-document-button');
             if (!submitBtn) return;
-
             var triggers = document.querySelectorAll('[data-approver-trigger]');
             var hasMissing = false;
-            triggers.forEach(function(btn) {
-                if (btn.offsetParent !== null) {
-                    hasMissing = true;
-                }
-            });
-
+            triggers.forEach(function(btn) { if (btn.offsetParent !== null) hasMissing = true; });
             submitBtn.disabled = hasMissing;
         }
-
         document.addEventListener('DOMContentLoaded', function() {
             updateSubmitDisabled();
             setInterval(updateSubmitDisabled, 300);
         });
     })();
 </script>
+</div>

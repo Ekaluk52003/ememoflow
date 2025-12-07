@@ -1,13 +1,22 @@
 
 
-  <button hx-post="{% url 'document_approval:toggle_favorite' document.id %}"
-          hx-swap="outerHTML"
-           class="{% if is_favorite %}text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2{% else %} text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2{% endif %} mr-4">
-      {% if is_favorite %}
-          Unfavorite
-      {% else %}
-          Favorite
-      {% endif %}
-  </button
+<button hx-post="{% url 'document_approval:toggle_favorite' document.id %}"
+        hx-swap="outerHTML"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200
+        {% if is_favorite %}
+            bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20 hover:bg-red-500/10 hover:text-red-600 hover:border-red-500/20 group
+        {% else %}
+            bg-white dark:bg-white/5 text-gray-700 dark:text-white border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-neon-violet hover:border-neon-violet/30
+        {% endif %}">
+    {% if is_favorite %}
+        <i data-lucide="star" class="w-4 h-4 fill-current group-hover:hidden"></i>
+        <i data-lucide="x" class="w-4 h-4 hidden group-hover:block"></i>
+        <span class="group-hover:hidden">Favorited</span>
+        <span class="hidden group-hover:inline">Unfavorite</span>
+    {% else %}
+        <i data-lucide="star" class="w-4 h-4"></i>
+        <span>Favorite</span>
+    {% endif %}
+</button>
 
 

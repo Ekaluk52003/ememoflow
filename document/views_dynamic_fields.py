@@ -305,6 +305,20 @@ def field_preview(request, field_id=None):
     """Preview a dynamic field"""
     if field_id:
         field = get_object_or_404(DynamicField, id=field_id)
+        
+        # Add helper properties that the template expects
+        if field.choices:
+            field.choices_list = [c.strip() for c in field.choices.split(',')]
+        else:
+            field.choices_list = []
+            
+        field.table_columns_list = [c.split(':')[0] for c in (field.table_columns.split('|') if field.table_columns else [])]
+        # Handle product_list_columns if it exists, otherwise fallback or empty
+        if hasattr(field, 'product_list_columns'):
+             field.product_list_columns_list = [c.split(':')[0] for c in (field.product_list_columns.split('|') if field.product_list_columns else [])]
+        else:
+             field.product_list_columns_list = []
+
         # Check if this is an embed request
         is_embed = request.GET.get('embed', 'false').lower() == 'true'
         template = 'document/dynamic_fields/field_preview_embed.html' if is_embed else 'document/dynamic_fields/field_preview.html'
@@ -341,9 +355,13 @@ def field_preview(request, field_id=None):
         temp_field.get_width_display = lambda: dict(DynamicField.WIDTH_CHOICES).get(temp_field.input_width, '')
         
         # Add helper properties for lists
-        temp_field.choices_list = temp_field.choices.splitlines() if temp_field.choices else []
-        temp_field.table_columns_list = temp_field.table_columns.split('|') if temp_field.table_columns else []
-        temp_field.product_list_columns_list = temp_field.product_list_columns.split('|') if temp_field.product_list_columns else []
+        if temp_field.choices:
+            temp_field.choices_list = [c.strip() for c in temp_field.choices.split(',')]
+        else:
+            temp_field.choices_list = []
+            
+        temp_field.table_columns_list = [c.split(':')[0] for c in (temp_field.table_columns.split('|') if temp_field.table_columns else [])]
+        temp_field.product_list_columns_list = [c.split(':')[0] for c in (temp_field.product_list_columns.split('|') if temp_field.product_list_columns else [])]
         
         response = render(request, 'document/dynamic_fields/field_preview_partial.html', {
             'field': temp_field

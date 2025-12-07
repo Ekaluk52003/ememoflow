@@ -3,9 +3,23 @@
 {% block title %}Approval Authorizations{% endblock %}
 
 {% block content %}
-<div class="container px-4 py-8 mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Approval Authorizations</h1>
+<!-- Hero Section -->
+<div class="mb-10 relative z-10">
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3 relative">
+        Approval <br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-violet to-neon-purple text-glow">Authorizations</span>
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
+        Manage delegation of your approval authority and view authorizations given to you.
+    </p>
+    <!-- Background Glow -->
+    <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+</div>
+
+<div class="container mx-auto relative z-10 space-y-8">
+    
+    <!-- Header & Action -->
+    <div class="flex justify-end items-center">
         <div x-data="{ showCreateModal: false, users: [], loading: true, currentDate: new Date().toISOString().slice(0, 16), selectedUser: null, dropdownOpen: false }">
             <!-- Button to open the modal -->
             <button @click="showCreateModal = true; 
@@ -18,10 +32,11 @@
                          })
                          .catch(error => {
                              console.error('Error fetching users:', error);
-                             loading = false;
+                             loading = false; 
                          });
                      }"
-                    class="px-4 py-2 text-white bg-blue-500 rounded shadow hover:bg-blue-600">
+                    class="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-xl shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5">
+                <i data-lucide="plus" class="w-4 h-4"></i>
                 Create New Authorization
             </button>
             
@@ -29,246 +44,210 @@
             <div x-show="showCreateModal" 
                  x-cloak
                  x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 transform scale-90"
-                 x-transition:enter-end="opacity-100 transform scale-100"
-                 x-transition:leave="transition ease-in duration-300"
-                 x-transition:leave-start="opacity-100 transform scale-100"
-                 x-transition:leave-end="opacity-0 transform scale-90"
-                 class="flex fixed inset-0 z-50 justify-center items-center" 
-                 style="background-color: rgba(0,0,0,0.5);">
-                <div @click.away="showCreateModal = false" class="p-6 mx-auto max-w-2xl bg-white rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-900">New Authorization</h3>
-                        <button @click="showCreateModal = false" class="text-gray-500 hover:text-gray-700">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                 
+                <div @click.away="showCreateModal = false" 
+                     class="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 m-4 overflow-hidden">
+                    
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">New Authorization</h3>
+                        <button @click="showCreateModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
                     
-                    <form hx-post="{% url 'document_approval:create_authorization' %}" 
-                          hx-target="#given-authorizations-table tbody" 
-                          hx-swap="beforeend"
-                          id="create-authorization-form"
-                          @htmx:after-request="if(event.detail.successful) { showCreateModal = false; }"
-                          class="space-y-4">
-                        {% csrf_token %}
-                    
+                    <div class="p-6">
+                        <form hx-post="{% url 'document_approval:create_authorization' %}" 
+                              hx-target="#given-authorizations-table tbody" 
+                              hx-swap="beforeend"
+                              id="create-authorization-form"
+                              @htmx:after-request="if(event.detail.successful) { showCreateModal = false; }"
+                              class="space-y-6">
+                            {% csrf_token %}
                         
-                        <!-- Authorized User -->
-                        <div class="form-group">
-                            <label for="authorized_user" class="block mb-1 text-sm font-medium text-gray-700">
-                                Authorize User *
-                            </label>
-                            <div class="relative">
-                                <!-- Custom dropdown with Alpine.js -->
+                            <!-- Authorized User -->
+                            <div class="form-group">
+                                <label for="authorized_user" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Authorize User *
+                                </label>
                                 <div class="relative">
                                     <input type="hidden" name="authorized_user" id="authorized_user" :value="selectedUser ? selectedUser.id : ''" required>
                                     <button 
                                         type="button"
                                         @click="dropdownOpen = !dropdownOpen" 
-                                        class="block py-2 pr-10 pl-3 mt-1 w-full text-left text-base rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm shadow-sm"
-                                        :class="{'bg-gray-200 text-gray-500': loading}"
+                                        class="flex items-center justify-between w-full px-4 py-3 text-left text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white"
+                                        :class="{'opacity-50 cursor-not-allowed': loading}"
                                         :disabled="loading">
                                         <span x-text="selectedUser ? selectedUser.username : 'Select a user'"></span>
-                                        <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </span>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                                     </button>
                                     
                                     <!-- Dropdown menu -->
-                                    <div 
-                                        x-show="dropdownOpen" 
-                                        @click.away="dropdownOpen = false"
-                                        x-transition:enter="transition ease-out duration-100"
-                                        x-transition:enter-start="transform opacity-0 scale-95"
-                                        x-transition:enter-end="transform opacity-100 scale-100"
-                                        x-transition:leave="transition ease-in duration-75"
-                                        x-transition:leave-start="transform opacity-100 scale-100"
-                                        x-transition:leave-end="transform opacity-0 scale-95"
-                                        class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
-                                        style="max-width: 100%;">
-                                        <div x-show="users.length === 0" class="px-4 py-2 text-sm text-gray-500">No users available</div>
+                                    <div x-show="dropdownOpen" 
+                                         @click.away="dropdownOpen = false"
+                                         class="absolute z-10 w-full mt-1 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto">
+                                        <div x-show="users.length === 0" class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No users available</div>
                                         <template x-for="user in users" :key="user.id">
-                                            <div 
-                                                @click="selectedUser = user; dropdownOpen = false" 
-                                                class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 text-gray-900"
-                                                :class="{'bg-blue-50': selectedUser && selectedUser.id === user.id}">
-                                                <span x-text="user.username" class="block truncate"></span>
-                                                <span 
-                                                    x-show="selectedUser && selectedUser.id === user.id" 
-                                                    class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600">
-                                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                    </svg>
-                                                </span>
+                                            <div @click="selectedUser = user; dropdownOpen = false" 
+                                                 class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer flex justify-between items-center"
+                                                 :class="{'bg-neon-violet/10': selectedUser && selectedUser.id === user.id}">
+                                                <span x-text="user.username" class="text-gray-900 dark:text-white text-sm"></span>
+                                                <i x-show="selectedUser && selectedUser.id === user.id" data-lucide="check" class="w-4 h-4 text-neon-violet"></i>
                                             </div>
                                         </template>
                                     </div>
-                                </div>
-                                
-                                <!-- Loading message with spinner -->
-                                <div x-show="loading" class="flex absolute inset-y-0 right-0 items-center pr-3 space-x-2">
-                                    <svg class="w-5 h-5 text-blue-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span class="text-sm font-medium text-blue-500">Loading data...</span>
+                                    
+                                    <!-- Loading -->
+                                    <div x-show="loading" class="absolute right-3 top-3 flex items-center gap-2">
+                                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-neon-violet"></i>
+                                        <span class="text-xs text-gray-500">Loading...</span>
+                                    </div>
                                 </div>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Select the user who will approve documents on your behalf</p>
-                        </div>
-                        
-                        <!-- Valid From -->
-                        <div class="form-group">
-                            <label for="valid_from" class="block mb-1 text-sm font-medium text-gray-700">
-                                Valid From *
-                            </label>
-                            <input type="datetime-local" name="valid_from" id="valid_from" 
-                                   class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                   x-bind:min="currentDate"
-                                   x-bind:value="currentDate"
-                                   required>
-                            <p class="mt-1 text-xs text-gray-500">When this authorization becomes active</p>
-                        </div>
-                        
-                        <!-- Valid Until -->
-                        <div class="form-group">
-                            <label for="valid_until" class="block mb-1 text-sm font-medium text-gray-700">
-                                Valid Until *
-                            </label>
-                            <input type="datetime-local" name="valid_until" id="valid_until" 
-                                   class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                   x-bind:min="currentDate"
-                                   required>
-                            <p class="mt-1 text-xs text-gray-500">When this authorization expires</p>
-                        </div>
-                        
-                        <!-- Reason -->
-                        <div class="form-group">
-                            <label for="reason" class="block mb-1 text-sm font-medium text-gray-700">
-                                Reason *
-                            </label>
-                            <textarea name="reason" id="reason" rows="4" 
-                                      class="block px-4 py-3 mt-1 w-full text-sm placeholder-gray-400 rounded-md border border-gray-300 shadow-sm transition duration-150 ease-in-out resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Please provide a reason for this authorization..."
-                                      required></textarea>
-                            <p class="mt-1 text-xs text-gray-500">Reason for the authorization (e.g., vacation, business trip)</p>
-                        </div>
-                        
-                        <div class="flex justify-end mt-6 space-x-3">
-                            <button type="button" @click="showCreateModal = false" class="px-4 py-2 text-gray-800 bg-gray-200 rounded hover:bg-gray-300">
-                                Cancel
-                            </button>
-                            <button type="submit" class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
-                                Create Authorization
-                            </button>
-                        </div>
-                    </form>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Valid From -->
+                                <div class="form-group">
+                                    <label for="valid_from" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Valid From *
+                                    </label>
+                                    <input type="datetime-local" name="valid_from" id="valid_from" 
+                                           class="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent text-sm dark:[color-scheme:dark]"
+                                           x-bind:min="currentDate"
+                                           x-bind:value="currentDate"
+                                           required>
+                                </div>
+                                
+                                <!-- Valid Until -->
+                                <div class="form-group">
+                                    <label for="valid_until" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Valid Until *
+                                    </label>
+                                    <input type="datetime-local" name="valid_until" id="valid_until" 
+                                           class="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent text-sm dark:[color-scheme:dark]"
+                                           x-bind:min="currentDate"
+                                           required>
+                                </div>
+                            </div>
+                            
+                            <!-- Reason -->
+                            <div class="form-group">
+                                <label for="reason" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Reason *
+                                </label>
+                                <textarea name="reason" id="reason" rows="3" 
+                                          class="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent text-sm resize-none"
+                                          placeholder="e.g., Vacation coverage"
+                                          required></textarea>
+                            </div>
+                            
+                            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
+                                <button type="button" @click="showCreateModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-6 py-2 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-lg transition-colors">
+                                    Create Authorization
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Authorizations you've given to others -->
-    <div class="p-6 mb-8 bg-white rounded-lg shadow-md">
-        <h2 class="mb-4 text-xl font-semibold text-gray-700">Authorizations You've Given</h2>
+    <div class="glass-card rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="send" class="w-5 h-5 text-neon-violet"></i>
+                Authorizations You've Given
+            </h2>
+        </div>
         
         <div id="authorization-list-container">
             <div class="overflow-x-auto">
-                <table id="given-authorizations-table" class="min-w-full bg-white">
-                    <thead class="bg-gray-100">
+                <table id="given-authorizations-table" class="min-w-full">
+                    <thead class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
                         <tr>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Authorized User</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Valid From</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Valid Until</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Reason</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Status</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Actions</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Authorized User</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valid From</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valid Until</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody class="divide-y divide-gray-200 dark:divide-white/10 bg-transparent">
                         {% if given_authorizations %}
                             {% for auth in given_authorizations %}
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ auth.authorized_user.get_full_name|default:auth.authorized_user.username }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ auth.valid_from|date:"Y-m-d H:i" }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ auth.valid_until|date:"Y-m-d H:i" }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-700">{{ auth.reason }}</td>
-                                    <td class="relative px-4 py-3 text-sm" id="status-cell-{{ auth.pk }}">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
+                                        {{ auth.authorized_user.get_full_name|default:auth.authorized_user.username }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ auth.valid_from|date:"Y-m-d H:i" }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ auth.valid_until|date:"Y-m-d H:i" }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ auth.reason }}</td>
+                                    <td class="relative px-6 py-4 text-sm" id="status-cell-{{ auth.pk }}">
                                         <div id="status-{{ auth.pk }}">
                                             {% if auth.is_active %}
                                                 {% if auth.valid_from <= now and auth.valid_until >= now %}
-                                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">Active</span>
                                                 {% elif auth.valid_from > now %}
-                                                    <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">Pending</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">Pending</span>
                                                 {% elif auth.valid_until < now %}
-                                                    <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">Expired</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">Expired</span>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Inactive</span>
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">Inactive</span>
                                             {% endif %}
                                         </div>
-                                        <span id="spinner-{{ auth.pk }}" class="flex absolute inset-0 justify-center items-center bg-white rounded-full shadow htmx-indicator">
-                                            <svg class="w-5 h-5 text-blue-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
+                                        <span id="spinner-{{ auth.pk }}" class="flex absolute inset-0 justify-center items-center bg-white/80 dark:bg-black/80 htmx-indicator">
+                                            <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-neon-violet"></i>
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm" id="status-toggle-{{ auth.pk }}">
-                                        <div class="flex space-x-2">
+                                    <td class="px-6 py-4 text-sm" id="status-toggle-{{ auth.pk }}">
+                                        <div class="flex items-center gap-3">
                                             <div x-data="{ showDeleteModal: false }">
-                                                <!-- Delete button that opens the modal -->
-                                                <button @click="showDeleteModal = true" type="button" class="text-red-500 hover:text-red-700">
-                                                    Delete
+                                                <button @click="showDeleteModal = true" type="button" class="text-red-500 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
                                                 </button>
                                                 
                                                 <!-- Delete confirmation modal -->
                                                 <div x-show="showDeleteModal" 
                                                      x-cloak
-                                                     x-transition:enter="transition ease-out duration-300"
-                                                     x-transition:enter-start="opacity-0 transform scale-90"
-                                                     x-transition:enter-end="opacity-100 transform scale-100"
-                                                     x-transition:leave="transition ease-in duration-300"
-                                                     x-transition:leave-start="opacity-100 transform scale-100"
-                                                     x-transition:leave-end="opacity-0 transform scale-90"
-                                                     class="flex fixed inset-0 z-50 justify-center items-center" 
-                                                     style="background-color: rgba(0,0,0,0.5);">
-                                                    <div @click.away="showDeleteModal = false" class="p-6 mx-auto max-w-md bg-white rounded-lg shadow-lg">
-                                                        <div class="flex justify-between items-center mb-4">
-                                                            <h3 class="text-xl font-bold text-gray-900">Confirm Deletion</h3>
-                                                            <button @click="showDeleteModal = false" class="text-gray-500 hover:text-gray-700">
-                                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                        <p class="mb-4 text-gray-700">Are you sure you want to delete the authorization for <strong>{{ auth.authorized_user.get_full_name|default:auth.authorized_user.username }}</strong>?</p>
-                                                        <div class="flex justify-end space-x-3">
-                                                            <button @click="showDeleteModal = false" class="px-4 py-2 text-gray-800 bg-gray-200 rounded hover:bg-gray-300">
+                                                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                                                    <div @click.away="showDeleteModal = false" class="w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-200 dark:border-white/10 m-4 p-6">
+                                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Confirm Deletion</h3>
+                                                        <p class="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete the authorization for <strong>{{ auth.authorized_user.get_full_name|default:auth.authorized_user.username }}</strong>?</p>
+                                                        <div class="flex justify-end gap-3">
+                                                            <button @click="showDeleteModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">
                                                                 Cancel
                                                             </button>
                                                             <button hx-delete="{% url 'document_approval:delete_authorization' auth.pk %}" 
                                                                     hx-target="closest tr" 
                                                                     hx-swap="outerHTML" 
                                                                     @click="showDeleteModal = false"
-                                                                    class="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600">
+                                                                    class="px-4 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg">
                                                                 Delete
                                                             </button>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                            
                                             <form hx-post="{% url 'document_approval:toggle_authorization' auth.pk %}" 
                                                   hx-swap="outerHTML" 
                                                   hx-indicator="#status-cell-{{ auth.pk }}" 
                                                   class="inline">
                                                 {% csrf_token %}
-                                                <button type="submit" class="text-yellow-500 hover:text-yellow-700">
-                                                    {% if auth.is_active %}Deactivate{% else %}Activate{% endif %}
+                                                <button type="submit" class="text-yellow-500 hover:text-yellow-600 p-1 rounded hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors" title="{% if auth.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                                    <i data-lucide="{% if auth.is_active %}pause-circle{% else %}play-circle{% endif %}" class="w-4 h-4"></i>
                                                 </button>
                                             </form>
                                         </div>
@@ -276,7 +255,9 @@
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="6" class="px-4 py-8 italic text-center text-gray-600">You haven't authorized anyone to approve documents on your behalf.</td>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 italic">
+                                        You haven't authorized anyone to approve documents on your behalf.
+                                    </td>
                                 </tr>
                             {% endfor %}
                         {% endif %}
@@ -287,60 +268,77 @@
     </div>
 
     <!-- Authorizations others have given to you -->
-    <div class="p-6 bg-white rounded-lg shadow-md">
-        <h2 class="mb-4 text-xl font-semibold text-gray-700">Authorizations Given To You</h2>
+    <div class="glass-card rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="inbox" class="w-5 h-5 text-neon-violet"></i>
+                Authorizations Given To You
+            </h2>
+        </div>
         
-        {% if received_authorizations %}
-            <div class="overflow-x-auto">
-                <table id="received-authorizations-table" class="min-w-full bg-white">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Authorizer</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Valid From</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Valid Until</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Reason</th>
-                            <th class="px-4 py-3 text-sm font-medium text-left text-gray-600">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
+        <div class="overflow-x-auto">
+            <table id="received-authorizations-table" class="min-w-full">
+                <thead class="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Authorizer</th>
+                        <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valid From</th>
+                        <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valid Until</th>
+                        <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reason</th>
+                        <th class="px-6 py-3 text-xs font-bold text-left text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-white/10 bg-transparent">
+                    {% if received_authorizations %}
                         {% for auth in received_authorizations %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ auth.authorizer.get_full_name|default:auth.authorizer.username }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ auth.valid_from|date:"Y-m-d H:i" }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ auth.valid_until|date:"Y-m-d H:i" }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-700">{{ auth.reason }}</td>
-                                <td class="px-4 py-3 text-sm">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">
+                                    {{ auth.authorizer.get_full_name|default:auth.authorizer.username }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ auth.valid_from|date:"Y-m-d H:i" }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ auth.valid_until|date:"Y-m-d H:i" }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ auth.reason }}</td>
+                                <td class="px-6 py-4 text-sm">
                                     {% if auth.is_active %}
                                         {% if auth.valid_from <= now and auth.valid_until >= now %}
-                                            <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">Active</span>
                                         {% elif auth.valid_from > now %}
-                                            <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-100 rounded-full">Pending</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20">Pending</span>
                                         {% elif auth.valid_until < now %}
-                                            <span class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 rounded-full">Expired</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">Expired</span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Inactive</span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">Inactive</span>
                                     {% endif %}
                                 </td>
                             </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="italic text-gray-600">No one has authorized you to approve documents on their behalf.......</p>
-        {% endif %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 italic">
+                                No one has authorized you to approve documents on their behalf.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {% if active_received %}
-        <div class="p-6 mt-8 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 class="mb-2 text-lg font-semibold text-blue-800">Active Authorizations</h3>
-            <p class="mb-4 text-blue-700">You are currently authorized to approve documents on behalf of:</p>
-            <ul class="pl-5 space-y-1 list-disc">
+        <div class="p-6 mt-8 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <h3 class="mb-2 text-lg font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                <i data-lucide="info" class="w-5 h-5"></i>
+                Active Authorizations
+            </h3>
+            <p class="mb-4 text-blue-600 dark:text-blue-300">You are currently authorized to approve documents on behalf of:</p>
+            <ul class="space-y-2">
                 {% for auth in active_received %}
-                    <li class="text-blue-700">
-                        <strong>{{ auth.authorizer.get_full_name|default:auth.authorizer.username }}</strong>
-                        (until {{ auth.valid_until|date:"Y-m-d H:i" }})
+                    <li class="flex items-center gap-2 text-blue-700 dark:text-blue-200">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>
+                            <strong>{{ auth.authorizer.get_full_name|default:auth.authorizer.username }}</strong>
+                            (until {{ auth.valid_until|date:"Y-m-d H:i" }})
+                        </span>
                     </li>
                 {% endfor %}
             </ul>

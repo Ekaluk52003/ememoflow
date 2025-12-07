@@ -1,80 +1,325 @@
 {% load static %}
-
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-base-100">
-
+<html lang="en" class="dark">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
-  <title>{% block title %}SmartFlow{% endblock title %}</title>
-  <meta name="description" content="WDC Document Workflow System">
-  <meta name="author" content="">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartFlow{% endblock title %}</title>
+    <meta name="description" content="WDC Document Workflow System">
 
-  <!-- <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}"> -->
-  <!-- <link rel="manifest" href="{% static 'images/site.webmanifest' %}"> -->
+    <!-- Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
 
-  {% block css %}
-  <link href="{% static 'dist/styles.css' %}" rel="stylesheet">
-  <link href="{% static 'css/hijack.css' %}" rel="stylesheet">
-  {% endblock %}
+        /* --- 1. The Cyber Grid Background --- */
+        .grid-bg {
+            background-size: 60px 60px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 90%);
+        }
+        
+        /* Light Mode Grid Override */
+        html:not(.dark) .grid-bg {
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        }
+
+        /* --- 2. The Central Violet Spot Light --- */
+        .violet-spotlight {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 95, 31, 0.25) 0%, rgba(234, 88, 12, 0.1) 40%, transparent 70%);
+            filter: blur(60px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* --- Dynamic Backgrounds --- */
+        body { background-color: #f8fafc; color: #0f172a; }
+        .dark body { background-color: #050505; color: #fff; }
+
+        /* --- Glass Card System --- */
+        .glass-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .dark .glass-card {
+            background: rgba(15, 15, 15, 0.6);
+            backdrop-filter: blur(12px);
+        }
+        .dark .glass-card:hover {
+            border-color: rgba(255, 165, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.1);
+        }
+
+        /* Light Mode Glass */
+        html:not(.dark) .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- Text Gradients --- */
+        .text-glow {
+            text-shadow: 0 0 20px rgba(255, 95, 31, 0.5);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+    </style>
+
+    {% block css %}
+    <link href="{% static 'dist/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'css/hijack.css' %}" rel="stylesheet">
+    {% endblock %}
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<body  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if request.user.is_hijacked %} class="hijacked"{% endif %}>
-     
-     <!-- Toast -->
-     <div id="toasts"></div>
+<body class="flex overflow-hidden relative h-screen selection:bg-neon-violet selection:text-white" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' x-data="{ sidebarOpen: false }">
 
-    <div class="relative min-h-screen bg-gray-100 md:flex" x-data="{ sidebarOpen: false }">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="fixed top-0 left-0 z-30 px-2 w-64 h-screen text-blue-100 bg-gray-800 transition duration-200 ease-in-out transform -translate-x-full md:translate-x-0"
-          :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
-        >
-          <!-- Logo - Fixed at top -->
-          <div class="sticky top-0 z-10">
-            <a href="{% url 'home' %}" class="flex items-center px-4 py-7 space-x-2 h-16 text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud-upload"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
-              <span class="text-2xl font-extrabold">SmartFlow</span>
+    <!-- Particle Background -->
+    <canvas id="globalStarCanvas" class="absolute inset-0 z-0 pointer-events-none"></canvas>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div x-show="sidebarOpen" x-transition.opacity 
+         @click="sidebarOpen = false"
+         class="fixed inset-0 z-30 backdrop-blur-sm bg-black/50 md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 z-40 w-64 h-full bg-white dark:bg-[#050505] border-r border-gray-200 dark:border-white/10 flex flex-col transition-transform duration-300 transform md:translate-x-0 md:relative md:z-20"
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+        
+        <!-- Logo -->
+        <div class="flex items-center px-6 h-16 border-b border-gray-200 dark:border-white/10">
+            <a href="{% url 'home' %}" class="flex gap-3 items-center">
+                <div class="relative flex items-center justify-center w-8 h-8 bg-neon-violet/10 rounded-lg border border-neon-violet/50 shadow-[0_0_10px_rgba(255, 95, 31,0.3)]">
+                    <i data-lucide="zap" class="w-5 h-5 text-neon-violet"></i>
+                </div>
+                <span class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">SmartFlow</span>
             </a>
-          </div>      
-          <!-- Nav - Scrollable with scrollbar -->
-          <nav class="h-[calc(100vh-200px)] overflow-y-auto px-4 [&::-webkit-scrollbar]:w-1
-          [&::-webkit-scrollbar-track]:bg-gray-100
-          [&::-webkit-scrollbar-thumb]:bg-gray-500">
-            {% include "menus.html" %}            
-          </nav>        
-        </aside>
-      
-        <!-- Overlay Main Layout -->
-        <div x-show="sidebarOpen" 
-        @click="sidebarOpen = false" 
-        class="fixed inset-0 z-20 bg-black bg-opacity-50 transition-opacity md:hidden">
         </div>
-        <!-- Main Layout - With overflow handling -->
-        <main class="overflow-hidden ml-0 w-full md:ml-64">
-        <!-- Progress Bar -->
-        <div class="progress" style="height: 3px; background-color: white;">
-            <div class="indeterminate" style="background-color: #0d6efd;"></div>
-        </div>    
-    
-          <!-- Fixed Header -->
-          <div class="sticky top-0 z-10 bg-white shadow-lg">
-            {% include "nav_header.html" %}      
-          </div>     
-          <!-- Scrollable Main Content - With overflow constraint -->
-           <div class="overflow-x-hidden p-6" id="content-div" hx-history-elt> 
-                   
-            {% block content %}{% endblock content %}
+
+        <!-- Nav -->
+        <nav class="overflow-y-auto flex-1 px-3 py-6 space-y-1">
+            {% include "menus.html" %}
+        </nav>
+
+        <!-- User Profile -->
+        <div class="relative p-4 border-t border-gray-200 dark:border-white/10" x-data="{ userMenuOpen: false }">
+            {% if request.user.is_authenticated %}
+            
+            <!-- Popover Menu (Upwards) -->
+            <div x-show="userMenuOpen" 
+                 x-cloak
+                 @click.away="userMenuOpen = false"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-2"
+                 class="absolute bottom-full left-4 right-4 mb-2 w-64 bg-white dark:bg-[#0f0f0f] rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 overflow-hidden z-50">
+                 
+                 <!-- User Info -->
+                 <div class="px-4 py-3 border-b border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                     <p class="mb-1 text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
+                     <p class="font-bold text-gray-900 truncate dark:text-white">{{ request.user.username }}</p>
+                     <p class="text-xs text-gray-500 truncate">{{ request.user.email }}</p>
+                 </div>
+        
+                 <!-- Groups -->
+                 <div class="px-4 py-3 border-b border-gray-200 dark:border-white/10">
+                     <p class="mb-2 text-xs font-bold text-gray-900 dark:text-white">Groups</p>
+                     {% if request.user.groups.all %}
+                         <ul class="space-y-2">
+                         {% for group in request.user.groups.all %}
+                             <li class="flex gap-2 items-center text-sm text-gray-600 dark:text-gray-400">
+                                 <i data-lucide="check-circle-2" class="w-3 h-3 text-neon-violet"></i>
+                                 {{ group.name }}
+                             </li>
+                         {% endfor %}
+                         </ul>
+                     {% else %}
+                         <p class="text-xs italic text-gray-500">No groups</p>
+                     {% endif %}
+                 </div>
+        
+                 <!-- Logout -->
+                 <div class="p-1">
+                     <a href="{% url 'account_logout' %}" class="flex gap-2 items-center px-3 py-2 text-sm text-red-600 rounded-lg transition-colors hover:bg-red-50 dark:hover:bg-red-900/20">
+                         <i data-lucide="log-out" class="w-4 h-4"></i>
+                         Sign out
+                     </a>
+                 </div>
             </div>
-          </div>
+
+            <div @click="userMenuOpen = !userMenuOpen" class="flex gap-3 items-center p-2 rounded-md transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 group">
+                <div class="relative">
+                    <div class="flex overflow-hidden justify-center items-center w-8 h-8 font-bold text-white bg-gray-700 rounded-full border-2 border-transparent transition-colors group-hover:border-neon-violet">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-[#0a0a0a]"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate dark:text-white">{{ request.user.username }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ request.user.email }}</p>
+                </div>
+                <div class="text-gray-500 transition-colors group-hover:text-neon-violet">
+                     <i data-lucide="chevron-up" class="w-4 h-4 transition-transform" :class="{'rotate-180': userMenuOpen}"></i>
+                </div>
+            </div>
+            {% else %}
+            <a href="{% url 'account_login' %}" class="flex justify-center items-center px-4 py-2 text-white rounded-md transition-colors bg-neon-violet hover:bg-neon-purple">
+                Login
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex overflow-hidden relative z-10 flex-col flex-1">
+        
+        <!-- Header -->
+        <header class="h-16 border-b border-gray-200 dark:border-white/10 flex items-center justify-between px-8 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md sticky top-0 z-30">
+            {% include "nav_header.html" %}
+        </header>
+
+        <!-- Content Scroll -->
+        <main class="flex-1 {% block main_class %}overflow-y-auto p-8{% endblock %}" id="content-div">
+            
+            <!-- Progress Bar -->
+            <div class="progress" style="height: 2px; background-color: transparent; position: absolute; top: 0; left: 0; right: 0; z-index: 50;">
+                <div class="indeterminate" style="background-color: #FF5F1F;"></div>
+            </div> 
+
+            {% block content %}{% endblock content %}
+            
+            <!-- Footer -->
+            <div class="pt-8 mt-12 text-center border-t border-gray-200 dark:border-white/10">
+                <p class="font-mono text-xs text-gray-500 dark:text-gray-600">SYSTEM_ID: V2.0.5 • <a href="#" class="transition-colors hover:text-neon-violet">SECURE LOGOUT</a></p>
+            </div>
         </main>
-      </div>
+    </div>
 
-  {% block javascript %}
-  <script src="{% static 'dist/bundle.js' %}"></script>
-  {% endblock javascript %}
+    {% block modals %}{% endblock modals %}
+
+    <!-- Theme Toggle Script -->
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+            lucide.createIcons();
+        }
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+        
+        // Re-initialize icons on HTMX swaps
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            lucide.createIcons();
+        });
+    </script>
+
+    <!-- Particle Animation Script -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+          const canvas = document.getElementById('globalStarCanvas');
+          if (!canvas) return;
+          
+          const ctx = canvas.getContext('2d');
+          let width, height;
+          let stars = [];
+          
+          function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+          }
+          
+          class Star {
+            constructor() {
+              this.reset();
+              this.y = Math.random() * height;
+            }
+            
+            reset() {
+              this.x = Math.random() * width;
+              this.y = height;
+              this.size = Math.random() * 1.5 + 0.5;
+              this.speed = Math.random() * 0.4 + 0.1;
+              this.opacity = Math.random() * 0.5 + 0.1;
+              this.color = Math.random() > 0.9 ? '#FF5F1F' : '#ffffff';
+            }
+            
+            update() {
+              this.y -= this.speed;
+              if (this.y < 0) this.reset();
+              
+              if(Math.random() > 0.95) {
+                 this.opacity = Math.random() * 0.5 + 0.1;
+              }
+            }
+            
+            draw() {
+              ctx.fillStyle = this.color === '#ffffff' ? `rgba(255, 255, 255, ${this.opacity})` : `rgba(255, 95, 31, ${this.opacity})`;
+              ctx.beginPath();
+              ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          
+          function init() {
+            resize();
+            for (let i = 0; i < 150; i++) {
+              stars.push(new Star());
+            }
+            animate();
+          }
+          
+          function animate() {
+            ctx.clearRect(0, 0, width, height);
+            stars.forEach(star => {
+              star.update();
+              star.draw();
+            });
+            requestAnimationFrame(animate);
+          }
+          
+          window.addEventListener('resize', resize);
+          init();
+      });
+    </script>
+
+    {% block javascript %}
+    <script src="{% static 'dist/bundle.js' %}"></script>
+    {% endblock javascript %}
 </body>
-
 </html>

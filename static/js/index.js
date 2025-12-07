@@ -1,6 +1,9 @@
 import '../css/tailwind.css';
 import '../css/base.css';
 import Alpine from 'alpinejs';
+import collapse from '@alpinejs/collapse';
+Alpine.plugin(collapse);
+
 import './userSearch.js';
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -110,7 +113,7 @@ document.addEventListener("alpine:init", () => {
           content: this.htmlContent,
           editorProps: {
             attributes: {
-              class: 'p-4 border border-gray-200 rounded-b-xl min-h-[200px] focus:outline-none',
+              class: 'p-4 border border-gray-200 dark:border-white/10 rounded-b-xl min-h-[200px] focus:outline-none text-gray-900 dark:text-gray-300',
             },
           },
           extensions: [
@@ -170,7 +173,7 @@ document.addEventListener("alpine:init", () => {
           wrapper.style.position = 'sticky';
           wrapper.style.top = '0';
           wrapper.style.zIndex = '10';
-          wrapper.style.backgroundColor = 'white';
+          wrapper.style.backgroundColor = 'transparent';
           wrapper.style.width = '100%';
 
           toolbar.parentNode.insertBefore(wrapper, toolbar);

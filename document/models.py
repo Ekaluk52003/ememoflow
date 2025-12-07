@@ -452,6 +452,17 @@ class Document(models.Model):
             url_pattern = r'src="(/document/view-editor-image/\d+/)"'
             current_image_urls = set(re.findall(url_pattern, self.content))
             
+            # Also collect URLs from dynamic fields to prevent deleting their images
+            try:
+                # check if dynamic_values exists (it might not if we are in a migration or early state)
+                if hasattr(self, 'dynamic_values'):
+                    for dynamic_value in self.dynamic_values.all():
+                        if dynamic_value.value:
+                            current_image_urls.update(re.findall(url_pattern, dynamic_value.value))
+            except Exception as e:
+                # In case of any error accessing dynamic values, log it but don't fail the save
+                logger.error(f"Error checking dynamic values for images: {e}")
+
             # Delete images that are no longer in the content
             for editor_image in self.editor_images.all():
                 if editor_image.base_url not in current_image_urls:

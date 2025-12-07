@@ -1,34 +1,41 @@
-<div id="document-actions">
+<div id="document-actions" class="space-y-6 mt-8">
     {% if can_resubmit %}
-
-
-<div class="flex p-6 mt-6 bg-white">
-    
-        <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-white bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 me-2" hx-target="#content-div" hx-push-url="true"  hx-indicator=".progress">Resubmit Document</a>
-
-
+    <div class="glass-card p-6 border border-gray-200 dark:border-white/10 rounded-xl">
+        <a hx-get="{% url 'document_approval:resubmit_document' document.pk %}" 
+           class="inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5" 
+           hx-target="#content-div" 
+           hx-push-url="true"  
+           hx-indicator=".progress">
+           <i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i>
+           Resubmit Document
+        </a>
+    </div>
     {% endif %}
 
     {% if can_draw %}
-    <div class="p-6 mt-6 bg-white rounded-xl">
+    <div class="glass-card p-6 border border-gray-200 dark:border-white/10 rounded-xl">
         <form hx-post="{% url 'document_approval:withdraw_document' document_id=document.pk %}"
-        hx-target="#document-status"
-        hx-swap="outerHTML"
-        style="display: inline;">
-      {% csrf_token %}
-      <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 me-2">Withdraw Document</button>
-  </form>
-
+              hx-target="#document-status"
+              hx-swap="outerHTML"
+              style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white bg-red-500/80 hover:bg-red-500 rounded-lg shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
+                <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
+                Withdraw Document
+            </button>
+        </form>
     </div>
-
     {% endif %}
 
     {% if can_cancel %}
+    <div class="glass-card p-6 border border-gray-200 dark:border-white/10 rounded-xl">
         <form method="post" hx-post="{% url 'document_approval:cancel_document' document.pk %}" style="display: inline;">
             {% csrf_token %}
-            <button type="submit" class="px-5 py-2.5 mb-2 text-sm font-medium text-center text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 rounded-lg hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400 me-2">Cancel Document</button>
+            <button type="submit" class="inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white bg-red-500/80 hover:bg-red-500 rounded-lg shadow-lg shadow-red-500/30 transition-all transform hover:-translate-y-0.5">
+                <i data-lucide="ban" class="w-4 h-4 mr-2"></i>
+                Cancel Document
+            </button>
         </form>
-    {% endif %}
-
     </div>
-  </div>
+    {% endif %}
+</div>

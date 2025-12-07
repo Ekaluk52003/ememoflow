@@ -203,6 +203,7 @@ def create_workflow_step(request, workflow_id):
             approval_mode = request.POST.get('approval_mode')
             requires_edit = request.POST.get('requires_edit') in ['true', 'on', True, 'True']
             allow_custom_approver = request.POST.get('allow_custom_approver_value') == 'on'
+            move_to_next = request.POST.get('move_to_next') == 'true'
             
             # Create the step
             step = ApprovalStep.objects.create(
@@ -211,7 +212,8 @@ def create_workflow_step(request, workflow_id):
                 order=order,
                 approval_mode=approval_mode,
                 requires_edit=requires_edit,
-                allow_custom_approver=allow_custom_approver
+                allow_custom_approver=allow_custom_approver,
+                move_to_next=move_to_next
             )
             
             # Handle editable fields if requires_edit is enabled
