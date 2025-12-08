@@ -113,7 +113,7 @@ document.addEventListener("alpine:init", () => {
           content: this.htmlContent,
           editorProps: {
             attributes: {
-              class: 'p-4 border border-gray-200 dark:border-white/10 rounded-b-xl min-h-[200px] focus:outline-none text-gray-900 dark:text-gray-300',
+              class: 'p-2 rounded-b-xl min-h-[200px] focus:outline-none text-gray-900 dark:text-gray-300',
             },
           },
           extensions: [

@@ -4397,6 +4397,12 @@ video {
 }
 
 
+.peer:checked ~ .dark\:peer-checked\:bg-neon-violet:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 95 31 / var(--tw-bg-opacity));
+}
+
+
 .peer:focus ~ .dark\:peer-focus\:ring-blue-800:is(.dark *) {
   --tw-ring-opacity: 1;
   --tw-ring-color: rgb(30 64 175 / var(--tw-ring-opacity));
