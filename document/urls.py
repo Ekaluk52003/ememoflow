@@ -1,5 +1,6 @@
 from django.urls import path, include
 from . import views
+from . import views_void
 from django.conf import settings
 from . import views_authorization
 from . import views_workflow
@@ -17,6 +18,7 @@ urlpatterns = [
     path('to-approve/', views.documents_to_approve_to_resubmit, name='documents_to_approve'),
     path('<int:document_id>/withdraw/', views.withdraw_document, name='withdraw_document'),
     path('<int:document_id>/cancel/', views.cancel_document, name='cancel_document'),
+    path('<int:document_id>/void/', views_void.void_document, name='void_document'),
     path('generate-pdf-report/<int:reference_id>/<int:template_id>/', views.generate_pdf_report, name='generate_pdf_report'),
     path('delete-attachment/<int:field_id>/<int:document_id>', views.delete_attachment, name='delete_attachment'),
     path('document/<int:document_id>/toggle-favorite/', views.toggle_favorite, name='toggle_favorite'),

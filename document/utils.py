@@ -93,7 +93,5 @@ def get_allowed_document(user, reference_id):
     try:
         document = allowed_documents.get(document_reference=reference_id)
     except Document.DoesNotExist:
-        return render(None, 'error.html', {
-            'message': "Document not found or you don't have permission to access it."
-        })
+        return None
     return document

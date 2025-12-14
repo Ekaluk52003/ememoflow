@@ -79,6 +79,36 @@ def send_reject_email(document):
     )
 
 
+def send_void_email(document, voided_by):
+    print('send email void')
+    workflow = document.workflow
+    if not workflow.send_reject_email:
+        return False
+
+    context = {
+        'document': document,
+        'submitted_by': document.submitted_by,
+        'rejector': voided_by, # Using rejector context variable to match reject template
+        'voider': voided_by,   # Adding specific voider context just in case
+        'workflow': workflow,
+        'reason': document.void_reason,
+    }
+    recipient_list = [document.submitted_by.email]
+    cc_list = workflow.get_cc_list()
+
+    # Reuse reject email templates but maybe prefix subject or just use them as is since void is similar to reject
+    # If we want specific void templates we would need to add them to ApprovalWorkflow model
+    # For now, reusing reject templates as requested "apply the same case for void"
+    
+    return send_templated_email(
+        workflow.reject_email_subject,
+        workflow.reject_email_body,
+        context,
+        recipient_list,
+        cc_list
+    )
+
+
 def send_withdraw_email(document):
     print('send email withdraw')
     workflow = document.workflow

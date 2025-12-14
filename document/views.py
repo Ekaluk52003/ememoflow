@@ -136,10 +136,10 @@ def generate_pdf_report(request, reference_id, template_id):
     from django.urls import reverse
     import base64
 
-    document_response = get_allowed_document(request.user, reference_id)
-    if isinstance(document_response, HttpResponse):
-        return document_response
-    document = document_response
+    document = get_allowed_document(request.user, reference_id)
+    if document is None:
+        return HttpResponseForbidden("You do not have permission to view this document.")
+
     template = get_object_or_404(PDFTemplate, id=template_id)
     report_config = ReportConfiguration.objects.first()
 
@@ -439,6 +439,11 @@ def document_detail(request, reference_id):
     try:
 
         document = get_allowed_document(request.user, reference_id)
+        if document is None:
+             return render(request, 'error.html', {
+                'message': "Document not found or you don't have permission to access it."
+            })
+
         # document = get_object_or_404(Document, document_reference=reference_id)
         is_favorite = Favorite.objects.filter(user=request.user, document=document).exists()
         dynamic_values = DynamicFieldValue.objects.filter(document=document).select_related('field')
@@ -735,6 +740,7 @@ def document_detail(request, reference_id):
             'can_resubmit': document.status in ['rejected','pending'] and request.user == document.submitted_by,
             'can_draw' : document.can_withdraw(request.user),
             'can_cancel' : document.can_cancel(request.user),
+            'can_void' : document.can_void(request.user),
             'is_favorite': is_favorite,
             'ordered_approvals': ordered_approvals,
             'editable_fields': editable_fields,
@@ -748,10 +754,10 @@ def document_detail(request, reference_id):
 
         return render(request, 'document/document_detail.html', context)
     except Exception as e:
-
+        logger.error(f"Error in document_detail: {str(e)}")
         if request.htmx:
-            return HttpResponse("you are not auhtorize", status=500)
-        return render(request, 'error.html', {'message': "you are not auhtorize"})
+            return HttpResponse("An error occurred", status=500)
+        return render(request, 'error.html', {'message': "An unexpected error occurred. Please contact support."})
 
 
 @login_required

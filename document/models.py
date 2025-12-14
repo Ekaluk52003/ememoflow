@@ -405,7 +405,7 @@ class EditorImage(models.Model):
             
         # Otherwise, check if the user has access to the document
         document = get_allowed_document(user, self.document.document_reference)
-        return document is not None and not isinstance(document, HttpResponse)
+        return document is not None
 
 
 
@@ -416,6 +416,7 @@ class Document(models.Model):
         ('in_review', 'In Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('void', 'Void'),
     ]
     document_reference = models.CharField(max_length=7, unique=True, blank=True, null=True)
     title = models.CharField(max_length=200)
@@ -429,6 +430,11 @@ class Document(models.Model):
     # important a lot mill
     last_submitted_at = models.DateTimeField(auto_now_add=True)
     authorized_users = models.ManyToManyField('accounts.CustomUser', related_name='authorized_documents', blank=True, help_text='Users authorized to view this document and receive notifications')
+    
+    # Void fields
+    void_reason = models.TextField(blank=True, null=True, help_text="Reason for voiding the document")
+    voided_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when the document was voided")
+    voided_by = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='voided_documents')
 
 
     def __str__(self):
@@ -667,6 +673,34 @@ class Document(models.Model):
             self.submitted_by == user
         )
 
+    def can_void(self, user):
+        try:
+            if not user.is_authenticated:
+                return False
+
+            if self.status != 'approved':
+                return False
+
+            if user.is_superuser:
+                return True
+
+            user_group_ids = list(user.groups.values_list('id', flat=True))
+            return self.workflow.authorized_groups.filter(id__in=user_group_ids).exists()
+        except Exception as e:
+            logger.error(f"Error checking can_void for document {self.id}: {str(e)}")
+            return False
+
+    def void(self, user, reason):
+        self.status = 'void'
+        self.void_reason = reason
+        self.voided_at = timezone.now()
+        self.voided_by = user
+        self.save()
+        
+        # Send void email
+        from .sendEmails import send_void_email
+        send_void_email(self, user)
+
 # The move_to_next_step method now uses a while loop to continue checking steps until either:
 
 # A valid next step is found (conditions met)
@@ -866,7 +900,7 @@ class DynamicFieldValue(models.Model):
         """Check if user has access to this field value"""
         from .utils import get_allowed_document
         document = get_allowed_document(user, self.document.document_reference)
-        return document is not None and not isinstance(document, HttpResponse)
+        return document is not None
 
     class Meta:
         unique_together = ('document', 'field')

@@ -1,8 +1,48 @@
 {% extends '_base.html' %}
 
-{% block title %}401 Error{% endblock %}
+{% block title %}Error{% endblock %}
 
 {% block content %}
-<h1>Error</h1>
-<p>{{ message }}</p>
+<div class="flex flex-col justify-center items-center min-h-[60vh] p-6 animate-fade-in">
+    <div class="w-full max-w-lg text-center">
+        <!-- Error Icon -->
+        <div class="flex justify-center mb-6">
+            <div class="p-4 rounded-full ring-1 bg-red-100/50 dark:bg-red-900/20 ring-red-500/20">
+                <i data-lucide="alert-triangle" class="w-12 h-12 text-red-500 dark:text-red-400"></i>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <h1 class="mb-3 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Something went wrong
+        </h1>
+        
+        <p class="mb-8 text-gray-500 dark:text-gray-400">
+            We encountered an issue while processing your request.
+        </p>
+
+        <!-- Message Box -->
+        <div class="overflow-hidden mb-8 text-left bg-white rounded-xl border border-red-100 shadow-sm dark:bg-[#1a1a1a] dark:border-white/10">
+            <div class="px-4 py-3 border-b border-red-100 bg-red-50/50 dark:bg-white/5 dark:border-white/10">
+                <h3 class="text-sm font-semibold text-red-600">Error Details</h3>
+            </div>
+            <div class="p-4 bg-white dark:bg-[#1a1a1a]">
+                <p class="font-mono text-sm text-red-600 break-words dark:text-red-300">
+                    {{ message|default:"An unexpected error occurred." }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col gap-3 justify-center sm:flex-row">
+           
+            
+            <a href="/" 
+               class="inline-flex justify-center items-center px-5 py-2.5 text-sm font-medium text-white rounded-lg shadow-lg transition-all bg-neon-violet hover:bg-neon-violet/90 shadow-neon-violet/20 hover:-translate-y-0.5">
+                <i data-lucide="home" class="mr-2 w-4 h-4"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
 {% endblock content %}

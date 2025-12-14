@@ -46,6 +46,9 @@ def _serialize_context(context_dict):
     if 'withdrawer' in serialized:
         serialized['withdrawer_id'] = serialized['withdrawer'].id
         del serialized['withdrawer']
+    if 'voider' in serialized:
+        serialized['voider_id'] = serialized['voider'].id
+        del serialized['voider']
     return serialized
 
 @app.task(name='document.tasks.generate_pdf_task')
@@ -283,6 +286,8 @@ def send_templated_email_task(subject_template, body_template, context_dict, rec
             context['rejector'] = CustomUser.objects.get(id=context['rejector_id'])
         if 'withdrawer_id' in context:
             context['withdrawer'] = CustomUser.objects.get(id=context['withdrawer_id'])
+        if 'voider_id' in context:
+            context['voider'] = CustomUser.objects.get(id=context['voider_id'])
         
         # Add document_url tag to the template if document exists
         if 'document' in context:

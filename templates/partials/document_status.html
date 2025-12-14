@@ -2,6 +2,7 @@
   <h5 class="text-lg font-medium leading-6 text-base-content mt-3">Status:
     <span class=" font-bold text-md {% if document.status == 'approved' %}text-green-400
                         {% elif document.status == 'rejected' %}text-error
+                        {% elif document.status == 'void' %}text-gray-500 dark:text-gray-400
                         {% else %}text-primary{% endif %}">
         {{ document.get_status_display }}
     </span>
@@ -9,7 +10,7 @@
 
 
   <h5 class="text-lg font-medium leading-6 text-base-content mt-4">Step:
-    <span class="text-primary font-bold text-md">{{ document.current_step.name }}</span>
+    <span class="text-primary font-bold text-md">{{ document.current_step.name|default:"-" }}</span>
 
 </h6>
 </div>
