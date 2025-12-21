@@ -523,10 +523,13 @@ def document_detail(request, reference_id):
             errors = {}
             is_approved = request.POST.get('is_approved') == 'true'
             comment = request.POST.get('comment', '')
+            internal_comment = request.POST.get('internal_comment', '')
 
             # Ensure newlines in comments are properly preserved as \n
             if comment:
                 comment = comment.replace('\r\n', '\n').replace('\r', '\n')
+            if internal_comment:
+                internal_comment = internal_comment.replace('\r\n', '\n').replace('\r', '\n')
 
             edited_values = {}
             uploaded_files = {}
@@ -608,6 +611,7 @@ def document_detail(request, reference_id):
                         approval.is_approved = is_approved
                         approval.status = 'approved' if is_approved else 'rejected'
                         approval.comment = comment
+                        approval.internal_comment = internal_comment
                         approval.recorded_at = timezone.now()
                         approval.on_behalf_of = request.user  # Set the user who performed the approval on behalf
                         approval.save()
@@ -669,6 +673,7 @@ def document_detail(request, reference_id):
                             user=request.user,
                             is_approved=is_approved,
                             comment=comment,
+                            internal_comment=internal_comment,
                             edited_values=edited_values,
                             uploaded_files=uploaded_files
                         )
@@ -747,6 +752,7 @@ def document_detail(request, reference_id):
             'authorized_approvers': authorized_approvers,
             'on_behalf_of': on_behalf_of,
             'current_step_pending_since': current_step_pending_since,
+            'can_see_internal_comments': document.approvals.filter(approver=request.user).exists() or document.approvals.filter(on_behalf_of=request.user).exists() or request.user.is_superuser,
         }
 
         if request.htmx:

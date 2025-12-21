@@ -598,7 +598,7 @@ class Document(models.Model):
         return approvals_created
 
 
-    def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None,):
+    def handle_approval(self, user, is_approved, comment, uploaded_files, edited_values=None, internal_comment=''):
         # TODO: Validate if user is the current approver
 
         approval = self.approvals.get(approver=user, step=self.current_step, is_approved__isnull=True)
@@ -611,6 +611,7 @@ class Document(models.Model):
         elif is_approved is False:  # Explicitly rejected
             approval.status = 'rejected'
         approval.comment = comment
+        approval.internal_comment = internal_comment
         approval.recorded_at = timezone.now()
 
 
@@ -855,6 +856,7 @@ class Approval(models.Model):
     is_approved = models.BooleanField(null=True, default=None)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     comment = models.TextField(blank=True)
+    internal_comment = models.TextField(blank=True, help_text="Comment visible only to other approvers")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     recorded_at = models.DateTimeField(null=True)

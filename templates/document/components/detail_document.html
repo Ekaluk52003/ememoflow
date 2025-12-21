@@ -277,6 +277,16 @@
                             </div>
                             {% endif %}
 
+                            {% if can_see_internal_comments and approval.internal_comment %}
+                            <div class="p-3 mt-3 text-sm italic text-gray-600 bg-amber-50 rounded-lg border border-amber-200 dark:text-gray-300 dark:bg-amber-900/20 dark:border-amber-700/30">
+                                <div class="flex gap-1.5 items-center mb-1 text-xs font-bold tracking-wider text-amber-600 uppercase dark:text-amber-500">
+                                    <i data-lucide="lock" class="w-3 h-3"></i>
+                                    Confidential Note (Approver-Only)
+                                </div>
+                                "{{ approval.internal_comment }}"
+                            </div>
+                            {% endif %}
+
                             {% if approval.recorded_at %}
                             <div class="flex gap-1 items-center mt-2 font-mono text-xs text-gray-400 dark:text-gray-500">
                                 <i data-lucide="clock" class="w-3 h-3"></i>
@@ -456,6 +466,14 @@
             <div class="mb-6">
                 <label for="comment" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Comment (Optional)</label>
                 <textarea name="comment" id="comment" rows="4" class="px-4 py-3 w-full placeholder-gray-400 text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent dark:placeholder-gray-600" placeholder="Add your remarks here..."></textarea>
+            </div>
+
+            <div class="mb-6">
+                <label for="internal_comment" class="flex gap-2 items-center mb-2 text-sm font-medium text-amber-600 dark:text-amber-500">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    Internal Comment (Visible only to approvers)
+                </label>
+                <textarea name="internal_comment" id="internal_comment" rows="2" class="px-4 py-3 w-full placeholder-gray-400 text-gray-900 rounded-lg border border-amber-200 transition-colors bg-amber-50/50 dark:bg-amber-500/5 dark:border-amber-500/20 dark:text-amber-50 focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:placeholder-amber-500/40" placeholder="Add private remarks for other approvers..."></textarea>
             </div>
 
             <button type="submit" class="px-6 py-3.5 w-full text-sm font-bold text-white rounded-xl shadow-lg transition-all transform bg-neon-violet hover:bg-neon-purple shadow-neon-violet/30 hover:-translate-y-0.5">

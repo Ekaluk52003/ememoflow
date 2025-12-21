@@ -2283,6 +2283,9 @@ video {
 .bg-yellow-500\/10 {
   background-color: rgb(234 179 8 / 0.1);
 }
+.bg-amber-50\/50 {
+  background-color: rgb(255 251 235 / 0.5);
+}
 .bg-\[radial-gradient\(circle_at_center\2c _rgba\(255\2c 95\2c 31\2c 0\.4\)_0\%\2c _transparent_70\%\)\] {
   background-image: radial-gradient(circle at center, rgba(255,95,31,0.4) 0%, transparent 70%);
 }
@@ -3647,6 +3650,12 @@ video {
 }
 
 
+.focus\:ring-amber-500:focus {
+  --tw-ring-opacity: 1;
+  --tw-ring-color: rgb(245 158 11 / var(--tw-ring-opacity));
+}
+
+
 .focus\:ring-offset-2:focus {
   --tw-ring-offset-width: 2px;
 }
@@ -3907,6 +3916,16 @@ video {
 }
 
 
+.dark\:border-amber-700\/30:is(.dark *) {
+  border-color: rgb(180 83 9 / 0.3);
+}
+
+
+.dark\:border-amber-500\/20:is(.dark *) {
+  border-color: rgb(245 158 11 / 0.2);
+}
+
+
 .dark\:bg-\[\#050505\]:is(.dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(5 5 5 / var(--tw-bg-opacity));
@@ -4071,6 +4090,16 @@ video {
 }
 
 
+.dark\:bg-amber-900\/10:is(.dark *) {
+  background-color: rgb(120 53 15 / 0.1);
+}
+
+
+.dark\:bg-amber-500\/5:is(.dark *) {
+  background-color: rgb(245 158 11 / 0.05);
+}
+
+
 .dark\:from-\[\#1a1a1a\]:is(.dark *) {
   --tw-gradient-from: #1a1a1a var(--tw-gradient-from-position);
   --tw-gradient-to: rgb(26 26 26 / 0) var(--tw-gradient-to-position);
@@ -4221,6 +4250,18 @@ video {
 }
 
 
+.dark\:text-amber-500:is(.dark *) {
+  --tw-text-opacity: 1;
+  color: rgb(245 158 11 / var(--tw-text-opacity));
+}
+
+
+.dark\:text-amber-50:is(.dark *) {
+  --tw-text-opacity: 1;
+  color: rgb(255 251 235 / var(--tw-text-opacity));
+}
+
+
 .dark\:placeholder-gray-600:is(.dark *)::-moz-placeholder {
   --tw-placeholder-opacity: 1;
   color: rgb(75 85 99 / var(--tw-placeholder-opacity));
@@ -4230,6 +4271,16 @@ video {
 .dark\:placeholder-gray-600:is(.dark *)::placeholder {
   --tw-placeholder-opacity: 1;
   color: rgb(75 85 99 / var(--tw-placeholder-opacity));
+}
+
+
+.dark\:placeholder-amber-500\/40:is(.dark *)::-moz-placeholder {
+  color: rgb(245 158 11 / 0.4);
+}
+
+
+.dark\:placeholder-amber-500\/40:is(.dark *)::placeholder {
+  color: rgb(245 158 11 / 0.4);
 }
 
 
