@@ -208,6 +208,7 @@ class ApprovalStep(models.Model):
     allow_custom_approver = models.BooleanField(default=False)
     # Use many-to-many relationship for approver groups
     approver_groups = models.ManyToManyField(Group, related_name='approval_steps', blank=True)
+    approver_is_submitter = models.BooleanField(default=False, help_text="If True, the document submitter will be the approver for this step")
     approval_mode = models.CharField(
         max_length=10,
         choices=[('all', 'All Approvers Required'), ('any', 'Any Approver Sufficient')],
@@ -532,7 +533,7 @@ class Document(models.Model):
 
         for step in self.workflow.steps.all():
             # Check if step condition is met
-            if step.evaluate_condition(self):
+            if step.evaluate_condition(self):              
                 if step.allow_custom_approver and custom_approvers and step.id in custom_approvers:
                     approval = Approval.objects.create(
                         document=self,
@@ -540,17 +541,25 @@ class Document(models.Model):
                         approver=custom_approvers[step.id]
                     )
                     approvals_created.append(approval)
+                
+                elif step.approver_is_submitter:
+                    approval = Approval.objects.create(
+                        document=self,
+                        step=step,
+                        approver=self.submitted_by
+                    )
+                    approvals_created.append(approval)
               
                 else:
+                    # Handle specific approvers
                     for approver in step.approvers.all():
                         approval = Approval.objects.create(
                             document=self,
                             step=step,
                             approver=approver
                         )
-                        approvals_created.append(approval)
+                        approvals_created.append(approval)                  
                   
-
                 # If this step has conditions and they're met, store it
                 if step.is_conditional:
                     last_conditional_step = step
