@@ -97,8 +97,16 @@
       ccEmails: '{{ workflow.cc_emails|default:''|escapejs }}',
       
       // Groups and fields
-      selectedGroups: [{% for group in workflow.authorized_groups.all %}{{ group.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+      selectedGroups: [{% for group in workflow.authorized_groups.all %}'{{ group.id }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+      selectedDeniedGroups: [{% for group in workflow.denied_groups.all %}'{{ group.id }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
       selectedFields: [{% for field in workflow.dynamic_fields.all %}{{ field.id }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+      
+      // Search & Filter State
+      groupSearch: '',
+      showSelectedGroupsOnly: false,
+      
+      deniedGroupSearch: '',
+      showSelectedDeniedGroupsOnly: false,
       
       // Tabs
       activeTab: 'basic',
@@ -210,9 +218,34 @@
                   Authorized Groups
                 </label>
                 <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Select groups that have full access to documents in this workflow</p>
+
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Select Groups</span>
+                  <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-neon-violet/10 text-neon-violet" 
+                        x-show="selectedGroups.length > 0" 
+                        x-text="selectedGroups.length + ' selected'"
+                        x-transition></span>
+                </div>
+
+                <div class="flex gap-2 mb-2">
+                  <div class="relative flex-1">
+                    
+                    <input type="text" x-model="groupSearch" placeholder="Search groups..." 
+                           class="px-3 py-3 w-full text-sm placeholder-gray-400 text-gray-900 bg-white rounded-lg border border-gray-200 dark:border-white/10 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:border-transparent dark:text-white dark:placeholder-gray-500">
+                  </div>
+                  <button type="button" 
+                          @click="showSelectedGroupsOnly = !showSelectedGroupsOnly"
+                          class="flex gap-1 items-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                          :class="showSelectedGroupsOnly ? 'bg-neon-violet/10 border-neon-violet/30 text-neon-violet' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'">
+                    <i data-lucide="filter" class="w-3 h-3"></i>
+                    Selected Only
+                  </button>
+                </div>
+
                 <div class="overflow-y-auto p-4 space-y-2 max-h-60 bg-gray-50 rounded-xl border border-gray-200 dark:border-white/10 dark:bg-white/5 custom-scrollbar">
                   {% for group in groups %}
-                  <label class="flex items-center p-3 bg-white rounded-lg border border-gray-200 shadow-sm transition-all cursor-pointer dark:bg-white/5 dark:border-white/10 hover:border-neon-violet/50 group">
+                  <label class="flex items-center p-3 bg-white rounded-lg border border-gray-200 shadow-sm transition-all cursor-pointer dark:bg-white/5 dark:border-white/10 hover:border-neon-violet/50 group"
+                         x-show="(groupSearch === '' || '{{ group.name|escapejs }}'.toLowerCase().includes(groupSearch.toLowerCase())) && (!showSelectedGroupsOnly || selectedGroups.includes('{{ group.id }}'))">
                     <input type="checkbox" name="authorized_groups[]" value="{{ group.id }}" 
                            {% if group in workflow.authorized_groups.all %}checked{% endif %}
                            x-model="selectedGroups" class="w-4 h-4 bg-transparent rounded border-gray-300 text-neon-violet dark:border-white/20 focus:ring-neon-violet">
@@ -221,6 +254,50 @@
                   {% endfor %}
                 </div>
               </div>
+
+              <!-- Denied Groups -->
+              <div class="pt-6 mt-8 border-t border-gray-200 dark:border-white/10">
+                <label class="block flex gap-2 items-center mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">
+                  <i data-lucide="shield-ban" class="w-4 h-4 text-red-500"></i>
+                  Denied Groups (Deny List)
+                </label>
+                <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Select groups that are <strong>forbidden</strong> from accessing this workflow</p>
+  
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Select Denied Groups</span>
+                  <span class="px-2 py-0.5 text-xs font-medium text-red-500 rounded-full bg-red-500/10" 
+                        x-show="selectedDeniedGroups.length > 0" 
+                        x-text="selectedDeniedGroups.length + ' selected'"
+                        x-transition></span>
+                </div>
+  
+                <div class="flex gap-2 mb-2">
+                  <div class="relative flex-1">
+                    <input type="text" x-model="deniedGroupSearch" placeholder="Search denied groups..." 
+                           class="px-3 py-3 w-full text-sm placeholder-gray-400 text-gray-900 bg-white rounded-lg border border-gray-200 pl-49 pxpy-1.5 dark:border-white/10 dark:bg-white/5 focus:ring-2 focus:ring-red-500 focus:border-transparent dark:text-white dark:placeholder-gray-500">
+                  </div>
+                  <button type="button" 
+                          @click="showSelectedDeniedGroupsOnly = !showSelectedDeniedGroupsOnly"
+                          class="flex gap-1 items-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                          :class="showSelectedDeniedGroupsOnly ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/10'">
+                    <i data-lucide="filter" class="w-3 h-3"></i>
+                    Selected Only
+                  </button>
+                </div>
+  
+                <div class="overflow-y-auto p-4 space-y-2 max-h-60 bg-gray-50 rounded-xl border border-gray-200 dark:border-white/10 dark:bg-white/5 custom-scrollbar">
+                  {% for group in groups %}
+                  <label class="flex items-center p-3 bg-white rounded-lg border border-gray-200 shadow-sm transition-all cursor-pointer dark:bg-white/5 dark:border-white/10 hover:border-red-500/50 group"
+                         x-show="(deniedGroupSearch === '' || '{{ group.name|escapejs }}'.toLowerCase().includes(deniedGroupSearch.toLowerCase())) && (!showSelectedDeniedGroupsOnly || selectedDeniedGroups.includes('{{ group.id }}'))">
+                    <input type="checkbox" name="denied_groups[]" value="{{ group.id }}" 
+                           {% if group in workflow.denied_groups.all %}checked{% endif %}
+                           x-model="selectedDeniedGroups" class="w-4 h-4 text-red-500 bg-transparent rounded border-gray-300 dark:border-white/20 focus:ring-red-500">
+                    <span class="ml-3 text-sm text-gray-700 dark:text-gray-200 group-hover:text-red-600 dark:group-hover:text-red-400">{{ group.name }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+           
             </div>
           </div>
         </div>
@@ -688,7 +765,7 @@
                 <input type="text" name="cc_emails" id="cc_emails" x-model="ccEmails"
                        class="px-4 py-2.5 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
                        placeholder="email1@example.com, email2@example.com">
-                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Comma-separated email addresses for CC</p>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Comma-separated email addresses for CC. <strong>Note:</strong> These recipients will only receive an email when the document is fully approved.</p>
             </div>
           </div>
         </div>

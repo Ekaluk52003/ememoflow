@@ -2,16 +2,16 @@
 
 <div id="form-errors"></div>
 
-<div class="glass-card rounded-2xl p-8 md:p-10">
+<div class="p-8 rounded-2xl glass-card md:p-10">
     <div class="mb-8">
-        <div class="flex items-center gap-3 mb-3">
-            <div class="p-2 rounded-xl bg-neon-violet/10 border border-neon-violet/20 text-neon-violet">
+        <div class="flex gap-3 items-center mb-3">
+            <div class="p-2 rounded-xl border bg-neon-violet/10 border-neon-violet/20 text-neon-violet">
                 <i data-lucide="file-plus" class="w-6 h-6"></i>
             </div>
             <h3 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Submit New Document</h3>
         </div>
-        <div class="flex items-center gap-3 ml-14 text-sm font-medium text-gray-500 dark:text-gray-400">
-            <span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/5">Workflow: {{ workflow.name }}</span>
+        <div class="flex gap-3 items-center ml-14 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <span class="px-3 py-1 bg-gray-100 rounded-full border border-gray-200 dark:bg-white/10 dark:border-white/5">Workflow: {{ workflow.name }}</span>
             <span class="px-3 py-1 rounded-full bg-neon-violet/10 border border-neon-violet/20 text-neon-violet shadow-[0_0_10px_rgba(255, 95, 31,0.2)]">New Request</span>
         </div>
     </div>
@@ -39,12 +39,12 @@
         {% csrf_token %}
 
         <div class="mb-6">
-            <label for="id_title" class="block w-full mb-2">
-                <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">
+            <label for="id_title" class="block mb-2 w-full">
+                <span class="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                     Title <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
                 </span>
             </label>
-            <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white placeholder-gray-500" required placeholder="Enter document title">
+            <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" class="px-4 py-3 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" required placeholder="Enter document title">
             {% if form.title.errors %}
                 <p class="mt-1 text-sm text-red-500">{{ form.title.errors.0 }}</p>
             {% endif %}
@@ -58,8 +58,8 @@
             {% for field in prepared_fields %}
             {% if field.name != 'Total Quantity' %}
             <div class="{% if field.input_width == 'quarter' %}md:col-span-1{% elif field.input_width == 'half' %}md:col-span-2{% elif field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
-                <label for="dynamic_{{ field.id }}" class="block w-full mb-2">
-                    <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">
+                <label for="dynamic_{{ field.id }}" class="block mb-2 w-full">
+                    <span class="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                         {{ field.name }} 
                         {% if field.required %}
                             <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
@@ -99,7 +99,7 @@
                                             <template x-for="(col, colIndex) in columns" :key="colIndex">
                                                 <div class="p-1" :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'">
                                                     <input type="text"
-                                                           class="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 transition-all"
+                                                           class="px-4 py-2.5 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 transition-all dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                                            :name="'table_' + '{{ field.id }}' + '_' + col.label + '[]'"
                                                            x-model="row[col.label]"
                                                            :placeholder="col.label"
@@ -107,7 +107,7 @@
                                                 </div>
                                             </template>
                                             <div class="p-1" style="flex: 0 0 100px;">
-                                                <button type="button" class="flex justify-center items-center w-full h-10 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" @click="removeRow(rowIndex)">
+                                                <button type="button" class="flex justify-center items-center w-full h-10 text-gray-400 rounded-lg transition-colors hover:text-red-500 hover:bg-red-500/10" @click="removeRow(rowIndex)">
                                                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                                                 </button>
                                             </div>
@@ -119,7 +119,7 @@
 
                         <div class="flex gap-4 justify-between items-center mt-4">
                             <button type="button" class="flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] transition-all" @click="addRow()">
-                                <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Row
+                                <i data-lucide="plus" class="mr-1 w-4 h-4"></i> Add Row
                             </button>
                         </div>
                     </div>
@@ -160,14 +160,14 @@
                                 <div class="space-y-2">
                                     <template x-for="(product, index) in products" :key="index">
                                         <div class="flex gap-2 py-1">
-                                            <input type="number" style="width: 80px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_id_{{ field.id }}[]'" x-model="product.id" placeholder="ID" required>
-                                            <input type="text" style="width: 150px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_code_{{ field.id }}[]'" x-model="product.code" placeholder="CODE" required>
-                                            <input type="text" style="width: 300px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_name_{{ field.id }}[]'" x-model="product.name" placeholder="Product Name" required>
-                                            <input type="number" style="width: 100px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_quantity_{{ field.id }}[]'" x-model="product.quantity" placeholder="Qty" required @input="updateTotalQuantity()">
-                                            <input type="text" style="width: 200px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_batch_no_{{ field.id }}[]'" x-model="product.batch_no" placeholder="Batch No">
-                                            <input type="text" style="width: 200px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_bin_location_{{ field.id }}[]'" x-model="product.bin_location" placeholder="Bin Location">
-                                            <input type="text" style="width: 250px;" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white" :name="'product_remark_{{ field.id }}[]'" x-model="product.remark" placeholder="Remark">
-                                            <button type="button" style="width: 100px;" class="flex justify-center items-center gap-2 px-3 h-9 text-sm text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-md font-medium transition-colors" @click="removeProduct(index)">
+                                            <input type="number" style="width: 80px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_id_{{ field.id }}[]'" x-model="product.id" placeholder="ID" required>
+                                            <input type="text" style="width: 150px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_code_{{ field.id }}[]'" x-model="product.code" placeholder="CODE" required>
+                                            <input type="text" style="width: 300px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_name_{{ field.id }}[]'" x-model="product.name" placeholder="Product Name" required>
+                                            <input type="number" style="width: 100px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_quantity_{{ field.id }}[]'" x-model="product.quantity" placeholder="Qty" required @input="updateTotalQuantity()">
+                                            <input type="text" style="width: 200px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_batch_no_{{ field.id }}[]'" x-model="product.batch_no" placeholder="Batch No">
+                                            <input type="text" style="width: 200px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_bin_location_{{ field.id }}[]'" x-model="product.bin_location" placeholder="Bin Location">
+                                            <input type="text" style="width: 250px;" class="px-3 py-2 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white" :name="'product_remark_{{ field.id }}[]'" x-model="product.remark" placeholder="Remark">
+                                            <button type="button" style="width: 100px;" class="flex gap-2 justify-center items-center px-3 h-9 text-sm font-medium text-gray-400 rounded-md transition-colors hover:text-red-500 hover:bg-red-500/10" @click="removeProduct(index)">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
                                             </button>
                                         </div>
@@ -178,7 +178,7 @@
 
                         <div class="flex gap-4 justify-between items-center mt-4">
                             <button type="button" class="flex items-center px-4 py-2 text-sm font-medium text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] transition-all" @click="addProduct()">
-                                <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Row
+                                <i data-lucide="plus" class="mr-1 w-4 h-4"></i> Add Row
                             </button>
                             {% for field in workflow.dynamic_fields.all %}
                                 {% if field.name == 'Total Quantity' %}
@@ -194,8 +194,8 @@
 
                 {% elif field.field_type == 'attachment' %}
                 {% if field.file %}
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Current file: {{ field.file.name }}</p>
-                    <button type="button" class="flex items-center gap-2 px-4 py-2 text-sm text-red-500 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
+                    <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">Current file: {{ field.file.name }}</p>
+                    <button type="button" class="flex gap-2 items-center px-4 py-2 text-sm text-red-500 rounded-lg transition-colors bg-red-500/10 hover:bg-red-500/20"
                             hx-delete="{% url 'delete_attachment' field.id  %}"
                             hx-target="#dynamic_{{ field.id }}-container"
                             hx-swap="outerHTML">
@@ -206,27 +206,27 @@
                 <input type="file" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-neon-violet/10 file:text-neon-violet hover:file:bg-neon-violet/20" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}">
 
                 {% elif field.field_type  == 'textarea' %}
-                <textarea name="dynamic_{{ field.id }}" class="block w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white placeholder-gray-500" rows="{{ field.textarea_rows }}"></textarea>
+                <textarea name="dynamic_{{ field.id }}" class="block px-4 py-3 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" rows="{{ field.textarea_rows }}"></textarea>
 
                 {% elif field.field_type == 'tiptap_editor' %}
                 <div x-data="editor('')" class="bg-white dark:bg-[#1a1a1a] rounded-xl tiptap-editor border border-gray-200 dark:border-white/10">
                   <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
-                  <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-transparent border-b border-gray-200 dark:border-white/10 rounded-t-lg">
+                  <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-transparent rounded-t-lg border-b border-gray-200 dark:border-white/10">
                     {% include "document/components/editor_toolbar.html" %}
                   </div>
-                  <article class="max-w-none prose prose-sm dark:prose-invert p-4">
+                  <article class="p-4 max-w-none prose prose-sm dark:prose-invert">
                     <div x-ref="element"></div>
                   </article>
                 </div>
 
                 {% elif field.field_type == 'number' %}
-                    <input type="number" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                    <input type="number" class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                 
                 {% elif field.field_type == 'text' %}
-                    <input type="text" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" {% if field.required %}{% endif %}>
+                    <input type="text" class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white"  name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" {% if field.required %}{% endif %}>
                 
                 {% elif field.field_type == 'date' %}
-                    <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" {% if field.required %}{% endif %}>
+                    <input type="date" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" {% if field.required %}{% endif %}>
 
                 {% elif field.field_type == 'boolean' %}
                     <label class="inline-flex items-center cursor-pointer" x-data="{ isChecked: {% if field.value == 'on' %}true{% else %}false{% endif %} }">
@@ -236,7 +236,7 @@
                     </label>
 
                 {% elif field.field_type == 'choice' %}
-                    <select name="dynamic_{{ field.id }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" @change="updateFieldValue($event)" {% if field.required %}required{% endif %}>
+                    <select name="dynamic_{{ field.id }}" class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" @change="updateFieldValue($event)" {% if field.required %}required{% endif %}>
                         <option value="">Select an option</option>
                         {% for choice in field.choices %}
                             <option value="{{ choice }}">{{ choice }}</option>
@@ -247,14 +247,14 @@
                     <div class="flex flex-col space-y-2">
                         {% for choice in field.choices %}
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="rounded border-gray-300 dark:border-white/10 text-neon-violet focus:ring-neon-violet bg-gray-50 dark:bg-white/5" >
+                                <input type="checkbox" name="dynamic_{{ field.id }}[]" value="{{ choice }}" class="bg-gray-50 rounded border-gray-300 dark:border-white/10 text-neon-violet focus:ring-neon-violet dark:bg-white/5" >
                                 <span class="text-gray-700 dark:text-gray-300">{{ choice }}</span>
                             </label>
                         {% endfor %}
                     </div>
 
                 {% else %}
-                    <input type="{{ field.field_type }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                    <input type="{{ field.field_type }}" class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
                 {% endif %}
             </div>
             {% endif %}
@@ -262,7 +262,6 @@
         </div>
 
     {% if steps_with_approvers %}
-    <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900 dark:text-white">Select Approvers</h3>
     {% for step_info in steps_with_approvers %}
     {% with script_id="potential-approvers-"|add:step_info.step_id_str %}
     {{ step_info.potential_approvers|json_script:script_id }}
@@ -281,9 +280,9 @@
         </div>
         <input type="hidden" name="approver_{{ step_info.step.id }}" x-model="selected">
         <div class="mb-4">
-            <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
+            <div class="flex flex-wrap gap-2 p-2 mb-2 rounded-lg border border-gray-200 bg-white/50 dark:bg-white/5 dark:border-white/10 min-h-10">
                 <template x-if="selected">
-                    <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
+                    <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-gray-100 rounded-md border border-gray-200 dark:bg-white/10 dark:border-white/5">
                         <div>
                             <div x-text="selectedUser.full_name" class="font-medium text-gray-900 dark:text-white"></div>
                             <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500 dark:text-gray-400"></div>
@@ -291,7 +290,7 @@
                         <button type="button" @click="reset()" class="self-start ml-2 text-gray-500 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>
                 </template>
-                <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">
+                <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm rounded-md border transition-colors text-neon-violet hover:text-white hover:bg-neon-violet/20 border-neon-violet/30">
                     + Select Approver
                 </button>
             </div>
@@ -303,14 +302,14 @@
                 <div class="p-6 w-full max-w-md bg-white dark:bg-[#111] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10" @click.stop>
                     <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Select Approver</h3>
                     <div class="relative mb-4">
-                        <input type="text" id="user-search-dialog-input" x-model="search" placeholder="Search..." class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
+                        <input type="text" id="user-search-dialog-input" x-model="search" placeholder="Search..." class="px-4 py-2 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
                     </div>
                     <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
                         <template x-if="filteredOptions.length === 0 && search.length > 0">
                             <div class="py-2 text-sm text-gray-500">No approvers found</div>
                         </template>
                         <template x-for="option in filteredOptions" :key="option.id">
-                            <div class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" @click="selectUser(option)" :class="{ 'bg-neon-violet/10': selected === option.id }">
+                            <div class="flex justify-between items-center p-2 rounded-md transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" @click="selectUser(option)" :class="{ 'bg-neon-violet/10': selected === option.id }">
                                 <div>
                                     <div x-text="option.full_name" class="font-medium text-gray-900 dark:text-white"></div>
                                     <div x-show="option.job_title" x-text="option.job_title" class="text-sm text-gray-500 dark:text-gray-400"></div>
@@ -320,7 +319,7 @@
                         </template>
                     </div>
                     <div class="flex justify-end">
-                        <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">Close</button>
+                        <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors dark:text-gray-300 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20">Close</button>
                     </div>
                 </div>
             </div>
@@ -333,19 +332,19 @@
     <!-- CC Recipients Section -->
     <div class="mb-6">
         <div class="flex items-center mb-2">
-            <span class="font-medium label-text text-gray-900 dark:text-white">CC Recipients</span>
+            <span class="font-medium text-gray-900 label-text dark:text-white">CC Recipients</span>
             <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">(Optional notification receivers)</span>
         </div>
         <div x-data="ccRecipients" x-init="$nextTick(() => { loadDocumentAuthorizedUsers(); })">
             <div class="mb-4">
-                <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
+                <div class="flex flex-wrap gap-2 p-2 mb-2 rounded-lg border border-gray-200 bg-white/50 dark:bg-white/5 dark:border-white/10 min-h-10">
                     <template x-for="user in selectedUsers" :key="user.id">
-                        <div class="flex items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
+                        <div class="flex items-center px-2 py-1 text-sm bg-gray-100 rounded-md border border-gray-200 dark:bg-white/10 dark:border-white/5">
                             <span x-text="user.full_name || user.username" class="text-gray-900 dark:text-white"></span>
                             <button type="button" @click="removeUser(user.id)" class="ml-2 text-gray-500 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                         </div>
                     </template>
-                    <button type="button" @click="openDialog" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">+ Add User</button>
+                    <button type="button" @click="openDialog" class="px-2 py-1 text-sm rounded-md border transition-colors text-neon-violet hover:text-white hover:bg-neon-violet/20 border-neon-violet/30">+ Add User</button>
                 </div>
                 <div id="cc-recipients-container"></div>
             </div>
@@ -355,15 +354,15 @@
                     <div class="p-6 w-full max-w-md bg-white dark:bg-[#111] rounded-xl shadow-2xl border border-gray-200 dark:border-white/10" @click.stop>
                         <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">Search Users</h3>
                         <div class="relative mb-4">
-                            <input type="text" id="user-search-input" x-model="searchQuery" @input="searchUsers" placeholder="Search..." class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
+                            <input type="text" id="user-search-input" x-model="searchQuery" @input="searchUsers" placeholder="Search..." class="px-4 py-2 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
                         </div>
-                        <div x-show="errorMessage" class="p-2 mb-4 text-sm text-white bg-red-500/80 rounded-md" x-text="errorMessage"></div>
+                        <div x-show="errorMessage" class="p-2 mb-4 text-sm text-white rounded-md bg-red-500/80" x-text="errorMessage"></div>
                         <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
                             <template x-if="searchResults.length === 0 && searchQuery.length >= 2">
                                 <div class="py-2 text-sm text-gray-500">No users found</div>
                             </template>
                             <template x-for="user in searchResults" :key="user.id">
-                                <div class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" @click="selectUser(user)" :class="{ 'bg-neon-violet/10': isUserSelected(user.id) }">
+                                <div class="flex justify-between items-center p-2 rounded-md transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" @click="selectUser(user)" :class="{ 'bg-neon-violet/10': isUserSelected(user.id) }">
                                     <div>
                                         <div x-text="user.full_name || user.username" class="font-medium text-gray-900 dark:text-white"></div>
                                         <div x-text="user.email" class="text-sm text-gray-500 dark:text-gray-400"></div>
@@ -373,7 +372,7 @@
                             </template>
                         </div>
                         <div class="flex justify-end">
-                            <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">Close</button>
+                            <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors dark:text-gray-300 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20">Close</button>
                         </div>
                     </div>
                 </div>
@@ -382,7 +381,7 @@
     </div>
 
     <div class="flex mt-10 space-x-4">
-        <button type="submit" name="save_draft" value="1" class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:text-white hover:bg-white/10 transition-colors">
+        <button type="submit" name="save_draft" value="1" class="flex gap-2 items-center px-6 py-2.5 text-sm font-medium text-gray-500 rounded-lg border border-gray-200 transition-colors dark:text-gray-400 bg-white/5 dark:border-white/10 hover:text-white hover:bg-white/10">
             <i data-lucide="save" class="w-4 h-4"></i>
             Save Draft
         </button>

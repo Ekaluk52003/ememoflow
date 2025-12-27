@@ -3,24 +3,24 @@
 {% block content %}
 
 <!-- Hero Section -->
-<div class="mb-10 relative z-10">
-    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3 relative">
+<div class="relative z-10 mb-10">
+    <h1 class="relative mb-3 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl dark:text-white">
         Approval <br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-violet to-fuchsia-500 text-glow">Workflows</span>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r to-fuchsia-500 from-neon-violet text-glow">Workflows</span>
     </h1>
-    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
+    <p class="max-w-2xl text-lg text-gray-600 dark:text-gray-400">
         Create and manage the workflows that drive your document approval processes.
     </p>
     <!-- Background Glow -->
     <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
 </div>
 
-<div class="container mx-auto relative z-10 space-y-8">
+<div class="container relative z-10 mx-auto space-y-8">
     
     <!-- Header & Action -->
     <div class="flex justify-end items-center">
         <a href="{% url 'document_approval:create_workflow' %}" 
-           class="flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-xl shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5">
+           class="flex gap-2 items-center px-6 py-3 text-sm font-bold text-white rounded-xl shadow-lg transition-all transform bg-neon-violet hover:bg-neon-purple shadow-neon-violet/30 hover:-translate-y-0.5">
             <i data-lucide="plus" class="w-4 h-4"></i>
             Create New Workflow
         </a>
@@ -37,26 +37,26 @@
     {% endif %}
 
     {% if workflows %}
-    <div class="glass-card rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
+    <div class="overflow-hidden rounded-xl border border-gray-200 glass-card dark:border-white/10">
         <div class="divide-y divide-gray-200 dark:divide-white/10">
             {% for workflow in workflows %}
-            <div class="p-6 hover:bg-white/50 dark:hover:bg-white/5 transition-colors">
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-neon-violet/10 rounded-xl text-neon-violet border border-neon-violet/20">
+            <div class="p-6 transition-colors hover:bg-white/50 dark:hover:bg-white/5">
+                <div class="flex flex-col gap-4 justify-between lg:flex-row lg:items-center">
+                    <div class="flex gap-4 items-start">
+                        <div class="flex flex-shrink-0 justify-center items-center w-12 h-12 rounded-xl border bg-neon-violet/10 text-neon-violet border-neon-violet/20">
                             <i data-lucide="git-merge" class="w-6 h-6"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                            <h3 class="mb-1 text-lg font-bold text-gray-900 dark:text-white">
                                 {{ workflow.name }}
                             </h3>
-                            <div class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-3">
-                                <span class="flex items-center gap-1">
+                            <div class="flex flex-wrap gap-3 items-center text-sm text-gray-500 dark:text-gray-400">
+                                <span class="flex gap-1 items-center">
                                     <i data-lucide="user" class="w-3 h-3"></i>
                                     Created by {{ workflow.created_by.get_full_name|default:workflow.created_by.username }}
                                 </span>
-                                <span class="hidden sm:inline text-gray-300 dark:text-gray-700">•</span>
-                                <span class="flex items-center gap-1">
+                                <span class="hidden text-gray-300 sm:inline dark:text-gray-700">•</span>
+                                <span class="flex gap-1 items-center">
                                     <i data-lucide="calendar" class="w-3 h-3"></i>
                                     {{ workflow.created_at|date:"M d, Y" }}
                                 </span>
@@ -64,37 +64,37 @@
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-wrap gap-2 items-center">
                         <a href="{% url 'document_approval:workflow_steps' workflow.id %}" 
-                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
-                            <i data-lucide="list" class="w-4 h-4 mr-2"></i>
+                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg transition-colors dark:text-blue-400 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                            <i data-lucide="list" class="mr-2 w-4 h-4"></i>
                             Steps
                         </a>
                         <a href="{% url 'document_approval:edit_workflow' workflow.id %}" 
-                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors">
-                            <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg transition-colors dark:text-indigo-400 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30">
+                            <i data-lucide="edit" class="mr-2 w-4 h-4"></i>
                             Edit
                         </a>
                         <a href="{% url 'document_approval:delete_workflow' workflow.id %}" 
-                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                           class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg transition-colors dark:text-red-400 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30">
+                            <i data-lucide="trash-2" class="mr-2 w-4 h-4"></i>
                             Delete
                         </a>
                     </div>
                 </div>
                 
-                <div class="mt-6 flex flex-wrap justify-between items-center gap-4 pt-4 border-t border-gray-100 dark:border-white/5">
+                <div class="flex flex-wrap gap-4 justify-between items-center pt-4 mt-6 border-t border-gray-100 dark:border-white/5">
                     <div class="flex gap-6">
-                        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="flex gap-2 items-center text-sm text-gray-600 dark:text-gray-300">
                             <i data-lucide="layers" class="w-4 h-4 text-gray-400"></i>
                             <span class="font-medium">{{ workflow.step_count }}</span> steps
                         </div>
-                        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="flex gap-2 items-center text-sm text-gray-600 dark:text-gray-300">
                             <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
                             <span class="font-medium">{{ workflow.document_count }}</span> documents
                         </div>
                         {% if workflow.content_editor %}
-                        <div class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                        <div class="flex gap-2 items-center text-sm text-green-600 dark:text-green-400">
                             <i data-lucide="pen-tool" class="w-4 h-4"></i>
                             Content Editor Enabled
                         </div>
@@ -104,9 +104,20 @@
                     <div>
                         {% if workflow.authorized_groups.exists %}
                         <div class="flex flex-wrap gap-2 items-center">
-                            <span class="text-xs text-gray-400 uppercase tracking-wider font-bold mr-1">Authorized:</span>
+                            <span class="mr-1 text-xs font-bold tracking-wider text-gray-400 uppercase">Authorized:</span>
                             {% for group in workflow.authorized_groups.all %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold text-green-600 rounded border bg-green-500/10 dark:text-green-400 border-green-500/20">
+                                {{ group.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if workflow.denied_groups.exists %}
+                        <div class="flex flex-wrap gap-2 items-center mt-2">
+                            <span class="mr-1 text-xs font-bold tracking-wider text-gray-400 uppercase">Denied:</span>
+                            {% for group in workflow.denied_groups.all %}
+                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold text-red-600 rounded border bg-red-500/10 dark:text-red-400 border-red-500/20">
                                 {{ group.name }}
                             </span>
                             {% endfor %}
@@ -119,15 +130,15 @@
         </div>
     </div>
     {% else %}
-    <div class="glass-card rounded-xl p-12 border border-gray-200 dark:border-white/10 text-center">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+    <div class="p-12 text-center rounded-xl border border-gray-200 glass-card dark:border-white/10">
+        <div class="flex justify-center items-center mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full dark:bg-white/5">
             <i data-lucide="git-merge" class="w-8 h-8 text-gray-400"></i>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No workflows found</h3>
-        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">Get started by creating a new approval workflow.</p>
+        <h3 class="mb-1 text-lg font-medium text-gray-900 dark:text-white">No workflows found</h3>
+        <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">Get started by creating a new approval workflow.</p>
         <a href="{% url 'document_approval:create_workflow' %}" 
-           class="inline-flex items-center px-6 py-3 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-xl shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5">
-            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+           class="inline-flex items-center px-6 py-3 text-sm font-bold text-white rounded-xl shadow-lg transition-all transform bg-neon-violet hover:bg-neon-purple shadow-neon-violet/30 hover:-translate-y-0.5">
+            <i data-lucide="plus" class="mr-2 w-4 h-4"></i>
             Create New Workflow
         </a>
     </div>

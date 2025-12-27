@@ -5,11 +5,11 @@
 
 <div id="form-errors"></div>
 
-<div class="glass-card rounded-2xl p-8 md:p-10">
+<div class="p-8 rounded-2xl glass-card md:p-10">
     <div class="mb-8">
         <h3 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Document Ref: {{document.document_reference}}</h3>
-        <div class="flex items-center gap-3 mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
-            <span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/5">Workflow: {{document.workflow.name}}</span>
+        <div class="flex gap-3 items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <span class="px-3 py-1 bg-gray-100 rounded-full border border-gray-200 dark:bg-white/10 dark:border-white/5">Workflow: {{document.workflow.name}}</span>
             <span class="px-3 py-1 rounded-full bg-neon-violet/10 border border-neon-violet/20 text-neon-violet shadow-[0_0_10px_rgba(255, 95, 31,0.2)]">Resubmit</span>
         </div>
     </div>
@@ -50,12 +50,12 @@ x-init="initializeFieldValues()"
 method="post" hx-post="{% url 'document_approval:resubmit_document' document.id %}" hx-target="#content-div" enctype="multipart/form-data" hx-indicator=".progress">
     {% csrf_token %}
     <div class="mb-6">
-        <label for="id_title" class="block w-full mb-2">
-            <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">
+        <label for="id_title" class="block mb-2 w-full">
+            <span class="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
                 Title <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
             </span>
         </label>
-        <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white placeholder-gray-500" required placeholder="Enter document title">
+        <input type="text" name="title" id="id_title" value="{{ form.title.value|default:'' }}" class="px-4 py-3 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" required placeholder="Enter document title">
         {% if form.title.errors %}
             <p class="mt-1 text-sm text-red-500">{{ form.title.errors.0 }}</p>
         {% endif %}
@@ -69,7 +69,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
     <div class="{% if field.input_width == 'quarter' %}md:col-span-1{% elif field.input_width == 'half' %}md:col-span-2{% elif field.input_width == 'three_quarter' %}md:col-span-3{% else %}md:col-span-4{% endif %}">
         <label for="dynamic_{{ field.id }}" class="block w-full">
             <div class="mb-2 ml-1">
-                <span class="text-sm font-semibold tracking-wide text-gray-700 dark:text-gray-300 uppercase">{{ field.name }} {% if field.required %}
+                <span class="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">{{ field.name }} {% if field.required %}
                     <span class="text-neon-violet drop-shadow-[0_0_5px_rgba(255, 95, 31,0.5)]">*</span>
                 {% endif %}</span>
                  </div>
@@ -113,7 +113,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                         <!-- Header row -->
                         <div class="flex px-1 mb-2 text-sm text-gray-600 dark:text-gray-400">
                             <template x-for="(col, colIndex) in columns" :key="colIndex">
-                                <div class="p-2 font-medium whitespace-nowrap truncate"
+                                <div class="p-2 font-medium truncate whitespace-nowrap"
                                      :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'"
                                      x-text="col.label"></div>
                             </template>
@@ -129,7 +129,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                         <div class="p-1"
                                              :style="'flex: 0 0 ' + col.width + 'px; max-width: ' + col.width + 'px;'">
                                             <input type="text"
-                                                   class="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 transition-all"
+                                                   class="px-4 py-2.5 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 transition-all dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                                    :name="'table_' + '{{ field.id }}' + '_' + col.label + '[]'"
                                                    x-model="row[col.label]"
                                                    :placeholder="col.label"
@@ -138,7 +138,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                     </template>
                                     <div class="p-1" style="flex: 0 0 100px;">
                                         <button type="button"
-                                            class="flex justify-center items-center w-8 h-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                                            class="flex justify-center items-center w-8 h-8 text-gray-400 rounded-full transition-colors hover:text-red-500 hover:bg-red-500/10"
                                             @click="removeRow(rowIndex)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -219,7 +219,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                         <div class="flex gap-2 py-2">
                             <input type="number"
                                 style="width: 80px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_id_{{ field.id }}[]`"
                                 x-model="product.id"
                                 placeholder="ID"
@@ -227,7 +227,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
                             <input type="text"
                                 style="width: 150px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_code_{{ field.id }}[]`"
                                 x-model="product.code"
                                 placeholder="CODE"
@@ -235,7 +235,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
                             <input type="text"
                                 style="width: 300px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                     :name="`product_name_{{ field.id }}[]`"
                                 x-model="product.name"
                                 placeholder="Product Name"
@@ -243,7 +243,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
                             <input type="number"
                                 style="width: 100px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_quantity_{{ field.id }}[]`"
                                     x-model="product.quantity"
                                 placeholder="Qty"
@@ -253,30 +253,30 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
                             <input type="text"
                                 style="width: 200px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_batch_no_{{ field.id }}[]`"
                                 x-model="product.batch_no"
                                 placeholder="Batch No">
 
                             <input type="text"
                                 style="width: 200px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_bin_location_{{ field.id }}[]`"
                                 x-model="product.bin_location"
                                 placeholder="Bin Location">
 
                             <input type="text"
                                 style="width: 250px;"
-                                class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none text-gray-900 dark:text-white placeholder-gray-500"
+                                class="px-3 py-2 placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:ring-2 focus:ring-neon-violet focus:outline-none dark:text-white"
                                 :name="`product_remark_{{ field.id }}[]`"
                                 x-model="product.remark"
                                 placeholder="Remark">
 
                             <button type="button"
                                     style="width: 100px;"
-                                    class="px-3 h-9 text-sm text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-md font-medium transition-colors"
+                                    class="px-3 h-9 text-sm font-medium text-gray-400 rounded-md transition-colors hover:text-red-500 hover:bg-red-500/10"
                                     @click="removeProduct(index)">
-                                <i data-lucide="trash-2" class="w-4 h-4 inline-block mr-1"></i>Del
+                                <i data-lucide="trash-2" class="inline-block mr-1 w-4 h-4"></i>Del
                             </button>
                         </div>
                     </template>
@@ -315,8 +315,8 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             <div id="attachment-field-{{ field.id }}">
                  {% if field.file %}
 
-           <a href='{{ field.file_url }}' class="block mb-2 font-medium text-neon-violet underline decoration-neon-violet/50 hover:decoration-neon-violet">{{ field.original_file_name}}</a>
-                <button type="button" class="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-red-500 bg-gray-100 dark:bg-white/5 hover:bg-red-500/10 rounded-lg transition-colors"
+           <a href='{{ field.file_url }}' class="block mb-2 font-medium underline text-neon-violet decoration-neon-violet/50 hover:decoration-neon-violet">{{ field.original_file_name}}</a>
+                <button type="button" class="px-4 py-1.5 text-sm font-medium text-gray-400 bg-gray-100 rounded-lg transition-colors hover:text-red-500 dark:bg-white/5 hover:bg-red-500/10"
                 hx-delete="{% url 'document_approval:delete_attachment' field.id document.id %}"
                 hx-target="#attachment-field-{{ field.id }}"
                 hx-swap="outerHTML">Delete File {{ field.value.id }}</button>
@@ -329,14 +329,14 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
  
 
             {% elif field.field_type == 'text' %}
-                    <input type="text" class="w-full px-4 py-3 leading-tight text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet placeholder-gray-500" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                    <input type="text" class="px-4 py-3 w-full leading-tight placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:text-white dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                     {% elif field.field_type  == 'textarea' %}
-                    <textarea name="dynamic_{{ field.id }}" class="block w-full px-4 py-3 mt-1 text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet placeholder-gray-500" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
+                    <textarea name="dynamic_{{ field.id }}" class="block px-4 py-3 mt-1 w-full placeholder-gray-500 text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:text-white dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet" rows="{{ field.textarea_rows }}" value="{{ field.value }}">{{ field.value }}</textarea>
                     
                     {% elif field.field_type == 'tiptap_editor' %}
                     <div x-data="editor('{{ field.value|default:''|escapejs }}')" class="bg-white dark:bg-[#1a1a1a] rounded-xl tiptap-editor border border-gray-200 dark:border-white/10">
                       <input type="hidden" name="dynamic_{{ field.id }}" x-model="htmlContent" />
-                      <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-transparent border-b border-gray-200 dark:border-white/10 rounded-t-lg">
+                      <div id="editorToolbar_{{ field.id }}" x-ref="toolbar" class="flex sticky top-0 z-40 flex-wrap bg-transparent rounded-t-lg border-b border-gray-200 dark:border-white/10">
                         {% include "document/components/editor_toolbar.html" %}
                       </div>
                       <article class="max-w-none prose">
@@ -344,9 +344,9 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                       </article>
                     </div>
                 {% elif field.field_type == 'number' %}
-                    <input type="number" class="w-full px-4 py-3 leading-tight text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
+                    <input type="number" class="px-4 py-3 w-full leading-tight text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:text-white dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}" value="{{ field.value }}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'date' %}
-                    <input type="date" class="w-full px-4 py-3 leading-tight text-gray-900 dark:text-white rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
+                    <input type="date" class="px-4 py-3 w-full leading-tight text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:text-white dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet" name="dynamic_{{ field.id }}" id="dynamic_{{ field.id }}"
                            value="{{ field.value}}" {% if field.required %}{% endif %}>
                 {% elif field.field_type == 'boolean' %}
                    
@@ -364,7 +364,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             </label>
             {% elif field.field_type == 'choice' %}
             <select name="dynamic_{{ field.id }}" 
-                    class="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 shadow-sm focus:outline-none focus:ring-2 focus:ring-neon-violet text-gray-900 dark:text-white" 
+                    class="px-4 py-3 w-full text-gray-900 rounded-lg border border-gray-200 shadow-sm dark:border-white/10 bg-white/50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-neon-violet dark:text-white" 
                     @change="updateFieldValue($event)"
                     {% if field.required %}required{% endif %}>
                 <option value="">Select an option</option>
@@ -394,7 +394,6 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 
    {% if steps_with_approvers %}
 
-   <h3 class="mt-6 mb-4 text-lg font-medium text-gray-900 dark:text-white">Select Approvers</h3>
    {% for step_info in steps_with_approvers %}
        {% comment %}
        We use the same robust pattern as the submit form.
@@ -424,9 +423,9 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
              <input type="hidden" name="approver_{{ step_info.step.id }}" x-model="selected">
    
              <div class="mb-4">
-                 <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
+                 <div class="flex flex-wrap gap-2 p-2 mb-2 rounded-lg border border-gray-200 bg-white/50 dark:bg-white/5 dark:border-white/10 min-h-10">
                      <template x-if="selected">
-                         <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
+                         <div class="flex flex-grow justify-between items-center px-2 py-1 text-sm bg-gray-100 rounded-md border border-gray-200 dark:bg-white/10 dark:border-white/5">
                              <div>
                                  <div x-text="selectedUser.full_name" class="font-medium text-gray-900 dark:text-white"></div>
                                  <div x-show="selectedUser.job_title" x-text="selectedUser.job_title" class="text-xs text-gray-500 dark:text-gray-400"></div>
@@ -437,7 +436,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                          </div>
                      </template>
    
-                     <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">
+                     <button type="button" @click="openDialog()" x-show="!selected" data-approver-trigger="true" class="px-2 py-1 text-sm rounded-md border transition-colors text-neon-violet hover:text-white hover:bg-neon-violet/20 border-neon-violet/30">
                          + Select Approver
                      </button>
                  </div>
@@ -456,7 +455,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                     id="user-search-dialog-input-resubmit-{{ step_info.step.id }}"
                                     x-model="search"
                                     placeholder="Search by name or job title..."
-                                    class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
+                                    class="px-4 py-2 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet">
                          </div>
        
                          <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
@@ -464,7 +463,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                                  <div class="py-2 text-sm text-gray-500">No approvers found</div>
                              </template>
                              <template x-for="option in filteredOptions" :key="option.id">
-                                 <div class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                 <div class="flex justify-between items-center p-2 rounded-md transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5"
                                       @click="selectUser(option)"
                                       :class="{ 'bg-neon-violet/10': selected === option.id }">
                                      <div>
@@ -479,7 +478,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                          </div>
        
                          <div class="flex justify-end">
-                             <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+                             <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors dark:text-gray-300 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20">
                                  Close
                              </button>
                          </div>
@@ -496,15 +495,15 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 <!-- CC Recipients Section -->
 <div class="mb-6">
   <div class="flex items-center mb-2">
-      <span class="font-medium label-text text-gray-900 dark:text-white">CC Recipients</span>
+      <span class="font-medium text-gray-900 label-text dark:text-white">CC Recipients</span>
       <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">(These users will receive email notifications when the document is approved)</span>
   </div>
   
   <div x-data="ccRecipients" x-init="$nextTick(() => { documentId = {{ document.id }}; loadDocumentAuthorizedUsers(); })">
     <div class="mb-4">
-      <div class="flex flex-wrap gap-2 p-2 mb-2 bg-white/50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 min-h-10">
+      <div class="flex flex-wrap gap-2 p-2 mb-2 rounded-lg border border-gray-200 bg-white/50 dark:bg-white/5 dark:border-white/10 min-h-10">
         <template x-for="user in selectedUsers" :key="user.id">
-          <div class="flex items-center px-2 py-1 text-sm bg-gray-100 dark:bg-white/10 rounded-md border border-gray-200 dark:border-white/5">
+          <div class="flex items-center px-2 py-1 text-sm bg-gray-100 rounded-md border border-gray-200 dark:bg-white/10 dark:border-white/5">
             <span x-text="user.full_name || user.username" class="text-gray-900 dark:text-white"></span>
             <button type="button" @click="removeUser(user.id)" class="ml-2 text-gray-500 hover:text-red-500">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -512,7 +511,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
           </div>
         </template>
         
-        <button type="button" @click="openDialog" class="px-2 py-1 text-sm text-neon-violet hover:text-white hover:bg-neon-violet/20 rounded-md border border-neon-violet/30 transition-colors">
+        <button type="button" @click="openDialog" class="px-2 py-1 text-sm rounded-md border transition-colors text-neon-violet hover:text-white hover:bg-neon-violet/20 border-neon-violet/30">
           + Add User
         </button>
       </div>
@@ -540,7 +539,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
                 x-model="searchQuery" 
                 @input="searchUsers" 
                 placeholder="Search by name, username, or email"
-                class="px-4 py-2 w-full rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet"
+                class="px-4 py-2 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-white focus:outline-none focus:ring-2 focus:ring-neon-violet"
               >
               <div x-show="isLoading" class="flex absolute inset-y-0 right-0 items-center pr-3">
                 <svg class="w-5 h-5 text-gray-400 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -550,7 +549,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
               </div>
             </div>
             
-            <div x-show="errorMessage" class="p-2 mb-4 text-sm text-white bg-red-500/80 rounded-md" x-text="errorMessage"></div>
+            <div x-show="errorMessage" class="p-2 mb-4 text-sm text-white rounded-md bg-red-500/80" x-text="errorMessage"></div>
             
             <div class="overflow-y-auto mb-4 max-h-60 custom-scrollbar">
               <template x-if="searchResults.length === 0 && searchQuery.length >= 2">
@@ -559,7 +558,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
               
               <template x-for="user in searchResults" :key="user.id">
                 <div 
-                  class="flex justify-between items-center p-2 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                  class="flex justify-between items-center p-2 rounded-md transition-colors cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5"
                   @click="selectUser(user)"
                   :class="{ 'bg-neon-violet/10': isUserSelected(user.id) }"
                 >
@@ -575,7 +574,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
             </div>
             
             <div class="flex justify-end">
-              <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+              <button type="button" @click="closeDialog" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors dark:text-gray-300 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20">
                 Close
               </button>
             </div>
@@ -586,7 +585,7 @@ method="post" hx-post="{% url 'document_approval:resubmit_document' document.id 
 </div>
 
 <div class="flex mt-10 space-x-4">
-    <button type="submit" name="save_draft" value="1" class="px-6 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:text-white hover:bg-white/10 transition-colors">Save Draft</button>
+    <button type="submit" name="save_draft" value="1" class="px-6 py-2.5 text-sm font-medium text-gray-500 rounded-lg border border-gray-200 transition-colors dark:text-gray-400 bg-white/5 dark:border-white/10 hover:text-white hover:bg-white/10">Save Draft</button>
     <button type="submit" id="resubmit-document-button" class="px-8 py-2.5 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-lg shadow-[0_0_15px_rgba(255, 95, 31,0.4)] hover:shadow-[0_0_20px_rgba(255, 95, 31,0.6)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">Resubmit Document</button>
 </div>
 
