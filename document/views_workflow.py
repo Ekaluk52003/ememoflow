@@ -55,6 +55,11 @@ def create_workflow(request):
             group_ids = request.POST.getlist('authorized_groups[]')
             if group_ids:
                 workflow.authorized_groups.set(group_ids)
+
+            # Handle denied groups
+            denied_group_ids = request.POST.getlist('denied_groups[]')
+            if denied_group_ids:
+                workflow.denied_groups.set(denied_group_ids)
             
             # Set default email settings
             workflow.send_reject_email = True
@@ -104,6 +109,10 @@ def edit_workflow(request, workflow_id):
             # Handle authorized groups
             group_ids = request.POST.getlist('authorized_groups[]')
             workflow.authorized_groups.set(group_ids)
+            
+            # Handle denied groups
+            denied_group_ids = request.POST.getlist('denied_groups[]')
+            workflow.denied_groups.set(denied_group_ids)
             
             # Handle email settings
             workflow.send_reject_email = request.POST.get('send_reject_email') == 'true'
@@ -172,6 +181,11 @@ def delete_workflow(request, workflow_id):
 def workflow_steps(request, workflow_id):
     """Display workflow steps with connecting dot lines"""
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
+    
+    # Check if user is in a denied group
+    if request.user.groups.exists() and workflow.denied_groups.filter(id__in=request.user.groups.all()).exists():
+         return render(request, 'error.html', {'message': "You are not authorized to view this workflow."})
+
     steps = workflow.steps.all().order_by('order')
     
     return render(request, 'document/workflow_steps.html', {

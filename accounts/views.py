@@ -1,8 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from django.db.models import Q, Prefetch
-from django.http import HttpResponse
 
 from .models import CustomUser
 
@@ -12,6 +10,9 @@ def user_list(request):
     View to display all active users grouped by their groups.
     Includes filtering functionality by group using HTMX.
     """
+    if not request.user.is_superuser:
+        return render(request, '403.html', status=403)
+
     # Get all groups
     groups = Group.objects.all().order_by('name')
     

@@ -34,5 +34,12 @@ def workflows_list(request):
         from document.models import ApprovalWorkflow
         # Cache the workflows to avoid repeated queries
         workflows = ApprovalWorkflow.objects.select_related('created_by').all()
-        return {'workflows': workflows}
+        
+        # Exclude workflows where the user is in a denied group
+        if request.user.groups.exists():
+            workflows = workflows.exclude(
+                denied_groups__in=request.user.groups.all()
+            )
+            
+        return {'workflows': workflows.distinct()}
     return {'workflows': []}

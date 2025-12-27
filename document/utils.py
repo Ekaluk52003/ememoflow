@@ -23,9 +23,17 @@ def is_bu_manager(user):
     return user.groups.filter(name__endswith='_Manager').exists()
 
 def get_allowed_documents(user):
-    # Check if the user is superuser or in Director group
-    if user.is_superuser or user.groups.filter(name='Director').exists():
+    # Check if the user is superuser
+    if user.is_superuser:
         return Document.objects.all().order_by('-created_at')
+    
+    # NEW: Filter out documents from workflows where the user is denied
+    from .models import ApprovalWorkflow
+    denied_workflow_ids = []
+    if user.groups.exists():
+        denied_workflow_ids = ApprovalWorkflow.objects.filter(
+            denied_groups__in=user.groups.all()
+        ).values_list('id', flat=True)
     
     # Get documents where the workflow has authorized groups that include the user's groups
     authorized_workflow_docs = Document.objects.filter(
@@ -43,19 +51,26 @@ def get_allowed_documents(user):
         cc_authorized_docs = Document.objects.none()
 
     # **MODIFIED**: A query to find documents where this user is or was an approver.
-    involved_in_approval_q = Q(approvals__approver=user)
+    involved_in_approval_q = Q(approvals__approver=user) | Q(approvals__on_behalf_of=user)
     
     # Get user's BU groups
     bu_groups = get_user_bu_groups(user)
     if not bu_groups:
         # If user is not in any BU group, they can only see their submitted documents,
         # documents from workflows where they're in an authorized group,
-        # and documents where they are authorized as a CC recipient
-        return (Document.objects.filter(
+        # documents where they are authorized as a CC recipient,
+        # and documents where they were involved in approval
+        docs = Document.objects.filter(
             Q(submitted_by=user) |
             Q(id__in=authorized_workflow_docs) |
-            Q(id__in=cc_authorized_docs)
-        )).distinct().order_by('-created_at')
+            Q(id__in=cc_authorized_docs) |
+            involved_in_approval_q
+        )
+        
+        if denied_workflow_ids:
+            docs = docs.exclude(workflow_id__in=denied_workflow_ids)
+            
+        return docs.distinct().order_by('-created_at')
 
     # Get all users who are either in these BU groups or are managers of these BUs
     users_in_same_bus = User.objects.filter(
@@ -86,6 +101,9 @@ def get_allowed_documents(user):
         )
 
     # Order the documents by creation date, most recent first
+    if denied_workflow_ids:
+        documents = documents.exclude(workflow_id__in=denied_workflow_ids)
+
     return documents.distinct().order_by('-created_at')
 
 def get_allowed_document(user, reference_id):

@@ -68,7 +68,8 @@ def send_reject_email(document):
         'workflow': workflow,
     }
     recipient_list = [document.submitted_by.email]
-    cc_list = workflow.get_cc_list()
+    # cc_list = workflow.get_cc_list()
+    cc_list = []
 
     return send_templated_email(
         workflow.reject_email_subject,
@@ -94,7 +95,8 @@ def send_void_email(document, voided_by):
         'reason': document.void_reason,
     }
     recipient_list = [document.submitted_by.email]
-    cc_list = workflow.get_cc_list()
+    # cc_list = workflow.get_cc_list()
+    cc_list = []
 
     # Reuse reject email templates but maybe prefix subject or just use them as is since void is similar to reject
     # If we want specific void templates we would need to add them to ApprovalWorkflow model
@@ -131,7 +133,8 @@ def send_withdraw_email(document):
     }
 
     recipient_list = [current_approver.email]
-    cc_list = workflow.get_cc_list()
+    # cc_list = workflow.get_cc_list()
+    cc_list = []
 
     logger.info(f"Using email templates - Subject: {workflow.withdraw_email_subject}, Body: {workflow.withdraw_email_body}")
 
@@ -218,7 +221,8 @@ def send_approved_document_email(document, approval=None, status=None):
             body_template = workflow.email_approved_body_template
 
             # Get CC list from workflow
-            cc_list = workflow.get_cc_list()
+            # cc_list = workflow.get_cc_list()
+            cc_list = []
             
             # Get list of recipients (primary approver + authorized users)
             recipients = [approval.approver.email]

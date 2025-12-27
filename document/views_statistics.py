@@ -12,6 +12,9 @@ def approval_statistics(request):
     """
     Display approval statistics for users and workflows
     """
+    if not request.user.is_superuser:
+        return render(request, '403.html', status=403)
+
     # Calculate user statistics
     user_stats = []
     
@@ -86,6 +89,12 @@ def approval_statistics(request):
     workflow_stats = []
     
     workflows = ApprovalWorkflow.objects.all()
+    
+    # Filter out workflows where the user is in a denied group
+    if request.user.groups.exists():
+        workflows = workflows.exclude(denied_groups__in=request.user.groups.all())
+    
+    workflows = workflows.distinct()
     
     for workflow in workflows:
         # Get completed documents for this workflow

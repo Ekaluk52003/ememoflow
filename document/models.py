@@ -74,6 +74,14 @@ class ApprovalWorkflow(models.Model):
         related_name='authorized_workflows',
         help_text="Groups that have full access to documents in this workflow"
     )
+
+    denied_groups = models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name='denied_workflows',
+        help_text="Users in these groups cannot see or submit to this workflow (Deny List)."
+    )
+    
     # Reject email fields
     content_editor = models.BooleanField(default=False, help_text="Add content editor for document")
     send_reject_email = models.BooleanField(default=True, help_text="Send email on document rejection for all steps")
@@ -91,7 +99,7 @@ class ApprovalWorkflow(models.Model):
     email_approved_body_template = models.TextField(blank=True, help_text="Use {document}, {approver}, and {step} as placeholders")
 
 
-    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC")
+    cc_emails = models.TextField(blank=True, help_text="Comma-separated email addresses for CC (Only sent when document is fully approved)")
 
     def __str__(self):
         return self.name

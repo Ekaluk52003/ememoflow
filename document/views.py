@@ -414,6 +414,12 @@ def document_list(request):
 
     workflows = ApprovalWorkflow.objects.all()
 
+    # Filter out workflows where the user is in a denied group
+    if request.user.groups.exists():
+        workflows = workflows.exclude(denied_groups__in=request.user.groups.all())
+    
+    workflows = workflows.distinct()
+
     context = {
         'documents': page_obj,
         'page_range': page_range,
@@ -1226,6 +1232,13 @@ def cancel_document(request, document_id):
 @login_required
 def submit_document(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
+    
+    # NEW: Security Check - Denied Groups
+    if request.user.groups.exists():
+        if workflow.denied_groups.filter(id__in=request.user.groups.all()).exists():
+            messages.error(request, "Access to this workflow is denied for your user group.")
+            return redirect('document_approval:document_list')
+
     all_dynamic_fields = workflow.dynamic_fields.all()
 
     editable_fields = DynamicField.objects.filter(
