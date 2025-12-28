@@ -91,7 +91,7 @@ def approval_statistics(request):
     workflows = ApprovalWorkflow.objects.all()
     
     # Filter out workflows where the user is in a denied group
-    if request.user.groups.exists():
+    if (not request.user.is_superuser) and request.user.groups.exists():
         workflows = workflows.exclude(denied_groups__in=request.user.groups.all())
     
     workflows = workflows.distinct()

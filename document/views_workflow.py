@@ -184,7 +184,7 @@ def workflow_steps(request, workflow_id):
     workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
     
     # Check if user is in a denied group
-    if request.user.groups.exists() and workflow.denied_groups.filter(id__in=request.user.groups.all()).exists():
+    if (not request.user.is_superuser) and request.user.groups.exists() and workflow.denied_groups.filter(id__in=request.user.groups.all()).exists():
          return render(request, 'error.html', {'message': "You are not authorized to view this workflow."})
 
     steps = workflow.steps.all().order_by('order')
