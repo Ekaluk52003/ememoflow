@@ -3,200 +3,306 @@
 {% block content %}
 
 <!-- Hero Section -->
-<div class="mb-10 relative z-10">
-    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3 relative">
+<div class="relative z-10 mb-10">
+    <h1 class="relative mb-3 text-4xl font-bold tracking-tight text-gray-900 md:text-5xl dark:text-white">
         {{ workflow.name }} <br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-violet to-fuchsia-500 text-glow">Visualizer</span>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r to-fuchsia-500 from-neon-violet text-glow">Visualizer</span>
     </h1>
-    <p class="text-lg text-gray-600 dark:text-gray-400 max-w-2xl">
+    <p class="max-w-2xl text-lg text-gray-600 dark:text-gray-400">
         Visualize and manage the approval steps for this workflow.
     </p>
     <!-- Background Glow -->
     <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
 </div>
 
-<div class="container relative mx-auto z-10">
+<div class="container relative z-10 mx-auto">
 
   <!-- Workflow steps visualization - Node based design -->
-  <div class="glass-card rounded-xl p-6 sm:p-12 workflow-canvas border border-gray-200 dark:border-white/10 relative overflow-hidden">
-    
-    <!-- Controls Header -->
-    <div class="relative z-20 mb-12 text-center">
-      
-      <!-- Add new step button -->
-      <div class="flex flex-wrap gap-4 justify-center items-center">
-        <a href="{% url 'document_approval:edit_workflow' workflow.id %}" 
-           class="inline-flex items-center px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 rounded-xl transition-all">
-          <i data-lucide="settings" class="w-5 h-5 mr-2"></i>
-          Workflow Settings
-        </a>
-
-        <a href="{% url 'document_approval:create_workflow_step' workflow.id %}" 
-           class="inline-flex items-center px-5 py-2.5 text-sm font-bold text-white bg-neon-violet hover:bg-neon-purple rounded-xl shadow-lg shadow-neon-violet/30 transition-all transform hover:-translate-y-0.5">
-          <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
-          Add New Step
-        </a>
-
-        {% if workflow.authorized_groups.exists %}
-        <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Authorized:</span>
-            <div class="flex flex-wrap gap-2">
-                {% for group in workflow.authorized_groups.all %}
-                <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 rounded-md">
-                    {{ group.name }}
-                </span>
-                {% endfor %}
+  <div class="grid gap-6 p-6 w-full min-h-[600px] rounded-xl border border-gray-200 glass-card sm:p-12 dark:border-white/10 md:grid-cols-3" x-data="workflowOrderEditor()">
+    <div class="w-full md:col-span-1">
+      <div class="flex flex-col gap-3 items-start">
+        {% if user.is_superuser %}
+        <div class="p-5 w-full rounded-xl border border-gray-200 backdrop-blur-sm bg-white/50 dark:bg-white/5 dark:border-white/10">
+            <div class="mb-4">
+                <h3 class="text-xs font-bold tracking-wider text-gray-500 uppercase dark:text-gray-400">Workflow</h3>
+                <div class="text-lg font-bold text-gray-900 truncate dark:text-white" title="{{ workflow.name }}">{{ workflow.name }}</div>
             </div>
-            <a href="{% url 'document_approval:edit_workflow' workflow.id %}" class="ml-2 p-1 text-gray-400 hover:text-neon-violet transition-colors" title="Edit Workflow">
-                <i data-lucide="settings" class="w-4 h-4"></i>
-            </a>
+
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'document_approval:edit_workflow' workflow.id %}" 
+                   class="inline-flex items-center px-4 py-2.5 w-full text-sm font-bold text-gray-700 bg-white rounded-xl border border-gray-200 transition-all dark:text-gray-300 dark:bg-white/5 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10">
+                  <i data-lucide="settings" class="mr-2 w-5 h-5"></i>
+                  Workflow Settings
+                </a>
+
+                <a href="{% url 'document_approval:create_workflow_step' workflow.id %}" 
+                   class="inline-flex justify-center items-center px-4 py-2.5 w-full text-sm font-bold text-white rounded-xl shadow-lg transition-all transform bg-neon-violet hover:bg-neon-purple shadow-neon-violet/30 hover:-translate-y-0.5">
+                  <i data-lucide="plus" class="mr-2 w-5 h-5"></i>
+                  Add New Step
+                </a>
+
+                <button @click="saveOrder" 
+                        :disabled="!hasChanges" 
+                        :class="hasChanges ? 'bg-neon-violet hover:bg-neon-purple text-white shadow-lg shadow-neon-violet/30 hover:-translate-y-0.5' : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-white/5'"
+                        class="inline-flex justify-center items-center px-4 py-2.5 w-full text-sm font-bold rounded-xl transition-all transform">
+                  <i data-lucide="save" class="mr-2 w-5 h-5"></i>
+                  <span x-text="hasChanges ? 'Save Order' : 'No Changes'"></span>
+                </button>
+
+                {% if workflow.authorized_groups.exists %}
+                <div class="flex flex-col gap-2 p-3 w-full rounded-lg border border-gray-200 bg-gray-50/50 dark:bg-white/5 dark:border-white/10">
+                    <span class="text-[10px] font-bold tracking-wider text-gray-500 uppercase dark:text-gray-400">Authorized Groups</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for group in workflow.authorized_groups.all %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-green-700 bg-green-100 rounded border border-green-200 dark:text-green-300 dark:bg-green-900/30 dark:border-green-900/50">
+                            {{ group.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if workflow.denied_groups.exists %}
+                <div class="flex flex-col gap-2 p-3 w-full rounded-lg border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/20">
+                    <span class="text-[10px] font-bold tracking-wider text-red-500 uppercase dark:text-red-400">Denied Groups</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for group in workflow.denied_groups.all %}
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold text-red-700 bg-red-100 rounded border border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-900/50">
+                            {{ group.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div x-show="successMessage" class="p-3 w-full text-sm text-center text-green-600 bg-green-50 rounded-lg border border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-900/30" x-text="successMessage"></div>
+                <div x-show="errorMessage" class="p-3 w-full text-sm text-center text-red-600 bg-red-50 rounded-lg border border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-900/30" x-text="errorMessage"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not user.is_superuser %}
+        <div class="p-5 w-full rounded-xl border border-gray-200 backdrop-blur-sm bg-white/50 dark:bg-white/5 dark:border-white/10">
+            <h3 class="mb-3 text-sm font-bold tracking-wider text-gray-900 uppercase dark:text-white">
+                <i data-lucide="info" class="inline-block mr-2 w-4 h-4 text-neon-violet"></i>
+                Workflow Info
+            </h3>
+            <div class="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+                {{ workflow.name }}
+            </div>
+            
+            <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                <div class="flex justify-between items-center">
+                    <span>Total Steps</span>
+                    <span class="font-mono font-bold text-gray-900 dark:text-white">{{ steps|length }}</span>
+                </div>
+               
+            </div>
         </div>
         {% endif %}
       </div>
     </div>
-    
-    <div class="flex flex-col items-center workflow-steps relative z-10">
+
+    <div class="w-full min-w-0 md:col-span-2">
+      <div class="overflow-hidden w-full rounded-xl border divide-y border-gray-200/70 divide-gray-200/70 dark:border-white/10 dark:divide-white/10" id="workflow-steps-container">
       {% for step in steps %}
-        <!-- Node container -->
-        <div class="flex relative justify-center mb-0 w-full workflow-node-container">
-          <!-- Node card -->
-          <div class="relative z-10 w-full max-w-xl glass-card rounded-xl border-l-4 shadow-xl workflow-node overflow-hidden hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] transition-shadow duration-300" 
-               style="border-left-color: #8b5cf6; background: rgba(255, 255, 255, 0.03);">
-            
-            <!-- Glass background layer -->
-            <div class="absolute inset-0 bg-white/40 dark:bg-[#1a1a1a]/40 backdrop-blur-md -z-10"></div>
-
-            <!-- Step content -->
-            <div class="p-6 relative z-10">
-              <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-neon-violet/10 text-neon-violet font-bold border border-neon-violet/20">
-                        {{ step.order }}
-                    </div>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ step.name }}</h2>
-                </div>
-                
-                <a href="{% url 'document_approval:edit_workflow_step' step.id %}" 
-                   class="p-2 text-gray-500 hover:text-neon-violet hover:bg-neon-violet/10 rounded-lg transition-colors">
-                  <i data-lucide="edit-2" class="w-4 h-4"></i>
-                </a>
-              </div>
-
-              {% if step.requires_edit %}
-              <div class="mb-4">
-                <span class="inline-flex items-center px-2.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-md">
-                  <i data-lucide="edit" class="w-3 h-3 mr-1.5"></i>
-                  Requires Input
-                </span>
-              </div>
-              {% endif %}
+        <div class="w-full group" data-step-id="{{ step.id }}">
+          <div class="px-5 py-4 w-full transition-all border-l-[3px] border-transparent hover:border-neon-violet bg-white/50 hover:bg-white/80 dark:bg-transparent dark:hover:bg-white/5">
+            <div class="flex flex-col gap-4 items-stretch sm:flex-row">
               
-              <!-- Flex layout for card content -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Left column -->
-                <div class="p-3 rounded-lg bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-                    <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Mode</div>
-                    <div class="text-sm font-medium flex items-center gap-2 {% if step.approval_mode == 'all' %}text-blue-600 dark:text-blue-400{% else %}text-green-600 dark:text-green-400{% endif %}">
-                        <i data-lucide="{% if step.approval_mode == 'all' %}users{% else %}user{% endif %}" class="w-4 h-4"></i>
-                        {% if step.approval_mode == 'all' %}All Required{% else %}Any One{% endif %}
-                    </div>
-                </div>
-                
-                <!-- Right column -->
-                <div class="p-3 rounded-lg bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
-                    <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Approvers</div>
-                    <div class="flex flex-wrap gap-1.5">
-                      {% for approver in step.approvers.all %}
-                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-                          {{ approver.get_full_name|default:approver.username }}
-                        </span>
-                      {% empty %}
-                        {% if step.approver_is_submitter %}
-                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 rounded-md">
-                              <i data-lucide="user" class="w-3 h-3 mr-1"></i> Submitter
-                            </span>
-                        {% elif step.approver_groups.exists %}
-                          {% for group in step.approver_groups.all %}
-                            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 rounded-md">
-                              <i data-lucide="users" class="w-3 h-3 mr-1"></i> {{ group.name }}
-                            </span>
-                          {% endfor %}
-                          
-                          {% if step.allow_custom_approver %}
-                            <div class="w-full mt-1 text-[10px] text-gray-500 dark:text-gray-400 italic flex items-center">
-                                <i data-lucide="user-plus" class="w-3 h-3 mr-1"></i>
-                                User selectable from group
-                            </div>
-                          {% endif %}
-                        {% else %}
-                          <span class="text-xs text-gray-500 dark:text-gray-400 italic">No specific approvers</span>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
-                </div>
+              <!-- 1. Left Column: Order -->
+              <div class="flex flex-row justify-between items-center pb-3 w-full border-b border-gray-100 shrink-0 sm:flex-col sm:justify-center sm:w-auto sm:pb-0 sm:border-b-0 sm:border-r sm:pt-1 sm:pr-4 dark:border-white/5 group/order">
+                 <div class="flex gap-1 items-center sm:mb-1">
+                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider dark:text-gray-600 transition-colors {% if user.is_superuser %}group-hover/order:text-neon-violet{% endif %}">Order</span>
+                     {% if user.is_superuser %}
+                     <i data-lucide="pencil" class="w-3 h-3 opacity-0 transition-opacity text-neon-violet group-hover/order:opacity-100"></i>
+                     {% endif %}
+                 </div>
+                 {% if user.is_superuser %}
+                 <input type="number"
+                        min="1"
+                        value="{{ step.order }}"
+                        title="Click to change order"
+                        class="p-0 w-12 h-auto text-xl font-bold text-center text-gray-700 bg-transparent border-0 border-b-2 border-gray-200 border-dashed transition-all cursor-pointer step-order-input focus:ring-0 dark:text-gray-200 dark:border-gray-700 focus:border-neon-violet group-hover/order:border-neon-violet/50 hover:text-neon-violet focus:cursor-text"
+                        data-step-id="{{ step.id }}" />
+                 {% else %}
+                 <span class="text-xl font-bold text-gray-700 dark:text-gray-200">{{ step.order }}</span>
+                 {% endif %}
               </div>
-          
-              <!-- Conditional logic -->
-              {% if step.is_conditional %}
-              <div class="mt-4 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/20">
-                  <div class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <i data-lucide="git-branch" class="w-3 h-3"></i>
-                      Conditional Logic
-                  </div>
-                  <div class="text-sm text-gray-700 dark:text-gray-300">
-                    {% if step.condition_field %}
-                      If <span class="font-mono bg-white/50 dark:bg-black/20 px-1 rounded">{{ step.condition_field.name }}</span> 
-                      <span class="font-bold text-neon-violet">{{ step.get_condition_operator_display }}</span> 
-                      <span class="font-mono bg-white/50 dark:bg-black/20 px-1 rounded">"{{ step.condition_value }}"</span>
+
+              <!-- Content & Actions Wrapper -->
+              <div class="flex flex-1 gap-4 items-start w-full">
+                  <!-- 2. Middle Column: Content -->
+                  <div class="flex-1 min-w-0">
+                    <!-- Title Row -->
+                    <div class="flex flex-wrap gap-3 items-center mb-1.5">
+                        <h3 class="text-base font-bold text-gray-900 truncate dark:text-gray-100">{{ step.name }}</h3>
+                        
+                        {% if step.requires_edit %}
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tracking-wider">
+                            INPUT REQUIRED
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Metadata Row -->
+                    <div class="flex flex-wrap gap-y-1 gap-x-3 items-center font-mono text-xs text-gray-500 dark:text-gray-400">
+                        <!-- Mode -->
+                        <div class="flex gap-2 items-center">
+                            <span class="font-bold text-gray-400 uppercase dark:text-gray-600">MODE:</span>
+                            <span class="font-medium {% if step.approval_mode == 'all' %}text-blue-600 dark:text-blue-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                                {% if step.approval_mode == 'all' %}All Required{% else %}Any One{% endif %}
+                            </span>
+                        </div>
+
+                        <span class="text-gray-300 dark:text-gray-700">•</span>
+
+                        <!-- Approvers -->
+                        <div class="flex gap-2 items-center min-w-0">
+                            <span class="font-bold text-gray-400 uppercase dark:text-gray-600">APPROVERS:</span>
+                            <div class="flex flex-wrap gap-1 items-center">
+                                {% for approver in step.approvers.all %}
+                                    <span class="text-gray-700 dark:text-gray-300">{{ approver.get_full_name|default:approver.username }}{% if not forloop.last %}, {% endif %}</span>
+                                {% empty %}
+                                    {% if step.approver_is_submitter %}
+                                        <span class="text-amber-600 dark:text-amber-400">Submitter</span>
+                                    {% elif step.approver_groups.exists %}
+                                        {% for group in step.approver_groups.all %}
+                                            <span class="text-purple-600 dark:text-purple-400">{{ group.name }}{% if not forloop.last %}, {% endif %}</span>
+                                        {% endfor %}
+                                        {% if step.allow_custom_approver %}
+                                            <span class="ml-1 italic text-gray-400">(User Selectable)</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="italic text-gray-400">None</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Conditionals -->
+                    {% if step.is_conditional %}
+                    <div class="flex gap-2 items-center mt-2 font-mono text-xs text-amber-600 dark:text-amber-400">
+                        <i data-lucide="git-branch" class="w-3 h-3"></i>
+                        <span class="truncate">
+                          {% if step.condition_field %}
+                            If {{ step.condition_field.name }} {{ step.get_condition_operator_display }} "{{ step.condition_value }}"
+                          {% endif %}
+                        </span>
+                    </div>
                     {% endif %}
                   </div>
-              </div>
-              {% endif %}
 
-              <div class="mt-4 flex items-center justify-end">
-                {% if step.move_to_next %}
-                <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-900/30">
-                  <i data-lucide="arrow-down" class="w-3 h-3 mr-1"></i> Next Step
-                </span>
-                {% else %}
-                <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-100 dark:border-green-900/30">
-                  <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i> Complete Workflow
-                </span>
-                {% endif %}
+                  <!-- 3. Right Column: Actions -->
+                  <div class="flex flex-col gap-3 items-end shrink-0 sm:ml-2">
+                     <!-- Edit Button -->
+                     {% if user.is_superuser %}
+                     <a href="{% url 'document_approval:edit_workflow_step' step.id %}" 
+                        class="p-1.5 text-gray-400 rounded-lg transition-colors hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                        title="Edit Step">
+                       <i data-lucide="edit-2" class="w-4 h-4"></i>
+                     </a>
+                     {% endif %}
+
+                     <!-- End Status -->
+                     {% if not step.move_to_next %}
+                        <span class="text-[10px] font-bold text-green-500 uppercase tracking-wider opacity-60">End</span>
+                     {% endif %}
+                  </div>
               </div>
             </div>
           </div>
         </div>
-        
-        <!-- Connecting line with n8n style add button -->
-        {% if not forloop.last %}
-        <div class="flex relative justify-center items-center w-full h-24 -mt-1 mb-0 z-0 group">
-          <!-- Vertical line -->
-          <div class="w-0.5 h-full bg-gray-200 dark:bg-white/10 group-hover:bg-neon-violet/50 transition-colors duration-300"></div>
-          
-          <!-- Add Button -->
-          <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-             <a href="{% url 'document_approval:create_workflow_step' workflow.id %}" 
-                title="Add step here"
-                class="w-8 h-8 bg-white dark:bg-[#0f0f0f] rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-neon-violet hover:border-neon-violet hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:scale-110 transition-all duration-300 cursor-pointer">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-             </a>
-          </div>
-        </div>
-        {% endif %}
         
       {% empty %}
         <div class="py-12 text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+            <div class="flex justify-center items-center mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full dark:bg-white/5">
                 <i data-lucide="git-merge" class="w-8 h-8 text-gray-400"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Steps Defined</h3>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">Get started by adding the first step to this workflow.</p>
+            <h3 class="mb-1 text-lg font-medium text-gray-900 dark:text-white">No Steps Defined</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Get started by adding the first step to this workflow.</p>
         </div>
       {% endfor %}
     </div>
   </div>
 </div>
+
+<script>
+function workflowOrderEditor() {
+    return {
+        originalOrders: {},
+        hasChanges: false,
+        successMessage: '',
+        errorMessage: '',
+        
+        init() {
+            // Store original order values
+            document.querySelectorAll('.step-order-input').forEach(input => {
+                this.originalOrders[input.dataset.stepId] = parseInt(input.value);
+                
+                // Listen for changes
+                input.addEventListener('input', () => {
+                    this.checkForChanges();
+                });
+            });
+        },
+        
+        checkForChanges() {
+            this.hasChanges = false;
+            document.querySelectorAll('.step-order-input').forEach(input => {
+                const stepId = input.dataset.stepId;
+                const currentValue = parseInt(input.value);
+                if (currentValue !== this.originalOrders[stepId]) {
+                    this.hasChanges = true;
+                }
+            });
+        },
+        
+        async saveOrder() {
+            this.successMessage = '';
+            this.errorMessage = '';
+            
+            // Collect all step orders as a dictionary (step_id: order)
+            const orders = {};
+            document.querySelectorAll('.step-order-input').forEach(input => {
+                orders[input.dataset.stepId] = parseInt(input.value);
+            });
+            
+            try {
+                const response = await fetch('{% url "document_approval:reorder_workflow_steps" workflow.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ orders: orders })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    this.successMessage = 'Order saved successfully!';
+                    // Update original orders
+                    Object.keys(orders).forEach(stepId => {
+                        this.originalOrders[stepId] = orders[stepId];
+                    });
+                    this.hasChanges = false;
+                    
+                    // Reload page after 1 second to show reordered steps
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    this.errorMessage = data.error || 'Failed to save order';
+                }
+            } catch (error) {
+                this.errorMessage = 'Network error: ' + error.message;
+            }
+        }
+    };
+}
+</script>
 
 <style>
   /* Custom styles for the workflow visualization */

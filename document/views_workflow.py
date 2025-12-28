@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.http import JsonResponse
+from django.db import transaction
 from .models import ApprovalWorkflow, ApprovalStep, DynamicField, Document
 from accounts.models import CustomUser
 from functools import wraps
@@ -427,3 +428,63 @@ def delete_workflow_step(request, step_id):
             messages.error(request, f'Error deleting step: {str(e)}')
     
     return redirect('document_approval:workflow_steps', workflow_id=workflow_id)
+
+@login_required
+@superuser_required
+def reorder_workflow_steps(request, workflow_id):
+    """Reorder workflow steps via AJAX"""
+    if request.method == 'POST':
+        try:
+            import json
+            data = json.loads(request.body)
+            orders = data.get('orders', {})
+
+
+            if not isinstance(orders, dict) or not orders:
+                return JsonResponse({'success': False, 'error': 'Invalid orders payload'}, status=400)
+
+            # Verify all steps belong to the workflow
+            workflow = get_object_or_404(ApprovalWorkflow, id=workflow_id)
+            step_ids = []
+            parsed_orders = {}
+            used_orders = set()
+
+            for step_id_str, order_value in orders.items():
+                try:
+                    step_id = int(step_id_str)
+                    order_int = int(order_value)
+                except (TypeError, ValueError):
+                    return JsonResponse({'success': False, 'error': 'Order values must be integers'}, status=400)
+
+                if order_int < 1:
+                    return JsonResponse({'success': False, 'error': 'Order values must be >= 1'}, status=400)
+
+                if order_int in used_orders:
+                    return JsonResponse({'success': False, 'error': 'Duplicate order values are not allowed'}, status=400)
+
+                used_orders.add(order_int)
+                step_ids.append(step_id)
+                parsed_orders[step_id] = order_int
+
+            db_steps = list(workflow.steps.filter(id__in=step_ids))
+            if len(db_steps) != len(step_ids):
+                return JsonResponse({'success': False, 'error': 'Invalid step IDs provided'}, status=400)
+
+            with transaction.atomic():
+                list(workflow.steps.select_for_update().filter(id__in=step_ids))
+                existing_max = workflow.steps.order_by('-order').values_list('order', flat=True).first() or 0
+                temp_base = existing_max + 1000
+
+                # Phase 1: move affected steps to a temporary unique range
+                for idx, step_id in enumerate(step_ids):
+                    ApprovalStep.objects.filter(id=step_id, workflow_id=workflow_id).update(order=temp_base + idx + 1)
+
+                # Phase 2: apply final orders
+                for step_id, order_int in parsed_orders.items():
+                    ApprovalStep.objects.filter(id=step_id, workflow_id=workflow_id).update(order=order_int)
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
