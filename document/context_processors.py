@@ -36,7 +36,7 @@ def workflows_list(request):
         workflows = ApprovalWorkflow.objects.select_related('created_by').all()
         
         # Exclude workflows where the user is in a denied group
-        if request.user.groups.exists():
+        if (not request.user.is_superuser) and request.user.groups.exists():
             workflows = workflows.exclude(
                 denied_groups__in=request.user.groups.all()
             )
