@@ -3,8 +3,8 @@
 {% block content %}
 <div class="p-4 sm:p-6 lg:p-8">
     <div class="mx-auto max-w-7xl">
-        <div class="mb-8 relative z-10">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">หลักการทำงานของกลุ่มผู้ใช้และสิทธิ์การเข้าถึง</h1>
+        <div class="relative z-10 mb-8">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">หลักการทำงานของกลุ่มผู้ใช้และสิทธิ์การเข้าถึง</h1>
             <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">แผนภาพอธิบายการมองเห็นเอกสารและการเลือกผู้อนุมัติ</p>
             <!-- Background Glow -->
             <div class="absolute -top-20 -left-20 w-96 h-96 bg-neon-violet/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
@@ -12,40 +12,40 @@
 
         <!-- Section 1: Core Concepts -->
         <div class="mb-12">
-            <h2 class="pb-2 mb-4 text-2xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-white/10 flex items-center gap-2">
+            <h2 class="flex gap-2 items-center pb-2 mb-4 text-2xl font-semibold text-gray-900 border-b border-gray-200 dark:text-white dark:border-white/10">
                 <i data-lucide="layers" class="w-6 h-6 text-neon-violet"></i>
                 แนวคิดหลัก
             </h2>
             <div class="grid gap-6 md:grid-cols-3">
                 <!-- BU Group Card -->
                 <div class="p-6 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-xl border border-l-4 border-blue-500 border-gray-200 dark:border-white/10 shadow-lg hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all">
-                    <h3 class="mb-2 text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                    <h3 class="flex gap-2 items-center mb-2 text-xl font-bold text-blue-600 dark:text-blue-400">
                         <i data-lucide="building-2" class="w-5 h-5"></i>
                         กลุ่มหน่วยธุรกิจ
                     </h3>
-                    <p class="text-sm font-mono text-blue-500 dark:text-blue-300 mb-2 opacity-75">(เช่น `BU1`)</p>
+                    <p class="mb-2 font-mono text-sm text-blue-500 opacity-75 dark:text-blue-300">(เช่น `BU1`)</p>
                     <p class="text-gray-600 dark:text-gray-300">
                         กลุ่มเหล่านี้ใช้กำหนดแผนกหรือทีมของผู้ใช้ การมองเห็นเอกสารของผู้ใช้จะถูกจำกัดอยู่ภายในหน่วยธุรกิจของตนเองเป็นหลัก
                     </p>
                 </div>
                 <!-- BU Manager Group Card -->
                 <div class="p-6 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-xl border border-l-4 border-neon-violet border-gray-200 dark:border-white/10 shadow-lg hover:shadow-[0_0_20px_rgba(255,95,31,0.2)] transition-all">
-                    <h3 class="mb-2 text-xl font-bold text-neon-violet flex items-center gap-2">
+                    <h3 class="flex gap-2 items-center mb-2 text-xl font-bold text-neon-violet">
                         <i data-lucide="crown" class="w-5 h-5"></i>
                         กลุ่มผู้จัดการ
                     </h3>
-                    <p class="text-sm font-mono text-neon-violet/75 mb-2">(เช่น `BU1_Manager`)</p>
+                    <p class="mb-2 font-mono text-sm text-neon-violet/75">(เช่น `BU1_Manager`)</p>
                     <p class="text-gray-600 dark:text-gray-300">
                         เป็นกลุ่มประเภทพิเศษ ผู้ใช้ที่อยู่ในกลุ่ม `_Manager` จะสามารถมองเห็น **เอกสารทั้งหมด** ที่ส่งโดยสมาชิกทุกคนในหน่วยธุรกิจนั้นๆ
                     </p>
                 </div>
                 <!-- Approver Group Card -->
                 <div class="p-6 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-xl border border-l-4 border-green-500 border-gray-200 dark:border-white/10 shadow-lg hover:shadow-[0_0_20px_rgba(34,197,94,0.2)] transition-all">
-                    <h3 class="mb-2 text-xl font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                    <h3 class="flex gap-2 items-center mb-2 text-xl font-bold text-green-600 dark:text-green-400">
                         <i data-lucide="user-check" class="w-5 h-5"></i>
                         กลุ่มผู้อนุมัติ
                     </h3>
-                    <p class="text-sm font-mono text-green-500 dark:text-green-300 mb-2 opacity-75">(เช่น `Sales_Approvers`)</p>
+                    <p class="mb-2 font-mono text-sm text-green-500 opacity-75 dark:text-green-300">(เช่น `Sales_Approvers`)</p>
                     <p class="text-gray-600 dark:text-gray-300">
                         กลุ่มเหล่านี้ใช้กำหนดบทบาทในการทำงาน ใช้ในขั้นตอนของเวิร์กโฟลว์เพื่อระบุว่าใครมีคุณสมบัติในการอนุมัติเอกสาร
                     </p>
@@ -55,103 +55,103 @@
 
         <!-- Section 2: Scenario Diagram -->
         <div>
-            <h2 class="pb-2 mb-4 text-2xl font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-white/10 flex items-center gap-2">
+            <h2 class="flex gap-2 items-center pb-2 mb-4 text-2xl font-semibold text-gray-900 border-b border-gray-200 dark:text-white dark:border-white/10">
                 <i data-lucide="git-branch" class="w-6 h-6 text-neon-violet"></i>
                 ตัวอย่างสถานการณ์
             </h2>
-            <div class="p-6 bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-xl border border-gray-200 dark:border-white/10 shadow-xl relative overflow-hidden">
+            <div class="overflow-hidden relative p-6 rounded-xl border border-gray-200 shadow-xl backdrop-blur-md bg-white/50 dark:bg-white/5 dark:border-white/10">
                 
                 <!-- Scenario Description -->
-                <div class="mb-8 relative z-10">
-                    <div class="p-4 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                        <p class="text-lg text-gray-800 dark:text-gray-200 mb-2">สมมติว่าผู้ใช้ชื่อ <strong class="text-neon-violet">คุณ</strong> กำลังส่งเอกสาร:</p>
-                        <ul class="list-disc ml-6 space-y-1 text-gray-600 dark:text-gray-400">
+                <div class="relative z-10 mb-8">
+                    <div class="p-4 bg-gray-100 rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10">
+                        <p class="mb-2 text-lg text-gray-800 dark:text-gray-200">สมมติว่าผู้ใช้ชื่อ <strong class="text-neon-violet">คุณ</strong> กำลังส่งเอกสาร:</p>
+                        <ul class="ml-6 space-y-1 list-disc text-gray-600 dark:text-gray-400">
                             <li>คุณเป็นสมาชิกของกลุ่ม <span class="font-bold text-blue-600 dark:text-blue-400">BU1</span></li>
                             <li>ขั้นตอนของเวิร์กโฟลว์นี้ต้องการผู้อนุมัติจากกลุ่ม <span class="font-bold text-green-600 dark:text-green-400">Sales_Approvers</span></li>
                         </ul>
                     </div>
-                    <p class="mt-6 text-xl font-bold text-center text-neon-violet animate-pulse">ใครจะปรากฏในรายการ "เลือกผู้อนุมัติ" บ้าง?</p>
+                    <p class="mt-6 text-xl font-bold text-center animate-pulse text-neon-violet">ใครจะปรากฏในรายการ "เลือกผู้อนุมัติ" บ้าง?</p>
                 </div>
 
                 <!-- Diagram Layout -->
-                <div class="flex flex-col gap-8 items-start lg:flex-row relative z-10">
+                <div class="flex relative z-10 flex-col gap-8 items-start lg:flex-row">
                     
                     <!-- Left Side: Users -->
                     <div class="space-y-4 w-full lg:w-1/2">
-                        <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 text-center mb-4">รายชื่อผู้อนุมัติที่เป็นไปได้ในกลุ่ม <span class="text-green-600 dark:text-green-400">Sales_Approvers</span>:</h3>
+                        <h3 class="mb-4 text-lg font-bold text-center text-gray-700 dark:text-gray-300">รายชื่อผู้อนุมัติที่เป็นไปได้ในกลุ่ม <span class="text-green-600 dark:text-green-400">Sales_Approvers</span>:</h3>
                         
                         <!-- Alice Card -->
                         <div class="p-4 bg-green-50/80 dark:bg-green-900/20 rounded-xl border-2 border-green-400/50 dark:border-green-500/30 shadow-lg transform transition-all hover:scale-[1.02]">
                             <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center text-green-800 dark:text-green-100 font-bold text-xl">
+                                <div class="flex justify-center items-center w-12 h-12 text-xl font-bold text-green-800 bg-green-200 rounded-full dark:bg-green-800 dark:text-green-100">
                                     A
                                 </div>
                                 <div>
-                                    <p class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <p class="flex gap-2 items-center text-lg font-bold text-gray-900 dark:text-white">
                                         Alice
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-100">เลือกได้</span>
+                                        <span class="px-2 py-0.5 text-xs text-green-800 bg-green-200 rounded-full dark:bg-green-800 dark:text-green-100">เลือกได้</span>
                                     </p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">สมาชิกของ: <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span>, <span class="font-semibold text-blue-600 dark:text-blue-400">BU1</span></p>
                                 </div>
-                                <i data-lucide="check-circle" class="w-6 h-6 text-green-500 ml-auto"></i>
+                                <i data-lucide="check-circle" class="ml-auto w-6 h-6 text-green-500"></i>
                             </div>
                         </div>
                         
                         <!-- Bob Card -->
-                        <div class="p-4 bg-red-50/80 dark:bg-red-900/20 rounded-xl border-2 border-red-400/50 dark:border-red-500/30 shadow-lg opacity-75 hover:opacity-100 transition-opacity">
+                        <div class="p-4 rounded-xl border-2 shadow-lg opacity-75 transition-opacity bg-red-50/80 dark:bg-red-900/20 border-red-400/50 dark:border-red-500/30 hover:opacity-100">
                            <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 rounded-full bg-red-200 dark:bg-red-800 flex items-center justify-center text-red-800 dark:text-red-100 font-bold text-xl">
+                                <div class="flex justify-center items-center w-12 h-12 text-xl font-bold text-red-800 bg-red-200 rounded-full dark:bg-red-800 dark:text-red-100">
                                     B
                                 </div>
                                 <div>
-                                    <p class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <p class="flex gap-2 items-center text-lg font-bold text-gray-900 dark:text-white">
                                         Bob
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-100">ไม่ได้</span>
+                                        <span class="px-2 py-0.5 text-xs text-red-800 bg-red-200 rounded-full dark:bg-red-800 dark:text-red-100">ไม่ได้</span>
                                     </p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">สมาชิกของ: <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span>, <span class="font-semibold text-gray-500">BU2</span></p>
                                 </div>
-                                <i data-lucide="x-circle" class="w-6 h-6 text-red-500 ml-auto"></i>
+                                <i data-lucide="x-circle" class="ml-auto w-6 h-6 text-red-500"></i>
                             </div>
                         </div>
                         
                         <!-- Charlie Card -->
                         <div class="p-4 bg-green-50/80 dark:bg-green-900/20 rounded-xl border-2 border-green-400/50 dark:border-green-500/30 shadow-lg transform transition-all hover:scale-[1.02]">
                              <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center text-green-800 dark:text-green-100 font-bold text-xl">
+                                <div class="flex justify-center items-center w-12 h-12 text-xl font-bold text-green-800 bg-green-200 rounded-full dark:bg-green-800 dark:text-green-100">
                                     C
                                 </div>
                                 <div>
-                                    <p class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <p class="flex gap-2 items-center text-lg font-bold text-gray-900 dark:text-white">
                                         Charlie
-                                        <span class="px-2 py-0.5 text-xs rounded-full bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-100">เลือกได้ (Manager)</span>
+                                        <span class="px-2 py-0.5 text-xs text-green-800 bg-green-200 rounded-full dark:bg-green-800 dark:text-green-100">เลือกได้ (Manager)</span>
                                     </p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">สมาชิกของ: <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span>, <span class="font-semibold text-neon-violet">BU1_Manager</span></p>
                                 </div>
-                                <i data-lucide="check-circle" class="w-6 h-6 text-green-500 ml-auto"></i>
+                                <i data-lucide="check-circle" class="ml-auto w-6 h-6 text-green-500"></i>
                             </div>
                         </div>
                     </div>
 
                     <!-- Right Side: Explanation -->
-                    <div class="p-6 mt-10 w-full bg-gray-100/50 dark:bg-white/5 rounded-xl lg:w-1/2 border border-gray-200 dark:border-white/10">
-                        <h3 class="mb-4 text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <div class="p-6 mt-10 w-full rounded-xl border border-gray-200 bg-gray-100/50 dark:bg-white/5 lg:w-1/2 dark:border-white/10">
+                        <h3 class="flex gap-2 items-center mb-4 text-xl font-bold text-gray-900 dark:text-white">
                             <i data-lucide="info" class="w-5 h-5 text-neon-violet"></i>
                             คำอธิบายหลักการคัดเลือก:
                         </h3>
                         <ul class="space-y-4 text-gray-700 dark:text-gray-300">
-                            <li class="flex items-start gap-3">
+                            <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="check" class="w-5 h-5 text-green-500"></i></div>
                                 <div>
                                     <span class="font-bold text-gray-900 dark:text-white">Alice สามารถถูกเลือกได้</span> เพราะเธออยู่ในกลุ่ม <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span> และอยู่ในหน่วยธุรกิจ <span class="font-semibold text-blue-600 dark:text-blue-400">BU1</span> เดียวกับผู้ส่ง
                                 </div>
                             </li>
-                            <li class="flex items-start gap-3">
+                            <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="x" class="w-5 h-5 text-red-500"></i></div>
                                 <div>
                                     <span class="font-bold text-gray-900 dark:text-white">Bob ไม่สามารถถูกเลือกได้</span> เพราะแม้ว่าจะอยู่ในกลุ่ม <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span> แต่หน่วยธุรกิจของเขา (<span class="text-gray-500 dark:text-gray-400">BU2</span>) ไม่ตรงกับของผู้ส่ง (<span class="text-blue-600 dark:text-blue-400">BU1</span>)
                                 </div>
                             </li>
-                             <li class="flex items-start gap-3">
+                             <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="check" class="w-5 h-5 text-green-500"></i></div>
                                 <div>
                                     <span class="font-bold text-gray-900 dark:text-white">Charlie สามารถถูกเลือกได้</span> เพราะเขาอยู่ในกลุ่ม <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span> และกลุ่มผู้จัดการของเขา (<span class="font-semibold text-neon-violet">BU1_Manager</span>) สัมพันธ์กับหน่วยธุรกิจของผู้ส่ง
@@ -161,34 +161,232 @@
 
                         <div class="my-6 h-px bg-gray-200 dark:bg-white/10"></div>
 
-                        <h3 class="mb-4 text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 class="flex gap-2 items-center mb-4 text-xl font-bold text-gray-900 dark:text-white">
                             <i data-lucide="eye" class="w-5 h-5 text-neon-violet"></i>
                             หลักการมองเห็นเอกสาร:
                         </h3>
                          <ul class="space-y-4 text-gray-700 dark:text-gray-300">
-                             <li class="flex items-start gap-3">
+                             <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="user-check" class="w-5 h-5 text-green-500"></i></div>
                                 <div>
                                     <span class="font-bold text-gray-900 dark:text-white">ผู้อนุมัติที่ถูกเลือก (เช่น Alice) สามารถเห็นเอกสาร</span> ที่กำลังรอการอนุมัติจากตนเอง เพื่อให้สามารถดำเนินการได้
                                 </div>
                             </li>
-                             <li class="flex items-start gap-3">
+                             <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="crown" class="w-5 h-5 text-neon-violet"></i></div>
                                 <div>
                                     <span class="font-bold text-gray-900 dark:text-white">Charlie (ในฐานะ <span class="text-neon-violet">BU1_Manager</span>) สามารถเห็นเอกสารทั้งหมด</span> ที่ส่งโดยสมาชิกทุกคนใน <span class="text-blue-600 dark:text-blue-400">BU1</span> หรือ <span class="text-neon-violet">BU1_Manager</span> นี่เป็นสิทธิ์พิเศษของผู้จัดการ
                                 </div>
                             </li>
-                            <li class="flex items-start gap-3">
+                            <li class="flex gap-3 items-start">
                                 <div class="mt-1"><i data-lucide="user" class="w-5 h-5 text-blue-500"></i></div>
                                 <div>
-                                    <span class="font-bold text-gray-900 dark:text-white">Alice (ในฐานะสมาชิก <span class="text-blue-600 dark:text-blue-400">BU1</span>) จะเห็นเอกสารได้</span> เฉพาะที่เธอส่งเอง, ถูก CC ถึง, เอกสารที่รอเธออนุมัติ, หรือเอกสารในเวิร์กโฟลว์ที่อนุญาตให้กลุ่ม <span class="text-blue-600 dark:text-blue-400">BU1</span> เข้าถึงได้เท่านั้น
+                                    <span class="font-bold text-gray-900 dark:text-white">หากผู้ใช้ไม่ได้อยู่ในกลุ่ม BU1_Manager (เช่น Vendor หรือกลุ่มที่ไม่ได้ขึ้นต้นด้วย BU)</span>
+                                    <p class="text-gray-700 dark:text-gray-300">
+                                        จะเห็นเฉพาะเอกสารที่ตนเองเป็นผู้สร้าง (Submitted) เท่านั้น
+                                    </p>
+                                </div>
+                            </li>
+                            <li class="flex gap-3 items-start">
+                                <div class="mt-1"><i data-lucide="history" class="w-5 h-5 text-purple-500"></i></div>
+                                <div>
+                                    <span class="font-bold text-gray-900 dark:text-white">สิทธิ์การมองเห็นต่อเนื่อง (Persistent Visibility)</span>
+                                    <p class="text-gray-700 dark:text-gray-300">
+                                        หากคุณเคยเป็นผู้อนุมัติเอกสารฉบับใด (ได้ดำเนินการอนุมัติไปแล้ว) คุณจะยังคงสามารถเห็นเอกสารฉบับนั้นได้ตลอดไป แม้ว่าในอนาคตคุณจะย้ายไปอยู่กลุ่มหน่วยธุรกิจ (BU) อื่นก็ตาม
+                                    </p>
+                                </div>
+                            </li>
+                            <li class="flex gap-3 items-start">
+                                <div class="mt-1"><i data-lucide="user-check" class="w-5 h-5 text-green-500"></i></div>
+                                <div>
+                                    <span class="font-bold text-gray-900 dark:text-white">ผู้อนุมัติที่เคยอนุมัติเอกสารแล้ว (เช่น Alice) จะยังคงเห็นเอกสารนั้นได้ตลอดไป แม้ว่าเธอจะย้ายออกจากกลุ่ม <span class="font-semibold text-green-600 dark:text-green-400">Sales_Approvers</span> หรือหน่วยธุรกิจ <span class="font-semibold text-blue-600 dark:text-blue-400">BU1</span> ก็ตาม</span>
                                 </div>
                             </li>
                          </ul>
                     </div>
 
                 </div>
+            </div>
+        </div>
 
+     
+        <!-- Section 3: Default Visibility Rules -->
+        <div class="mb-12">
+             <h2 class="flex gap-2 items-center pb-2 mb-4 text-2xl font-semibold text-gray-900 border-b border-gray-200 dark:text-white dark:border-white/10">
+                <i data-lucide="eye" class="w-6 h-6 text-neon-violet"></i>
+                กฎการมองเห็นเริ่มต้น (Default Visibility)
+            </h2>
+            <div class="p-6 rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
+                <div class="flex gap-4 items-start">
+                    <div class="p-3 text-blue-600 bg-blue-100 rounded-full dark:bg-blue-800 dark:text-blue-200">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-blue-800 dark:text-blue-300">ผู้ใช้ทั่วไป (General Users)</h3>
+                        <p class="mt-1 text-gray-700 dark:text-gray-300">
+                            หากผู้ใช้<strong>ไม่ได้</strong>อยู่ในกลุ่ม <span class="font-mono text-neon-violet">_Manager</span>:
+                        </p>
+                        <ul class="mt-2 ml-5 space-y-1 list-disc text-gray-600 dark:text-gray-400">
+                            <li>จะเห็นเฉพาะเอกสารที่ <strong>ตนเองเป็นผู้สร้าง (Submitted)</strong> เท่านั้น</li>
+                            <li>จะไม่เห็นเอกสารของเพื่อนร่วมทีม แม้จะอยู่ในหน่วยธุรกิจ (BU) เดียวกัน</li>
+                            <li>จะเห็นเอกสารอื่นๆ ก็ต่อเมื่อได้รับสิทธิ์อนุมัติ หรือถูกระบุในช่อง CC เท่านั้น</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Technical Logic -->
+        <div class="mb-12">
+            <h2 class="flex gap-2 items-center pb-2 mb-4 text-2xl font-semibold text-gray-900 border-b border-gray-200 dark:text-white dark:border-white/10">
+                <i data-lucide="code" class="w-6 h-6 text-gray-500"></i>
+                ตรรกะการตรวจสอบสิทธิ์ (Technical Logic)
+            </h2>
+            <div class="p-6 bg-gray-50 rounded-xl border border-gray-200 dark:bg-white/5 dark:border-white/10">
+                <p class="mb-4 text-gray-600 dark:text-gray-400">
+                    ระบบใช้ฟังก์ชัน <code>get_allowed_documents</code> ในการกรองเอกสาร โดยมีเงื่อนไข (OR Logic) ดังนี้:
+                </p>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <!-- 0. Superuser -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5 md:col-span-2">
+                        <div class="mt-1"><i data-lucide="shield-check" class="w-5 h-5 text-red-500"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">0. Superuser (Admin)</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบเป็นอันดับแรก หากเป็น Superuser จะเห็นเอกสาร <strong>ทั้งหมด</strong> ในระบบโดยไม่มีเงื่อนไข</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 1. Submitted By -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5">
+                        <div class="mt-1"><i data-lucide="user" class="w-5 h-5 text-blue-500"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">1. Submitted By (Owner)</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบว่า <code>user == document.submitted_by</code> ผู้สร้างเอกสารจะมีสิทธิ์เห็นเอกสารของตนเองเสมอ</p>
+                        </div>
+                    </div>
+
+                    <!-- 2. Manager -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5">
+                        <div class="mt-1"><i data-lucide="crown" class="w-5 h-5 text-neon-violet"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">2. BU Scope (Manager Only)</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">หากเป็น Manager จะตรวจสอบว่าผู้สร้างเอกสารอยู่ใน BU เดียวกันหรือไม่</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. Approver -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5">
+                        <div class="mt-1"><i data-lucide="check-square" class="w-5 h-5 text-green-500"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">3. Approval History</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบว่าเคยเป็นผู้อนุมัติในเอกสารนั้นหรือไม่ (Approver)</p>
+                        </div>
+                    </div>
+
+                    <!-- 4. CC -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5">
+                        <div class="mt-1"><i data-lucide="mail" class="w-5 h-5 text-yellow-500"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">4. CC / Authorized Users</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบว่าอยู่ในรายชื่อ CC (<code>authorized_users</code>) หรือไม่</p>
+                        </div>
+                    </div>
+
+                    <!-- 5. Workflow Group -->
+                    <div class="flex gap-3 items-start p-3 bg-white rounded-lg border border-gray-100 dark:bg-white/5 dark:border-white/5 md:col-span-2">
+                        <div class="mt-1"><i data-lucide="users-2" class="w-5 h-5 text-pink-500"></i></div>
+                        <div>
+                            <span class="font-bold text-gray-900 dark:text-white">5. Workflow Group Authorization</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบว่ากลุ่มของผู้ใช้ได้รับอนุญาตใน Workflow นั้นๆ โดยตรงหรือไม่ (<code>workflow.authorized_groups</code>)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Exclusion Logic -->
+                <div class="p-4 mt-6 rounded-lg border border-red-100 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/20">
+                    <div class="flex gap-3 items-center">
+                        <i data-lucide="ban" class="w-5 h-5 text-red-500"></i>
+                        <div>
+                            <span class="font-bold text-red-700 dark:text-red-400">ข้อยกเว้น (Exclusion):</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">หากผู้ใช้อยู่ใน <strong>Denied Groups</strong> ของ Workflow นั้นๆ จะถูกตัดสิทธิ์การมองเห็นทันที (Priority สูงสุด)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Access Denied -->
+        <div class="mt-12 mb-12">
+            <h2 class="flex gap-2 items-center pb-2 mb-4 text-2xl font-semibold text-gray-900 border-b border-gray-200 dark:text-white dark:border-white/10">
+                <i data-lucide="shield-alert" class="w-6 h-6 text-red-500"></i>
+                การระงับสิทธิ์ (Access Denied)
+            </h2>
+            
+            <div class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop-blur-md bg-white/50 dark:bg-white/5 dark:border-white/10">
+                <div class="grid gap-8 items-center md:grid-cols-2">
+                    <!-- Concept -->
+                    <div class="space-y-6">
+                        <div class="p-4 rounded-lg border-l-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
+                            <h3 class="mb-2 text-lg font-bold text-red-700 dark:text-red-400">แนวคิด "Denied Groups"</h3>
+                            <p class="text-gray-600 dark:text-gray-300">
+                                ระบบรองรับการ <strong>"ระงับสิทธิ์"</strong> (Blacklist) สำหรับกลุ่มผู้ใช้บางกลุ่ม (เช่น Contractors) เพื่อป้องกันไม่ให้เข้าถึงเวิร์กโฟลว์ที่กำหนดไว้
+                            </p>
+                        </div>
+                        
+                        <ul class="space-y-4">
+                            <li class="flex gap-3 items-start">
+                                <div class="p-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-white/10 dark:text-gray-300">
+                                    <i data-lucide="eye-off" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-gray-900 dark:text-white">ซ่อนเมนู (Menu Hiding)</span>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">เวิร์กโฟลว์ที่ถูกระงับสิทธิ์จะไม่ปรากฏในเมนู "สร้างเอกสารใหม่" หรือ "Diagrams"</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-3 items-start">
+                                <div class="p-2 text-gray-600 bg-gray-100 rounded-lg dark:bg-white/10 dark:text-gray-300">
+                                    <i data-lucide="lock" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-gray-900 dark:text-white">บล็อกการเข้าถึง (Strict Blocking)</span>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">หากพยายามเข้าถึงผ่าน URL โดยตรง ระบบจะแสดงหน้า <span class="font-mono text-red-500">403 Forbidden</span></p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Visual Representation -->
+                    <div class="flex relative flex-col justify-center items-center p-6 text-center bg-gray-100 rounded-xl border border-gray-300 border-dashed dark:bg-black/20 dark:border-white/20">
+                        <div class="flex gap-4 items-center mb-4">
+                            <!-- User -->
+                            <div class="flex flex-col items-center">
+                                <div class="flex justify-center items-center w-12 h-12 bg-gray-300 rounded-full dark:bg-gray-700">
+                                    <i data-lucide="user" class="w-6 h-6 text-gray-500 dark:text-gray-400"></i>
+                                </div>
+                                <span class="mt-2 font-mono text-sm text-gray-500">User (Denied)</span>
+                            </div>
+                            
+                            <!-- Arrow blocked -->
+                            <div class="flex items-center text-red-500">
+                                <span class="text-2xl font-bold">×</span>
+                                <div class="mx-1 w-12 h-0.5 bg-red-500"></div>
+                                <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </div>
+
+                            <!-- Workflow -->
+                            <div class="flex flex-col items-center opacity-50 grayscale">
+                                <div class="flex justify-center items-center w-12 h-12 rounded-lg border bg-neon-violet/20 border-neon-violet/50">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-neon-violet"></i>
+                                </div>
+                                <span class="mt-2 font-mono text-sm text-gray-500">Workflow</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 items-center px-3 py-1 text-sm font-bold text-red-500 bg-red-100 rounded-full dark:bg-red-900/30">
+                            <i data-lucide="ban" class="w-4 h-4"></i>
+                            Access Denied
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

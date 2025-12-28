@@ -5,31 +5,21 @@ from django.db.models import Q, Exists, OuterRef
 from django.template.loader import render_to_string
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, HttpResponseRedirect
-from django.db.models import Q
 from django.utils import timezone
 from .models import Document, EditorImage, ApprovalWorkflow, ApprovalStep, DynamicField, DynamicFieldValue, PDFTemplate, ReportConfiguration, Favorite, Approval
 from accounts.models import CustomUser
 from django.contrib.auth.models import Group
-from django.core.exceptions import ValidationError
-from django.contrib import messages
-from django.http import HttpResponse
 from django.template import Context, Template
 from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
 from .forms import DocumentSubmissionForm
-from django.views.decorators.http import require_http_methods
-from django.db.models import Q, Exists, OuterRef
-from django.shortcuts import render
+from django.views.decorators.http import require_http_methods, require_POST
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from django.template.loader import render_to_string
 from django_htmx.http import retarget
 import logging
 from .utils_authorization import is_authorized_approver, get_authorized_approvers
-from django.views.decorators.http import require_POST
 from django.conf import settings
 from pathlib import Path
 import traceback
@@ -42,6 +32,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 import time
 import asyncio
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -1965,14 +1956,14 @@ def get_document_authorized_users(request, document_id):
 
 
 
-from django.contrib.auth.decorators import user_passes_test
-
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
 def user_group_diagram(request):
     """
     Renders a page with a diagram explaining the user group and permission logic.
     Access is restricted to superusers.
     """
+    if not request.user.is_superuser:
+        return render(request, '403.html', status=403)
+
     return render(request, 'document/user_group_diagram.html')
 
