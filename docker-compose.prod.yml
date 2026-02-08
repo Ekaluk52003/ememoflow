@@ -88,7 +88,7 @@ services:
       - media_volume:/code/media    
     environment:
       - DOMAIN=${DOMAIN}
-
+      - DOMAIN2=${DOMAIN2}
     depends_on:
       - web
 

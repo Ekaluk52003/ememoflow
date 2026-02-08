@@ -14,14 +14,25 @@ DEBUG = bool(os.environ.get("DEBUG", default=0))
 # print(f"DEBUG setting is: {DEBUG}")
 
 
+# Parse domains from environment variables
+_domain1 = os.environ.get('DOMAIN', '')
+_domain2 = os.environ.get('DOMAIN2', '')
+
 ALLOWED_HOSTS = [
     "localhost",
     "0.0.0.0",
     "127.0.0.1",
-    "wdc.smartflow.pw",
-     "web",  # Add this for internal Docker communication
+    "web",  # Add this for internal Docker communication
     "web:8000",  # Add this for internal Docker communication
 ]
+
+# Add domains from environment variables
+if _domain1:
+    ALLOWED_HOSTS.append(_domain1)
+    ALLOWED_HOSTS.append(f'www.{_domain1}')
+if _domain2:
+    ALLOWED_HOSTS.append(_domain2)
+    ALLOWED_HOSTS.append(f'www.{_domain2}')
 
 # Add these settings for better proxy handling
 USE_X_FORWARDED_HOST = True
@@ -246,10 +257,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 
 CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
-CSRF_COOKIE_DOMAIN = '.wdc.smartflow.pw'  # Include your domain here
 SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 
-CSRF_TRUSTED_ORIGINS = ['https://www.wdc.smartflow.pw', 'https://wdc.smartflow.pw']
+# Build CSRF_TRUSTED_ORIGINS from environment variables
+CSRF_TRUSTED_ORIGINS = []
+if _domain1:
+    CSRF_TRUSTED_ORIGINS.extend([f'https://{_domain1}', f'https://www.{_domain1}'])
+if _domain2:
+    CSRF_TRUSTED_ORIGINS.extend([f'https://{_domain2}', f'https://www.{_domain2}'])
 
 # Celery Settings
 CELERY_TIMEZONE = os.environ.get('CELERY_TIMEZONE', 'Asia/Bangkok')
