@@ -1136,7 +1136,21 @@ def resubmit_document(request, pk):
                 'potential_approvers': potential_approvers,
                 'potential_approvers_json': potential_approvers_json,
                 'step_id_str': str(step.id),
-                'previous_approver': previous_approver.approver if previous_approver else None
+                'previous_approver': previous_approver.approver if previous_approver else None,
+                'conditions': [
+                    {
+                        'field_id': cond.condition_field.id,
+                        'operator': cond.operator,
+                        'value': cond.value
+                    } for cond in step.conditions.all()
+                ] if step.is_conditional and step.conditions.exists() else (
+                    [{
+                        'field_id': step.condition_field.id,
+                        'operator': step.condition_operator,
+                        'value': step.condition_value
+                    }] if step.is_conditional and step.condition_field else []
+                ),
+                'condition_logic': step.condition_logic
             })
 
     context = {
@@ -1585,8 +1599,21 @@ def submit_document(request, workflow_id):
                 steps_with_approvers.append({
                     'step': step,
                     'potential_approvers': potential_approvers,
-                    'step_id_str': str(step.id)
-
+                    'step_id_str': str(step.id),
+                    'conditions': [
+                        {
+                            'field_id': cond.condition_field.id,
+                            'operator': cond.operator,
+                            'value': cond.value
+                        } for cond in step.conditions.all()
+                    ] if step.is_conditional and step.conditions.exists() else (
+                        [{
+                            'field_id': step.condition_field.id,
+                            'operator': step.condition_operator,
+                            'value': step.condition_value
+                        }] if step.is_conditional and step.condition_field else []
+                    ),
+                    'condition_logic': step.condition_logic
                 })
         context = {
             'form': form,

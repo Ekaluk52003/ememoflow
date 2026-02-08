@@ -54,9 +54,20 @@
       // Conditional Logic
       isConditional: false,
       moveToNext: true,
-      conditionField: '',
-      conditionOperator: 'equals',
-      conditionValue: '',
+      conditionLogic: 'and',
+      conditions: [
+        { field: '', operator: 'eq', value: '' }
+      ],
+      
+      addCondition() {
+        this.conditions.push({ field: '', operator: 'eq', value: '' });
+      },
+      
+      removeCondition(index) {
+        if (this.conditions.length > 1) {
+          this.conditions.splice(index, 1);
+        }
+      },
       
       // Lookups for Custom Selects
       fieldMap: {
@@ -93,8 +104,18 @@
         }
         
         if (this.isConditional) {
-          if (!this.conditionField) this.errors.conditionField = 'Condition field is required';
-          if (!this.conditionValue) this.errors.conditionValue = 'Condition value is required';
+          let hasError = false;
+          this.conditions.forEach((condition, index) => {
+            if (!condition.field) {
+               this.errors['conditionField_' + index] = 'Field is required';
+               hasError = true;
+            }
+            if (!condition.value) {
+               this.errors['conditionValue_' + index] = 'Value is required';
+               hasError = true;
+            }
+          });
+          if (hasError) return false;
         }
         
         if (this.inputType === 'choice' && !this.inputOptions) {
@@ -305,68 +326,89 @@
             <input type="hidden" :value="isConditional ? 'true' : 'false'" name="is_conditional">
           </div>
           
-          <div x-show="isConditional" class="space-y-4" x-transition>
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <!-- Condition Field -->
-              <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                <label class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Field</label>
-                <button type="button" @click="open = !open"
-                        class="flex relative justify-between items-center px-4 py-2.5 w-full text-left rounded-lg border workflow-select-btn focus:ring-2 focus:ring-neon-violet focus:border-transparent"
-                        :class="{'border-red-500': errors.conditionField}">
-                  <span x-text="conditionField ? fieldMap[conditionField] : '-- Select Field --'"></span>
-                  <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                
-                <div x-show="open" x-transition class="overflow-auto absolute z-50 mt-1 w-full max-h-60 rounded-lg border shadow-lg workflow-dropdown-bg">
-                  {% for field in dynamic_fields %}
-                  <div @click="conditionField = '{{ field.id }}'; open = false"
-                       class="px-4 py-2 cursor-pointer workflow-dropdown-item workflow-text">
-                    {{ field.name }}
-                  </div>
-                  {% endfor %}
-                </div>
-                <select name="condition_field" x-model="conditionField" class="hidden">
-                  <option value="">-- Select Field --</option>
-                  {% for field in dynamic_fields %}
-                  <option value="{{ field.id }}">{{ field.name }}</option>
-                  {% endfor %}
-                </select>
-                <p x-show="errors.conditionField" x-text="errors.conditionField" class="mt-1 text-sm text-red-500"></p>
-              </div>
-              
-              <!-- Condition Operator -->
-              <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                <label class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Operator</label>
-                <button type="button" @click="open = !open"
-                        class="flex relative justify-between items-center px-4 py-2.5 w-full text-left rounded-lg border workflow-select-btn focus:ring-2 focus:ring-neon-violet focus:border-transparent">
-                  <span x-text="operatorMap[conditionOperator] || conditionOperator"></span>
-                  <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                
-                <div x-show="open" x-transition class="overflow-auto absolute z-50 mt-1 w-full max-h-60 rounded-lg border shadow-lg workflow-dropdown-bg">
-                  {% for operator, display in condition_operators %}
-                  <div @click="conditionOperator = '{{ operator }}'; open = false"
-                       class="px-4 py-2 cursor-pointer workflow-dropdown-item workflow-text">
-                    {{ display }}
-                  </div>
-                  {% endfor %}
-                </div>
-                <select name="condition_operator" x-model="conditionOperator" class="hidden">
-                  {% for operator, display in condition_operators %}
-                  <option value="{{ operator }}">{{ display }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              
-              <!-- Condition Value -->
-              <div>
-                <label for="condition_value" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Value</label>
-                <input type="text" name="condition_value" id="condition_value" x-model="conditionValue"
-                       class="px-4 py-2.5 w-full text-gray-900 bg-white rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
-                       :class="{'border-red-500': errors.conditionValue}">
-                <p x-show="errors.conditionValue" x-text="errors.conditionValue" class="mt-1 text-sm text-red-500"></p>
-              </div>
+          <div x-show="isConditional" class="space-y-6" x-transition>
+            
+            <!-- Logic Operator Selection -->
+            <div class="flex items-center mb-4 space-x-4" x-show="conditions.length > 1">
+               <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Logic:</span>
+               <label class="inline-flex items-center cursor-pointer">
+                 <input type="radio" name="condition_logic" value="and" x-model="conditionLogic" class="w-4 h-4 bg-transparent border-gray-300 text-neon-violet dark:border-white/20 focus:ring-neon-violet">
+                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">AND (All match)</span>
+               </label>
+               <label class="inline-flex items-center cursor-pointer">
+                 <input type="radio" name="condition_logic" value="or" x-model="conditionLogic" class="w-4 h-4 bg-transparent border-gray-300 text-neon-violet dark:border-white/20 focus:ring-neon-violet">
+                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">OR (Any match)</span>
+               </label>
             </div>
+
+            <template x-for="(condition, index) in conditions" :key="index">
+                <div class="relative p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10">
+                    
+                    <button type="button" @click="removeCondition(index)" x-show="conditions.length > 1"
+                            class="absolute top-2 right-2 text-gray-400 transition-colors hover:text-red-500">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      <!-- Condition Field -->
+                      <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <label class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300" x-text="'Field ' + (index + 1)"></label>
+                        <button type="button" @click="open = !open"
+                                class="flex relative justify-between items-center px-4 py-2.5 w-full text-left rounded-lg border workflow-select-btn focus:ring-2 focus:ring-neon-violet focus:border-transparent"
+                                :class="{'border-red-500': errors['conditionField_' + index]}">
+                          <span x-text="condition.field ? fieldMap[condition.field] : '-- Select Field --'"></span>
+                          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        
+                        <div x-show="open" x-transition class="overflow-auto absolute z-50 mt-1 w-full max-h-60 rounded-lg border shadow-lg workflow-dropdown-bg">
+                          {% for field in dynamic_fields %}
+                          <div @click="condition.field = '{{ field.id }}'; open = false"
+                               class="px-4 py-2 cursor-pointer workflow-dropdown-item workflow-text">
+                            {{ field.name }}
+                          </div>
+                          {% endfor %}
+                        </div>
+                        <input type="hidden" name="condition_fields[]" x-model="condition.field">
+                        <p x-show="errors['conditionField_' + index]" x-text="errors['conditionField_' + index]" class="mt-1 text-sm text-red-500"></p>
+                      </div>
+                      
+                      <!-- Condition Operator -->
+                      <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <label class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Operator</label>
+                        <button type="button" @click="open = !open"
+                                class="flex relative justify-between items-center px-4 py-2.5 w-full text-left rounded-lg border workflow-select-btn focus:ring-2 focus:ring-neon-violet focus:border-transparent">
+                          <span x-text="operatorMap[condition.operator] || condition.operator"></span>
+                          <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        
+                        <div x-show="open" x-transition class="overflow-auto absolute z-50 mt-1 w-full max-h-60 rounded-lg border shadow-lg workflow-dropdown-bg">
+                          {% for operator, display in condition_operators %}
+                          <div @click="condition.operator = '{{ operator }}'; open = false"
+                               class="px-4 py-2 cursor-pointer workflow-dropdown-item workflow-text">
+                            {{ display }}
+                          </div>
+                          {% endfor %}
+                        </div>
+                        <input type="hidden" name="condition_operators[]" x-model="condition.operator">
+                      </div>
+                      
+                      <!-- Condition Value -->
+                      <div>
+                        <label class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Value</label>
+                        <input type="text" name="condition_values[]" x-model="condition.value"
+                               class="px-4 py-2.5 w-full text-gray-900 bg-white rounded-lg border border-gray-200 dark:bg-white/5 dark:border-white/10 dark:text-white focus:ring-2 focus:ring-neon-violet focus:border-transparent"
+                               :class="{'border-red-500': errors['conditionValue_' + index]}">
+                        <p x-show="errors['conditionValue_' + index]" x-text="errors['conditionValue_' + index]" class="mt-1 text-sm text-red-500"></p>
+                      </div>
+                    </div>
+                </div>
+            </template>
+            
+            <button type="button" @click="addCondition()" class="flex items-center mt-2 text-sm font-medium transition-colors text-neon-violet hover:text-neon-purple">
+                <i data-lucide="plus-circle" class="mr-1 w-4 h-4"></i>
+                Add Another Condition
+            </button>
+
           </div>
         </div>
         

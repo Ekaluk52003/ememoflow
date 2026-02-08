@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue, DynamicField, PDFTemplate, ReportConfiguration, ReferenceID
+from .models import ApprovalWorkflow, ApprovalStep, Document, Approval, DynamicFieldValue, DynamicField, PDFTemplate, ReportConfiguration, ReferenceID, StepCondition
 from django.core.exceptions import ValidationError
 from .notification_models import Notification
 from .models_authorization import ApprovalAuthorization
@@ -38,8 +38,13 @@ class ApprovalWorkflowAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_by', 'created_at')
     search_fields = ('name', 'created_by__username')
 
+class StepConditionInline(admin.TabularInline):
+    model = StepCondition
+    extra = 1
+
 @admin.register(ApprovalStep)
 class ApprovalStepAdmin(admin.ModelAdmin):
+    inlines = [StepConditionInline]
     list_display = ('workflow', 'name', 'order', 'approval_mode', 'allow_custom_approver', 'is_conditional', 'requires_edit', 'move_to_next')
     list_filter = ('workflow', 'approval_mode', 'is_conditional', 'requires_edit')
     filter_horizontal = ('approvers', 'editable_fields')
@@ -125,6 +130,12 @@ class ReferenceIDAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of references
         return False
+
+@admin.register(StepCondition)
+class StepConditionAdmin(admin.ModelAdmin):
+    list_display = ('step', 'condition_field', 'operator', 'value')
+    list_filter = ('step__workflow', 'operator')
+    search_fields = ('step__name', 'condition_field__name', 'value')
 
 @admin.register(ApprovalAuthorization)
 class ApprovalAuthorizationAdmin(admin.ModelAdmin):

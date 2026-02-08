@@ -19,18 +19,109 @@
     <!-- Main form with formHandler -->
     <form x-data="{
         fieldValues: {},
+        initializeFieldValues() {
+            this.$nextTick(() => {
+                // Initialize checkboxes
+                document.querySelectorAll('input[type=checkbox]').forEach(checkbox => {
+                    const fieldId = checkbox.getAttribute('name')?.replace('dynamic_', '');
+                    if (fieldId) {
+                        this.fieldValues[fieldId] = checkbox.checked;
+                    }
+                });
+                // Initialize other fields (text, number, date, etc.)
+                document.querySelectorAll('input[name^=dynamic_], select[name^=dynamic_], textarea[name^=dynamic_]').forEach(input => {
+                    if(input.type !== 'checkbox' && input.type !== 'radio') {
+                         const fieldId = input.getAttribute('name').replace('dynamic_', '');
+                         this.fieldValues[fieldId] = input.value;
+                    }
+                });
+            });
+        },
         updateFieldValue(event) {
             const input = event.target;
             const fieldId = input.getAttribute('name').replace('dynamic_', '');
             const value = input.type === 'checkbox' ? input.checked : input.value;
             this.fieldValues[fieldId] = value;
         },
-        shouldShowApprover(isConditional, conditionFieldId) {
-            if (!isConditional) return true;
-            if (conditionFieldId === '8' || conditionFieldId === 8) return true;
-            return this.fieldValues[conditionFieldId] === true;
+        handleCustomUpdate(detail) {
+             this.fieldValues[detail.id] = detail.value;
+        },
+        shouldShowApprover(conditions, logic) {
+            if (!conditions || conditions.length === 0) return true;
+
+            const results = conditions.map(condition => {
+                const fieldId = condition.field_id;
+                const operator = condition.operator || 'eq';
+                const targetValue = condition.value;
+                const actualValue = this.fieldValues[fieldId];
+                
+                return this.evaluateCondition(actualValue, operator, targetValue);
+            });
+
+            if (logic === 'or') {
+                return results.some(r => r === true);
+            } else {
+                return results.every(r => r === true);
+            }
+        },
+        evaluateCondition(actual, operator, target) {
+            if (actual === undefined || actual === null) actual = '';
+            if (target === undefined || target === null) target = '';
+            
+            // Helper to normalize boolean values
+            const toBool = (val) => {
+                if (typeof val === 'boolean') return val;
+                const s = String(val).toLowerCase().trim();
+                return ['on', 'true', '1', 'yes', 'checked'].includes(s);
+            };
+
+            // If it looks like a boolean comparison (either side is a known bool string or boolean type)
+            const boolStrings = ['on', 'true', 'yes', 'off', 'false', 'no', 'checked'];
+            const isActualBool = typeof actual === 'boolean' || boolStrings.includes(String(actual).toLowerCase().trim());
+            const isTargetBool = typeof target === 'boolean' || boolStrings.includes(String(target).toLowerCase().trim());
+
+            if (isActualBool && isTargetBool) {
+                const a = toBool(actual);
+                const t = toBool(target);
+                // console.log(`DEBUG: Boolean Eval - Actual: ${actual}(${a}), Target: ${target}(${t}), Operator: ${operator}`);
+                if (operator === 'eq') return a === t;
+                if (operator === 'ne') return a !== t;
+            }
+
+            // Numeric comparison if both look like numbers
+            const actualNum = parseFloat(actual);
+            const targetNum = parseFloat(target);
+            const isNumeric = !isNaN(actualNum) && !isNaN(targetNum) && String(actual).trim() !== '' && String(target).trim() !== '';
+
+            if (isNumeric) {
+                switch (operator) {
+                    case 'eq': return actualNum === targetNum;
+                    case 'ne': return actualNum !== targetNum;
+                    case 'gt': return actualNum > targetNum;
+                    case 'lt': return actualNum < targetNum;
+                    case 'gte': return actualNum >= targetNum;
+                    case 'lte': return actualNum <= targetNum;
+                }
+            }
+            
+            // String comparison
+            const actualStr = String(actual).toLowerCase();
+            const targetStr = String(target).toLowerCase();
+
+             switch (operator) {
+                case 'eq': return actualStr === targetStr;
+                case 'ne': return actualStr !== targetStr;
+                case 'gt': return actualStr > targetStr;
+                case 'lt': return actualStr < targetStr;
+                case 'gte': return actualStr >= targetStr;
+                case 'lte': return actualStr <= targetStr;
+            }
+            
+            return false;
         }
     }"
+    x-init="initializeFieldValues()"
+    @field-update="handleCustomUpdate($event.detail)"
       method="post"
       hx-post="{% url 'document_approval:submit_document' workflow.id %}"
       hx-target="#content-div"
@@ -185,7 +276,9 @@
                                     <div class="text-lg text-gray-600 dark:text-gray-300">
                                         Total Quantity: <span x-ref="totalQuantity" class="font-bold text-neon-violet">0</span>
                                     </div>
-                                    <input type="hidden" name="dynamic_{{ field.id }}" :value="products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0)">
+                                    <input type="hidden" name="dynamic_{{ field.id }}" 
+                                           :value="products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0)"
+                                           x-effect="$dispatch('field-update', { id: '{{ field.id }}', value: products.reduce((sum, product) => sum + (parseInt(product.quantity) || 0), 0) })">
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -263,11 +356,12 @@
 
     {% if steps_with_approvers %}
     {% for step_info in steps_with_approvers %}
-    {% with script_id="potential-approvers-"|add:step_info.step_id_str %}
+    {% with script_id="potential-approvers-"|add:step_info.step_id_str condition_script_id="step-conditions-"|add:step_info.step_id_str %}
     {{ step_info.potential_approvers|json_script:script_id }}
+    {{ step_info.conditions|json_script:condition_script_id }}
     <div class="mt-6 mb-6"
          x-data="userSearch('{{ script_id }}', null, {{ request.user.id }})"
-         x-show="shouldShowApprover({{ step_info.step.is_conditional|lower }}, {% if step_info.step.condition_field_id %}{{ step_info.step.condition_field_id }}{% else %}null{% endif %})">
+         x-show="shouldShowApprover(JSON.parse(document.getElementById('{{ condition_script_id }}').textContent), '{{ step_info.condition_logic }}')">
         <div class="mb-2">
             <span class="font-medium text-gray-900 dark:text-white">{{ step_info.step.name }}</span>
             <span class="text-gray-600 dark:text-gray-400">

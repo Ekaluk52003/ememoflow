@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.models import Group
 from django.http import JsonResponse
 from django.db import transaction
-from .models import ApprovalWorkflow, ApprovalStep, DynamicField, Document
+from .models import ApprovalWorkflow, ApprovalStep, DynamicField, Document, StepCondition
 from accounts.models import CustomUser
 from functools import wraps
 
@@ -187,7 +187,7 @@ def workflow_steps(request, workflow_id):
     if (not request.user.is_superuser) and request.user.groups.exists() and workflow.denied_groups.filter(id__in=request.user.groups.all()).exists():
          return render(request, 'error.html', {'message': "You are not authorized to view this workflow."})
 
-    steps = workflow.steps.all().order_by('order')
+    steps = workflow.steps.all().order_by('order').prefetch_related('conditions')
     
     return render(request, 'document/workflow_steps.html', {
         'workflow': workflow,
@@ -264,10 +264,33 @@ def create_workflow_step(request, workflow_id):
             is_conditional = request.POST.get('is_conditional') == 'true'
             if is_conditional:
                 step.is_conditional = True
-                step.condition_field_id = request.POST.get('condition_field')
-                step.condition_operator = request.POST.get('condition_operator')
-                step.condition_value = request.POST.get('condition_value')
+                step.condition_logic = request.POST.get('condition_logic', 'and')
+                step.move_to_next = request.POST.get('move_to_next') == 'true'
                 step.save()
+                
+                # Save multiple conditions
+                c_fields = request.POST.getlist('condition_fields[]')
+                c_operators = request.POST.getlist('condition_operators[]')
+                c_values = request.POST.getlist('condition_values[]')
+                
+                # Also save the first condition to legacy fields for backward compatibility
+                if c_fields and len(c_fields) > 0:
+                    step.condition_field_id = c_fields[0]
+                    step.condition_operator = c_operators[0] if len(c_operators) > 0 else 'eq'
+                    step.condition_value = c_values[0] if len(c_values) > 0 else ''
+                    step.save()
+                    
+                    # Create StepCondition objects
+                    for i in range(len(c_fields)):
+                        if c_fields[i]: # Ensure field is present
+                            op = c_operators[i] if i < len(c_operators) else 'eq'
+                            val = c_values[i] if i < len(c_values) else ''
+                            StepCondition.objects.create(
+                                step=step,
+                                condition_field_id=c_fields[i],
+                                operator=op,
+                                value=val
+                            )
             
             # Input type handling removed
             
@@ -364,17 +387,45 @@ def edit_workflow_step(request, step_id):
             # Handle conditional logic
             is_conditional = request.POST.get('is_conditional') == 'true'
             step.is_conditional = is_conditional
+            
+            # Clear existing conditions first
+            step.conditions.all().delete()
+            
             if is_conditional:
-                step.condition_field_id = request.POST.get('condition_field')
-                step.condition_operator = request.POST.get('condition_operator')
-                step.condition_value = request.POST.get('condition_value')
-                # Process move_to_next field
+                step.condition_logic = request.POST.get('condition_logic', 'and')
                 step.move_to_next = request.POST.get('move_to_next') == 'true'
+                
+                # Save multiple conditions
+                c_fields = request.POST.getlist('condition_fields[]')
+                c_operators = request.POST.getlist('condition_operators[]')
+                c_values = request.POST.getlist('condition_values[]')
+                
+                # Also save the first condition to legacy fields for backward compatibility
+                if c_fields and len(c_fields) > 0:
+                    step.condition_field_id = c_fields[0]
+                    step.condition_operator = c_operators[0] if len(c_operators) > 0 else 'eq'
+                    step.condition_value = c_values[0] if len(c_values) > 0 else ''
+                    
+                    # Create StepCondition objects
+                    for i in range(len(c_fields)):
+                        if c_fields[i]: # Ensure field is present
+                            op = c_operators[i] if i < len(c_operators) else 'eq'
+                            val = c_values[i] if i < len(c_values) else ''
+                            StepCondition.objects.create(
+                                step=step,
+                                condition_field_id=c_fields[i],
+                                operator=op,
+                                value=val
+                            )
+                else:
+                    # Fallback if no array sent but legacy fields sent (e.g. from old form submission)
+                    step.condition_field_id = request.POST.get('condition_field')
+                    step.condition_operator = request.POST.get('condition_operator')
+                    step.condition_value = request.POST.get('condition_value')
             else:
                 step.condition_field = None
                 step.condition_operator = None
                 step.condition_value = None
-                # Default to True for move_to_next when not conditional
                 step.move_to_next = True
             
             step.save()
@@ -399,6 +450,22 @@ def edit_workflow_step(request, step_id):
         approver_type = 'group'
     else:
         approver_type = 'none'
+        
+    # Prepare existing conditions for Alpine.js
+    existing_conditions = []
+    if step.conditions.exists():
+        for condition in step.conditions.all():
+            existing_conditions.append({
+                'field': str(condition.condition_field.id),
+                'operator': condition.operator,
+                'value': condition.value
+            })
+    elif step.condition_field: # Legacy fallback
+        existing_conditions.append({
+            'field': str(step.condition_field.id),
+            'operator': step.condition_operator,
+            'value': step.condition_value
+        })
     
     return render(request, 'document/edit_workflow_step.html', {
         'step': step,
@@ -409,7 +476,8 @@ def edit_workflow_step(request, step_id):
         'condition_operators': condition_operators,
         'approver_type': approver_type,
         'selected_approvers': [str(a.id) for a in step.approvers.all()],
-        'selected_approver_groups': [str(g.id) for g in step.approver_groups.all()]
+        'selected_approver_groups': [str(g.id) for g in step.approver_groups.all()],
+        'existing_conditions': existing_conditions
     })
 
 @login_required

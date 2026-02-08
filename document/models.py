@@ -241,6 +241,12 @@ class ApprovalStep(models.Model):
         ('lte', 'Less Than or Equal'),
     ], null=True, blank=True)
     condition_value = models.CharField(max_length=255, null=True, blank=True)
+    
+    CONDITION_LOGIC_CHOICES = [
+        ('and', 'AND (All conditions must be met)'),
+        ('or', 'OR (Any condition can be met)'),
+    ]
+    condition_logic = models.CharField(max_length=3, choices=CONDITION_LOGIC_CHOICES, default='and')
 
 
     # input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='none')
@@ -270,67 +276,109 @@ class ApprovalStep(models.Model):
         if not self.is_conditional:
             return True
 
-        dynamic_value = document.dynamic_values.filter(field=self.condition_field).first()
+        # Check for multiple conditions
+        conditions = self.conditions.all()
+        if conditions.exists():
+            results = []
+            for condition in conditions:
+                is_met = self._evaluate_single_condition(
+                    document, 
+                    condition.condition_field, 
+                    condition.operator, 
+                    condition.value
+                )
+                results.append(is_met)
+            
+            if self.condition_logic == 'or':
+                return any(results)
+            return all(results)
+
+        # Fallback to legacy single condition
+        if self.condition_field:
+            return self._evaluate_single_condition(
+                document, 
+                self.condition_field, 
+                self.condition_operator, 
+                self.condition_value
+            )
+            
+        return True
+
+    def _evaluate_single_condition(self, document, field, operator, condition_value):
+        dynamic_value = document.dynamic_values.filter(field=field).first()
         if not dynamic_value:
             return False
 
-        field_type = self.condition_field.field_type
+        field_type = field.field_type
         actual_value = dynamic_value.value
-        condition_value = self.condition_value
 
         # Handle different field types based on FIELD_TYPES in DynamicField
         if field_type == 'text' or field_type == 'textarea':
             # Direct string comparison for text fields
-            return self._compare_values(str(actual_value), str(condition_value))
+            return self._compare_values(str(actual_value), str(condition_value), operator)
 
         elif field_type == 'number':
             try:
                 actual_value = float(actual_value)
                 condition_value = float(condition_value)
-                return self._compare_values(actual_value, condition_value)
+                return self._compare_values(actual_value, condition_value, operator)
             except (ValueError, TypeError):
                 return False
 
         elif field_type == 'boolean':
-            # Convert checkbox value to boolean
-            actual_bool = actual_value == 'on'
-            condition_bool = condition_value == 'on'
-            return self._compare_values(actual_bool, condition_bool)
+            # Convert values to boolean consistently
+            def to_bool(val):
+                if isinstance(val, bool):
+                    return val
+                if val is None:
+                    return False
+                val_str = str(val).lower().strip()
+                # Consider common truthy values
+                return val_str in ['on', 'true', '1', 'yes', 'y', 't', 'checked']
+
+            actual_bool = to_bool(actual_value)
+            condition_bool = to_bool(condition_value)        
+            
+            return self._compare_values(actual_bool, condition_bool, operator)
 
         elif field_type == 'choice':
             # Single choice comparison - direct string comparison
             actual_value = str(actual_value).strip()
             condition_value = str(condition_value).strip()
-            return self._compare_values(actual_value, condition_value)
+            return self._compare_values(actual_value, condition_value, operator)
 
         elif field_type == 'multiple_choice':
             # Convert to sets for comparison, ignoring empty strings and whitespace
             actual_set = set(choice.strip() for choice in actual_value.split(',') if choice.strip())
             condition_set = set(choice.strip() for choice in condition_value.split(',') if choice.strip())
 
-            if self.condition_operator in ['eq', 'ne']:
+            if operator in ['eq', 'ne']:
                 # For eq/ne, compare the exact sets
                 result = actual_set == condition_set
-                return result if self.condition_operator == 'eq' else not result
+                return result if operator == 'eq' else not result
             else:
                 # For other operators, compare the number of selections
-                return self._compare_values(len(actual_set), len(condition_set))
+                return self._compare_values(len(actual_set), len(condition_set), operator)
 
         return False
 
-    def _compare_values(self, actual, condition):
+    def _compare_values(self, actual, condition, operator=None):
         """Helper method to compare values based on the condition operator"""
-        if self.condition_operator == 'eq':
+        # If operator is not provided, use the instance's legacy operator
+        if operator is None:
+            operator = self.condition_operator
+            
+        if operator == 'eq':
             return actual == condition
-        elif self.condition_operator == 'ne':
+        elif operator == 'ne':
             return actual != condition
-        elif self.condition_operator == 'gt':
+        elif operator == 'gt':
             return actual > condition
-        elif self.condition_operator == 'lt':
+        elif operator == 'lt':
             return actual < condition
-        elif self.condition_operator == 'gte':
+        elif operator == 'gte':
             return actual >= condition
-        elif self.condition_operator == 'lte':
+        elif operator == 'lte':
             return actual <= condition
         return False
 
@@ -345,6 +393,23 @@ class ApprovalStep(models.Model):
         # For new instances, we can't check approver_groups.exists() because the M2M relationship
         # isn't saved yet when clean is called. This validation will be handled in the view instead.
         pass
+
+
+class StepCondition(models.Model):
+    step = models.ForeignKey(ApprovalStep, on_delete=models.CASCADE, related_name='conditions')
+    condition_field = models.ForeignKey(DynamicField, on_delete=models.CASCADE)
+    operator = models.CharField(max_length=10, choices=[
+        ('eq', 'Equals'),
+        ('ne', 'Not Equals'),
+        ('gt', 'Greater Than'),
+        ('lt', 'Less Than'),
+        ('gte', 'Greater Than or Equal'),
+        ('lte', 'Less Than or Equal'),
+    ])
+    value = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.step.name} - {self.condition_field.name} {self.operator} {self.value}"
 
 
 class ReferenceID(models.Model):
@@ -539,7 +604,7 @@ class Document(models.Model):
         approvals_created = []
         last_conditional_step = None
 
-        for step in self.workflow.steps.all():
+        for step in self.workflow.steps.all().prefetch_related('conditions'):
             # Check if step condition is met
             if step.evaluate_condition(self):              
                 if step.allow_custom_approver and custom_approvers and step.id in custom_approvers:
@@ -740,7 +805,7 @@ class Document(models.Model):
         next_step = ApprovalStep.objects.filter(
             workflow=self.workflow,
             order__gt=approval.step.order
-        ).order_by('order').first()
+        ).order_by('order').prefetch_related('conditions').first()
 
         if not next_step:
             # No more steps, document is approved
