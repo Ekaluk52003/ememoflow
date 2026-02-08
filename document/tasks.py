@@ -292,7 +292,7 @@ def send_templated_email_task(subject_template, body_template, context_dict, rec
         # Add document_url tag to the template if document exists
         if 'document' in context:
             document = context['document']
-            host = settings.ALLOWED_HOSTS[3] if settings.ALLOWED_HOSTS else 'localhost:8000'
+            host = os.environ.get('DOMAIN', 'localhost:8000')
             document_url = reverse('document_approval:document_detail', args=[document.document_reference])
             full_url = f"https://{host}{document_url}"
             # Add the URL as a clickable link, only replace the template tag

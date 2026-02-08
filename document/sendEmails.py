@@ -3,6 +3,7 @@ from django.template import Template, Context
 from django.utils.html import strip_tags
 from django.conf import settings
 import logging
+import os
 from django.template import Template, Context, TemplateSyntaxError
 from django.urls import reverse
 from .notification_service import send_approval_notification
@@ -312,7 +313,7 @@ def _generate_pdf_content(document):
             def __init__(self, user):
                 self.user = user
                 self.scheme = 'http'
-                self.META = {'HTTP_HOST': settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost:8000'}
+                self.META = {'HTTP_HOST': os.environ.get('DOMAIN', 'localhost:8000')}
 
             def build_absolute_uri(self, path=''):
                 return f"{self.scheme}://{self.META['HTTP_HOST']}{path}"
