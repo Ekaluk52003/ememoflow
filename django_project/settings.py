@@ -1,6 +1,7 @@
 from pathlib import Path
 import dj_database_url
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 import os
@@ -148,6 +149,13 @@ DATABASES = {
 # ]
 
 AUTH_PASSWORD_VALIDATORS = []
+
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'accounts.validators.CustomPasswordValidator', # <--- This string right here
+    },
+]
 
 
 # Internationalization
