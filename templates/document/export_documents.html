@@ -1,0 +1,101 @@
+{% extends "_base.html" %}
+{% block title %}Export Documents{% endblock %}
+
+{% block content %}
+<style>
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline-flex; }
+    .htmx-request.htmx-indicator { display: inline-flex; }
+    .htmx-request { cursor: wait; opacity: 0.8; }
+</style>
+
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Export Documents to Excel</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            Select a workflow and optional filters. You can export up to <span class="font-semibold text-neon-violet">{{ max_rows }}</span> documents at once.
+        </p>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800{% else %}bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="" id="export-form" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-white/10 p-6 shadow-sm">
+        {% csrf_token %}
+        <input type="hidden" name="action_type" id="action_type" value="">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="md:col-span-2">
+                <label for="id_workflow" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Workflow <span class="text-red-500">*</span>
+                </label>
+                {{ form.workflow }}
+                {% if form.workflow.errors %}
+                <p class="mt-1 text-xs text-red-500">{{ form.workflow.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="id_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status
+                </label>
+                {{ form.status }}
+            </div>
+
+            <div>
+                <label for="id_date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Created From
+                </label>
+                {{ form.date_from }}
+            </div>
+
+            <div>
+                <label for="id_date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Created To
+                </label>
+                {{ form.date_to }}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <button type="button"
+                hx-post="{% url 'document_approval:export_documents' %}"
+                hx-target="#count-result"
+                hx-swap="outerHTML"
+                hx-include="#export-form"
+                hx-indicator="#preview-btn"
+                onclick="document.getElementById('action_type').value='';"
+                class="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-white/10 rounded-lg hover:bg-black dark:hover:bg-white/20 transition-colors flex items-center gap-2"
+                id="preview-btn">
+                <span id="preview-label">Preview Count</span>
+                <span class="htmx-indicator">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                </span>
+            </button>
+
+            <button type="submit"
+                onclick="document.getElementById('action_type').value='export'; this.classList.add('opacity-70','cursor-wait'); const btn=this; setTimeout(function(){btn.classList.remove('opacity-70','cursor-wait');}, 3000);"
+                class="px-5 py-2.5 text-sm font-medium text-white bg-neon-violet rounded-lg hover:bg-neon-violet/90 transition-colors shadow-[0_0_15px_rgba(255,95,31,0.3)] flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                Export to Excel
+            </button>
+        </div>
+    </form>
+
+    <div id="count-result">
+        {% if count is not None %}
+        {% include "document/partials/export_count_result.html" %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

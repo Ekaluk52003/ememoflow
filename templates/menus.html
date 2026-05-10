@@ -196,7 +196,7 @@
         <span class="text-sm font-medium">Workflows</span>
     </a>
     
-    <a href="{% url 'document_approval:field_list' %}" 
+    <a href="{% url 'document_approval:field_list' %}"
        class="flex items-center px-3 py-2.5 mb-1 rounded-md transition-all duration-200 group
        {% if request.resolver_match.url_name == 'field_list' %}
        bg-neon-violet text-white shadow-[0_0_15px_rgba(255,95,31,0.4)]
@@ -205,6 +205,17 @@
        {% endif %}">
         <i data-lucide="database" class="w-4 h-4 mr-3 {% if request.resolver_match.url_name != 'field_list' %}group-hover:text-neon-violet{% endif %} transition-colors"></i>
         <span class="text-sm font-medium">Dynamic Fields</span>
+    </a>
+
+    <a href="{% url 'document_approval:export_documents' %}"
+       class="flex items-center px-3 py-2.5 mb-1 rounded-md transition-all duration-200 group
+       {% if request.resolver_match.url_name == 'export_documents' %}
+       bg-neon-violet text-white shadow-[0_0_15px_rgba(255,95,31,0.4)]
+       {% else %}
+       text-gray-500 dark:text-gray-400 hover:text-neon-violet dark:hover:text-white hover:bg-neon-violet/10
+       {% endif %}">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-3 {% if request.resolver_match.url_name != 'export_documents' %}group-hover:text-neon-violet{% endif %} transition-colors"></i>
+        <span class="text-sm font-medium">Export Excel</span>
     </a>
 
     <div class="p-4 mx-2 mt-4 text-center bg-gray-100 rounded-xl border border-gray-200 dark:bg-white/5 dark:border-white/10">

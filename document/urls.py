@@ -6,6 +6,7 @@ from . import views_authorization
 from . import views_workflow
 from . import views_dynamic_fields
 from .views_statistics import approval_statistics
+from . import views_export
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -70,5 +71,8 @@ urlpatterns = [
     path('statistics/', approval_statistics, name='approval_statistics'),
 
     path('user-group-diagram/', views.user_group_diagram, name='user_group_diagram'),
+
+    # Export
+    path('export/', views_export.export_documents, name='export_documents'),
 
 ]

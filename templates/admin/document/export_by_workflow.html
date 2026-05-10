@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  <p>Select a workflow to filter the documents and include only the dynamic fields related to that workflow in the Excel export.</p>
+
+  <form method="post" action="">
+    {% csrf_token %}
+    <div style="margin-bottom: 1rem;">
+      {{ form.as_p }}
+    </div>
+    <div class="submit-row">
+      <input type="submit" value="Export to Excel" class="default" name="_export">
+      <a href="{% url 'admin:document_document_changelist' %}" class="button" style="margin-left: 0.5rem;">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

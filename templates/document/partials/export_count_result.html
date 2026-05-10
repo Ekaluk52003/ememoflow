@@ -1,0 +1,23 @@
+<div id="count-result" class="mt-6 p-5 rounded-xl border {% if count == 0 %}bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800{% elif count > max_rows %}bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-800{% else %}bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800{% endif %}">
+    <div class="flex items-center gap-3">
+        {% if count == 0 %}
+        <i data-lucide="circle-x" class="w-5 h-5 text-red-500"></i>
+        <div>
+            <p class="text-sm font-semibold text-red-700 dark:text-red-400">No documents found</p>
+            <p class="text-xs text-red-600 dark:text-red-300 mt-0.5">Try changing your filters.</p>
+        </div>
+        {% elif count > max_rows %}
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-500"></i>
+        <div>
+            <p class="text-sm font-semibold text-yellow-700 dark:text-yellow-400">{{ count }} documents match your filters</p>
+            <p class="text-xs text-yellow-600 dark:text-yellow-300 mt-0.5">This exceeds the {{ max_rows }} row limit. Please narrow the filters (add a date range or status).</p>
+        </div>
+        {% else %}
+        <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+        <div>
+            <p class="text-sm font-semibold text-green-700 dark:text-green-400">{{ count }} documents ready to export</p>
+            <p class="text-xs text-green-600 dark:text-green-300 mt-0.5">Click "Export to Excel" to download the file.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
