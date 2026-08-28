@@ -5,7 +5,7 @@ services:
     build:
         context: .
         dockerfile: Dockerfile.prod
-    command: sh -c "./entrypoint.prod.sh && (python websocket_server.py & gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120)"
+    command: sh -c "./entrypoint.prod.sh && (python websocket_server.py & gunicorn django_project.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120)"
     volumes:
       - static_volume:/code/staticfiles
       - media_volume:/code/media
@@ -16,6 +16,7 @@ services:
       - db
     env_file:
       - .env
+    mem_limit: 650m
 
 
   db:
@@ -30,6 +31,8 @@ services:
       - .env
     ports:
       - "5432:5432"
+    mem_limit: 200m
+    command: postgres -c shared_buffers=64MB -c work_mem=4MB
 
   redis:
     image: redis:7-alpine
@@ -49,7 +52,7 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     entrypoint: ["/code/entrypoint.celery.sh"]
-    command: celery -A django_project worker --loglevel=info
+    command: celery -A django_project worker --loglevel=warning --max-tasks-per-child=20
     volumes:
       - .:/code
     env_file:
@@ -58,6 +61,7 @@ services:
       - db
       - redis
     restart: always
+    mem_limit: 500m
     
 
   celery-beat:
