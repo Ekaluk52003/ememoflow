@@ -50,6 +50,22 @@
             </div>
 
             <div>
+                <label for="id_submitted_by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Submitted By
+                </label>
+                <div class="relative">
+                    {{ form.submitted_by }}
+                    <input type="text" id="submitted-by-search" autocomplete="off" placeholder="All users — type to search…"
+                        value="{% if selected_user %}{{ selected_user.get_full_name|default:selected_user.username }}{% endif %}"
+                        class="w-full">
+                    <div id="sb-pop" class="hidden absolute top-full left-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur dark:border-white/10 dark:bg-gray-900/95">
+                        <ul id="sb-list" class="overflow-auto p-1 max-h-56"></ul>
+                        <div class="px-3 py-1.5 text-[10px] text-gray-400 border-t border-gray-100 dark:border-white/10">↑↓ navigate · Enter select · Esc close</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
                 <label for="id_date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Created From
                 </label>
@@ -98,4 +114,71 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script>
+(function () {
+    var inp = document.getElementById('submitted-by-search'), hid = document.getElementById('id_submitted_by');
+    var pop = document.getElementById('sb-pop'), list = document.getElementById('sb-list');
+    var url = "{% url 'document_approval:export_users' %}";
+    var items = [], sel = 0, timer;
+
+    function close() { pop.classList.add('hidden'); items = []; }
+    function row(inner) { var li = document.createElement('li'); li.className = 'flex gap-3 items-center px-2.5 py-2 rounded-lg text-sm'; inner(li); return li; }
+    function loading() {
+        list.replaceChildren(row(function (li) {
+            li.classList.add('text-gray-500', 'dark:text-gray-300');
+            var sp = document.createElement('span');
+            sp.className = 'inline-block w-4 h-4 rounded-full border-2 animate-spin border-neon-violet border-t-transparent';
+            li.append(sp, 'Loading users…');
+        }));
+        pop.classList.remove('hidden');
+    }
+    function pick(i) {
+        var u = items[i]; if (!u) return;
+        hid.value = u.id; inp.value = u.name; close();
+    }
+    function render() {
+        list.replaceChildren();
+        items.forEach(function (u, i) {
+            list.appendChild(row(function (li) {
+                li.classList.add('cursor-pointer');
+                if (i === sel) li.classList.add('bg-neon-violet/15');
+                var av = document.createElement('span');
+                av.className = 'flex justify-center items-center w-8 h-8 text-xs font-bold text-white rounded-full shrink-0 bg-neon-violet';
+                av.textContent = (u.name || u.username).charAt(0).toUpperCase();
+                var box = document.createElement('span'); box.className = 'min-w-0';
+                var n = document.createElement('span'); n.className = 'block font-semibold text-gray-900 truncate dark:text-white'; n.textContent = u.name;
+                var h = document.createElement('span'); h.className = 'block text-xs text-gray-500 truncate dark:text-gray-400'; h.textContent = u.username;
+                box.append(n, h); li.append(av, box);
+                li.addEventListener('mousedown', function (e) { e.preventDefault(); pick(i); });
+            }));
+        });
+        pop.classList.toggle('hidden', !items.length);
+        var cur = list.children[sel]; if (cur) cur.scrollIntoView({block: 'nearest'});
+    }
+    function search() {
+        clearTimeout(timer); loading();
+        timer = setTimeout(function () {
+            fetch(url + '?q=' + encodeURIComponent(inp.value.trim())).then(function (r) { return r.json(); }).then(function (d) {
+                items = d; sel = 0; render(); if (!d.length) close();
+            }).catch(close);
+        }, 300);
+    }
+    inp.addEventListener('input', function () { hid.value = ''; search(); }); // typing again clears the pick
+    inp.addEventListener('focus', search);
+    inp.addEventListener('keydown', function (e) {
+        if (pop.classList.contains('hidden') || !items.length) return;
+        if (e.key === 'ArrowDown') { sel = (sel + 1) % items.length; render(); }
+        else if (e.key === 'ArrowUp') { sel = (sel - 1 + items.length) % items.length; render(); }
+        else if (e.key === 'Enter' || e.key === 'Tab') { pick(sel); }
+        else if (e.key === 'Escape') { close(); return; }
+        else return;
+        e.preventDefault();
+    });
+    inp.addEventListener('blur', function () { close(); if (!hid.value) inp.value = ''; });
+})();
+</script>
 {% endblock %}

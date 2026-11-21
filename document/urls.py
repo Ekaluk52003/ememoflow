@@ -81,5 +81,6 @@ urlpatterns = [
 
     # Export
     path('export/', views_export.export_documents, name='export_documents'),
+    path('export/users/', views_export.export_users, name='export_users'),
 
 ]

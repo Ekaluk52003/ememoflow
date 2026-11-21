@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django import forms
-from django.http import HttpResponse
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment
@@ -207,6 +209,12 @@ class DocumentExportForm(forms.Form):
         required=False,
         choices=[('', '-- All Statuses --')] + list(Document.STATUS_CHOICES),
     )
+    submitted_by = forms.ModelChoiceField(
+        queryset=get_user_model().objects.order_by('username'),
+        label='Submitted By',
+        required=False,
+        widget=forms.HiddenInput,  # picked through the type-ahead in the template
+    )
     date_from = forms.DateField(
         label='Created From',
         required=False,
@@ -224,6 +232,21 @@ MAX_EXPORT_ROWS = 1000
 
 @login_required
 @superuser_required
+def export_users(request):
+    """Type-ahead for the 'Submitted By' filter (same JSON shape as mention_users)."""
+    q = request.GET.get('q', '').strip()
+    users = get_user_model().objects.filter(
+        Q(username__icontains=q) | Q(first_name__icontains=q) |
+        Q(last_name__icontains=q) | Q(email__icontains=q)
+    ).order_by('username')[:8]
+    return JsonResponse([
+        {'id': u.pk, 'username': u.username, 'name': u.get_full_name() or u.username}
+        for u in users
+    ], safe=False)
+
+
+@login_required
+@superuser_required
 def export_documents(request):
     """Superuser-only page to export documents to Excel with workflow filters."""
     count = None
@@ -234,12 +257,15 @@ def export_documents(request):
         if form.is_valid():
             workflow = form.cleaned_data['workflow']
             status = form.cleaned_data['status']
+            submitted_by = form.cleaned_data['submitted_by']
             date_from = form.cleaned_data['date_from']
             date_to = form.cleaned_data['date_to']
 
             qs = Document.objects.filter(workflow=workflow)
             if status:
                 qs = qs.filter(status=status)
+            if submitted_by:
+                qs = qs.filter(submitted_by=submitted_by)
             if date_from:
                 qs = qs.filter(created_at__date__gte=date_from)
             if date_to:
@@ -270,11 +296,18 @@ def export_documents(request):
                         'can_export': can_export,
                         'max_rows': MAX_EXPORT_ROWS,
                     })
+        elif request.headers.get('HX-Request') == 'true':
+            # Invalid form (e.g. no workflow): return only the partial, never the full page,
+            # or htmx nests the whole layout inside #count-result.
+            return render(request, 'document/partials/export_count_result.html', {
+                'error': 'Please choose a workflow (and check the dates) first.',
+            })
     else:
         form = DocumentExportForm()
 
     return render(request, 'document/export_documents.html', {
         'form': form,
+        'selected_user': form.cleaned_data.get('submitted_by') if form.is_bound and form.is_valid() else None,
         'count': count,
         'can_export': can_export,
         'max_rows': MAX_EXPORT_ROWS,

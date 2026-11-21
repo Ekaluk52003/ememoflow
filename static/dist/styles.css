@@ -1261,6 +1261,9 @@ video {
 .top-3 {
   top: 0.75rem;
 }
+.top-full {
+  top: 100%;
+}
 .isolate {
   isolation: isolate;
 }
