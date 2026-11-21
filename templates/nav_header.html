@@ -114,6 +114,7 @@
             const notification = this.notifications[index];
             if (notification && notification.url) {
                 this.markNotificationRead(notification.id);
+                this.isOpen = false;  // same-page #hash links don't reload, so close the dropdown ourselves
                 window.location.href = notification.url;
             }
         },

@@ -151,8 +151,15 @@
     });
     paint();
     // scrollIntoView also scrolls the overflow-hidden page wrappers on mobile (100vh > visible height), pushing the navbar off screen; scroll only #content-div
+    // the browser's own #fragment jump (and focus) can also scroll those wrappers; put them back so the navbar shows
+    function unshift() {
+        var e = document.getElementById('content-div').parentElement;
+        for (; e; e = e.parentElement) { e.scrollTop = 0; e.scrollLeft = 0; }
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+    }
     function center(el, smooth) {
         var box = document.getElementById('content-div');
+        unshift();
         box.scrollTo({top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top - (box.clientHeight - el.offsetHeight) / 2, behavior: smooth ? 'smooth' : 'auto'});
     }
     // opened from a notification: jump to that comment, then drop the hash so later posts don't re-scroll
@@ -167,6 +174,7 @@
     if (window._commentJump) window.removeEventListener('hashchange', window._commentJump);
     window._commentJump = jump;
     window.addEventListener('hashchange', jump);  // click while already on this document: no reload happens
+    if (/^#comment-\d+$/.test(location.hash)) unshift();  // native anchor scroll already happened at load
     setTimeout(jump, 300);  // let the page layout settle first
     if (window.lucide) lucide.createIcons();
 })();
