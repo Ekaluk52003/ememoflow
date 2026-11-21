@@ -113,6 +113,12 @@
                     <div class="text-xs font-mono text-gray-400 dark:text-gray-400 tracking-tight">
                         {{ document.updated_at|date:"d M • H:i"|upper }}
                     </div>
+                    <button type="button" title="Open in new window"
+                        data-url="{% url 'document_approval:document_detail' document.document_reference %}"
+                        onclick="event.stopPropagation(); event.preventDefault(); window.open(this.dataset.url, '_blank', 'noopener');"
+                        class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-neon-violet dark:text-gray-400">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> New window
+                    </button>
                 </div>
             </div>
         </div>
