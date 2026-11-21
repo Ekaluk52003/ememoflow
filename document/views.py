@@ -1754,6 +1754,8 @@ def load_notifications(request):
         'message': n.message,
         'workflow_name': n.workflow_name,
         'url': n.url,
+        'preview': n.preview,
+        'kind': n.kind,
         'timestamp': n.timestamp.isoformat(),
         'is_read': n.is_read
     } for n in notifications]
@@ -1762,6 +1764,13 @@ def load_notifications(request):
         'notifications': notification_data,
         'unread_count': unread_count
     })
+
+@login_required
+def notification_list(request):
+    from django.core.paginator import Paginator
+    page = Paginator(Notification.objects.filter(user=request.user), 20).get_page(request.GET.get('page'))
+    return render(request, 'document/notification_list.html', {'page': page})
+
 
 @login_required
 @require_POST

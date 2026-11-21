@@ -491,4 +491,6 @@
     {% endif %}
 
     {% include "partials/document_actions.html" %}
+
+    <div hx-get="{% url 'document_approval:comments' document.document_reference %}" hx-trigger="load" hx-swap="outerHTML"></div>
 </div>

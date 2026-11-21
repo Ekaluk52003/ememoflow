@@ -1,0 +1,114 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="flex relative z-10 justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Notifications</h1>
+    {% if page.paginator.count %}
+    <button type="button" id="clear-all" class="px-3 py-1.5 text-sm text-red-500 rounded-lg border border-red-500/30 hover:bg-red-500/10">Clear all</button>
+    {% endif %}
+</div>
+<div class="flex flex-wrap gap-4 mb-4 text-xs text-gray-500 dark:text-gray-400">
+    <span class="flex gap-1 items-center"><i data-lucide="at-sign" class="w-3.5 h-3.5 text-neon-violet"></i> Mention</span>
+    <span class="flex gap-1 items-center"><i data-lucide="corner-up-left" class="w-3.5 h-3.5 text-sky-500"></i> Reply</span>
+    <span class="flex gap-1 items-center"><i data-lucide="file-check" class="w-3.5 h-3.5 text-amber-500"></i> Approval</span>
+</div>
+
+<div class="space-y-2">
+    {% csrf_token %}
+    {% for n in page %}
+    <a href="{{ n.url }}" data-nid="{{ n.id }}"
+       class="block p-4 rounded-xl border border-l-4 border-gray-200 transition-colors glass-card dark:border-white/10 hover:bg-white/60 dark:hover:bg-white/10
+       {% if n.kind == 'mention' %}border-l-neon-violet{% elif n.kind == 'reply' %}border-l-sky-500{% else %}border-l-amber-500{% endif %}
+       {% if not n.is_read %}bg-neon-violet/5{% endif %}">
+        <div class="flex gap-3 items-start">
+            <span class="flex justify-center items-center w-9 h-9 rounded-full shrink-0
+                {% if n.kind == 'mention' %}bg-neon-violet/15 text-neon-violet{% elif n.kind == 'reply' %}bg-sky-500/15 text-sky-500{% else %}bg-amber-500/15 text-amber-500{% endif %}">
+                <i data-lucide="{% if n.kind == 'mention' %}at-sign{% elif n.kind == 'reply' %}corner-up-left{% else %}file-check{% endif %}" class="w-4 h-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ n.workflow_name }}{% if not n.is_read %} <span class="ml-1 w-2 h-2 rounded-full inline-block bg-neon-violet align-middle"></span>{% endif %}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ n.message }}</p>
+                {% if n.preview %}
+                <p class="pl-2 my-1.5 text-sm italic text-gray-500 border-l-2 dark:text-gray-400 border-neon-violet/50">{{ n.preview }}</p>
+                {% endif %}
+                <p class="text-xs text-gray-400 dark:text-gray-500">{{ n.timestamp|date:"d M Y H:i" }}</p>
+            </div>
+            <button type="button" data-del="{{ n.id }}" title="Clear this notification"
+                class="p-1 ml-auto text-gray-400 rounded shrink-0 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+    </a>
+    {% empty %}
+    <p class="p-8 text-center text-gray-500 dark:text-gray-400">No notifications.</p>
+    {% endfor %}
+</div>
+
+{% if page.has_other_pages %}
+<div class="flex justify-between mt-6 text-sm">
+    {% if page.has_previous %}<a class="text-neon-violet" href="?page={{ page.previous_page_number }}">← Newer</a>{% else %}<span></span>{% endif %}
+    <span class="text-gray-500">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="text-neon-violet" href="?page={{ page.next_page_number }}">Older →</a>{% else %}<span></span>{% endif %}
+</div>
+{% endif %}
+
+<!-- in-page confirm dialog (replaces the browser confirm pop-up) -->
+<div id="confirm-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true">
+    <div class="p-6 w-full max-w-sm bg-white rounded-2xl border border-gray-200 shadow-2xl dark:bg-[#0f0f0f] dark:border-white/10">
+        <div class="flex justify-center items-center mb-4 w-11 h-11 text-red-500 rounded-full bg-red-500/10"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+        <h3 id="confirm-title" class="text-lg font-bold text-gray-900 dark:text-white"></h3>
+        <p id="confirm-text" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
+        <div class="flex gap-2 justify-end mt-6">
+            <button type="button" id="confirm-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 rounded-lg border border-gray-200 dark:text-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5">Cancel</button>
+            <button type="button" id="confirm-ok" class="px-4 py-2 text-sm font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-60">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var cm = document.getElementById('confirm-modal'); document.body.appendChild(cm);  // escape the page's stacking context so it covers the sidebar too
+var cmOk = document.getElementById('confirm-ok'), cmAction = null;
+function askConfirm(title, text, action) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-text').textContent = text;
+    cmAction = action; cmOk.disabled = false; cm.classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+    cmOk.focus();
+}
+function closeConfirm() { cm.classList.add('hidden'); cmAction = null; }
+document.getElementById('confirm-cancel').addEventListener('click', closeConfirm);
+cm.addEventListener('click', function (e) { if (e.target === cm) closeConfirm(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeConfirm(); });
+cmOk.addEventListener('click', function () {
+    if (!cmAction) return;
+    cmOk.disabled = true;
+    Promise.resolve(cmAction()).finally(closeConfirm);
+});
+
+document.querySelectorAll('a[data-nid]').forEach(function (a) {
+    a.addEventListener('click', function () {  // mark read; keepalive lets the request finish while the page navigates
+        fetch("{% url 'document_approval:mark_notification_read' notification_id=0 %}".replace('0', a.dataset.nid), {
+            method: 'POST', keepalive: true,
+            headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+        });
+    });
+});
+document.querySelectorAll('[data-del]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();  // the row is a link; don't open it
+        askConfirm('Delete this notification?', 'It will be removed from your list.', function () {
+            return fetch("{% url 'document_approval:delete_notification' notification_id=0 %}".replace('0', b.dataset.del), {
+                method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+            }).then(function (r) { if (r.ok) b.closest('a').remove(); });
+        });
+    });
+});
+var clr = document.getElementById('clear-all');
+if (clr) clr.addEventListener('click', function () {
+    askConfirm('Delete all notifications?', 'This cannot be undone.', function () {
+        return fetch("{% url 'document_approval:clear_all_notifications' %}", {
+            method: 'POST', headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+        }).then(function () { location.reload(); });
+    });
+});
+if (window.lucide) lucide.createIcons();
+</script>
+{% endblock %}

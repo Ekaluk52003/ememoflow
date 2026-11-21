@@ -1,0 +1,168 @@
+<div id="comments-section" class="mt-6 glass-card rounded-xl p-5 border border-gray-200 dark:border-white/10">
+    <h3 class="flex items-center gap-2 mb-4 text-lg font-bold text-gray-900 dark:text-white">
+        <i data-lucide="message-square" class="w-5 h-5"></i> Comments ({{ total }})
+    </h3>
+
+    <div class="space-y-3 mb-4">
+        {% for c in comments %}
+        {% include "partials/comment_item.html" %}
+        {% if c.reply_list %}
+        <div class="pl-4 ml-3 space-y-2 border-l-2 border-neon-violet/30">
+            {% for c in c.reply_list %}{% include "partials/comment_item.html" %}{% endfor %}
+        </div>
+        {% endif %}
+        {% empty %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No comments yet.</p>
+        {% endfor %}
+    </div>
+
+    <form hx-post="{% url 'document_approval:comments' document.document_reference %}" hx-target="#comments-section" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="parent" id="comment-parent">
+        <div id="reply-banner" class="hidden flex justify-between items-center px-3 py-1.5 mb-2 text-xs rounded-lg bg-neon-violet/10 text-neon-violet">
+            <span>Replying to <b id="reply-name"></b></span>
+            <button type="button" id="reply-cancel" class="font-bold">✕</button>
+        </div>
+        <div class="relative">
+            <!-- popup opens ABOVE the box -->
+            <div id="mention-pop" class="hidden absolute bottom-full left-0 z-30 mb-2 w-80 max-w-full overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur dark:border-white/10 dark:bg-gray-900/95">
+                <div class="flex items-center gap-1.5 px-3 py-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase border-b border-gray-100 dark:border-white/10">
+                    <i data-lucide="at-sign" class="w-3 h-3"></i> Mention someone
+                </div>
+                <ul id="mention-list" class="overflow-auto p-1 max-h-56"></ul>
+                <div class="px-3 py-1.5 text-[10px] text-gray-400 border-t border-gray-100 dark:border-white/10">↑↓ navigate · Enter select · Esc close</div>
+            </div>
+            <!-- backdrop paints the picked @names behind the transparent textarea -->
+            <div id="comment-back" aria-hidden="true" class="overflow-hidden absolute inset-0 px-4 py-3 text-sm leading-6 text-transparent whitespace-pre-wrap break-words rounded-lg border border-transparent pointer-events-none"></div>
+            <textarea name="text" id="comment-text" rows="3" maxlength="2000" required placeholder="Write a comment… type @ to mention someone"
+                class="relative px-4 py-3 w-full text-sm leading-6 text-gray-900 bg-transparent rounded-lg border border-gray-200 dark:border-white/10 dark:text-white focus:ring-2 focus:ring-neon-violet"></textarea>
+        </div>
+        <div class="flex justify-end mt-2">
+            <button type="submit" class="px-4 py-2 text-sm font-bold text-white rounded-lg bg-neon-violet hover:bg-neon-purple">Post</button>
+        </div>
+    </form>
+</div>
+<script>
+(function () {
+    var ta = document.getElementById('comment-text'), back = document.getElementById('comment-back');
+    var pop = document.getElementById('mention-pop'), list = document.getElementById('mention-list');
+    var url = "{% url 'document_approval:mention_users' document.document_reference %}";
+    var items = [], sel = 0, timer, picked = [];
+
+    function paint() {
+        back.replaceChildren();
+        var text = ta.value, re = null;
+        if (picked.length) re = new RegExp('(^|\\s)(@(?:' + picked.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + '))(?![\\w+-])', 'g');
+        var last = 0, m;
+        while (re && (m = re.exec(text))) {
+            var start = m.index + m[1].length;
+            back.append(text.slice(last, start));
+            var mark = document.createElement('mark');
+            mark.className = 'rounded bg-neon-violet/25 text-transparent';
+            mark.textContent = m[2];
+            back.appendChild(mark);
+            last = start + m[2].length;
+        }
+        back.append(text.slice(last) + '\n');
+        back.scrollTop = ta.scrollTop;
+    }
+    function close() { pop.classList.add('hidden'); items = []; }
+    function query() {
+        var m = /(^|\s)@([\w.+-]*)$/.exec(ta.value.slice(0, ta.selectionStart));
+        return m ? m[2] : null;
+    }
+    function pick(i) {
+        var u = items[i]; if (!u) return;
+        var pos = ta.selectionStart, before = ta.value.slice(0, pos).replace(/@[\w.+-]*$/, '@' + u.username + ' ');
+        ta.value = before + ta.value.slice(pos);
+        ta.selectionStart = ta.selectionEnd = before.length;
+        if (picked.indexOf(u.username) < 0) picked.push(u.username);
+        close(); paint(); ta.focus();
+    }
+    function row(inner) { var li = document.createElement('li'); li.className = 'flex gap-3 items-center px-2.5 py-2 rounded-lg text-sm'; inner(li); return li; }
+    function loading() {
+        list.replaceChildren(row(function (li) {
+            li.classList.add('text-gray-500', 'dark:text-gray-300');
+            var sp = document.createElement('span');
+            sp.className = 'inline-block w-4 h-4 rounded-full border-2 animate-spin border-neon-violet border-t-transparent';
+            li.append(sp, 'Loading users…');
+        }));
+        pop.classList.remove('hidden');
+    }
+    function render() {
+        list.replaceChildren();
+        items.forEach(function (u, i) {
+            list.appendChild(row(function (li) {
+                li.classList.add('cursor-pointer');
+                if (i === sel) li.classList.add('bg-neon-violet/15');
+                var av = document.createElement('span');
+                av.className = 'flex justify-center items-center w-8 h-8 text-xs font-bold text-white rounded-full shrink-0 bg-neon-violet';
+                av.textContent = (u.name || u.username).charAt(0).toUpperCase();
+                var box = document.createElement('span'); box.className = 'min-w-0';
+                var n = document.createElement('span'); n.className = 'block font-semibold text-gray-900 truncate dark:text-white'; n.textContent = u.name;
+                var h = document.createElement('span'); h.className = 'block text-xs text-gray-500 truncate dark:text-gray-400'; h.textContent = '@' + u.username;
+                box.append(n, h); li.append(av, box);
+                li.addEventListener('mousedown', function (e) { e.preventDefault(); pick(i); });
+            }));
+        });
+        pop.classList.toggle('hidden', !items.length);
+        var cur = list.children[sel]; if (cur) cur.scrollIntoView({block: 'nearest'});
+        if (window.lucide) lucide.createIcons();
+    }
+    ta.addEventListener('input', function () {
+        paint();
+        var q = query(); clearTimeout(timer);
+        if (q === null) return close();
+        loading();
+        timer = setTimeout(function () {
+            fetch(url + '?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (d) {
+                if (query() === null) return;
+                items = d; sel = 0; render(); if (!d.length) close();
+            }).catch(close);
+        }, 150);
+    });
+    ta.addEventListener('scroll', function () { back.scrollTop = ta.scrollTop; });
+    ta.addEventListener('keydown', function (e) {
+        if (pop.classList.contains('hidden') || !items.length) return;
+        if (e.key === 'ArrowDown') { sel = (sel + 1) % items.length; render(); }
+        else if (e.key === 'ArrowUp') { sel = (sel - 1 + items.length) % items.length; render(); }
+        else if (e.key === 'Enter' || e.key === 'Tab') { pick(sel); }
+        else if (e.key === 'Escape') { close(); return; }
+        else return;
+        e.preventDefault();
+    });
+    ta.addEventListener('blur', close);
+
+    var banner = document.getElementById('reply-banner'), parentInp = document.getElementById('comment-parent');
+    function cancelReply() { parentInp.value = ''; banner.classList.add('hidden'); }
+    document.getElementById('reply-cancel').addEventListener('click', cancelReply);
+    document.querySelectorAll('#comments-section [data-reply]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            parentInp.value = b.dataset.reply;
+            document.getElementById('reply-name').textContent = b.dataset.name;
+            banner.classList.remove('hidden');
+            if (b.dataset.mention && ta.value.indexOf('@' + b.dataset.mention + ' ') < 0) {
+                ta.value = '@' + b.dataset.mention + ' ' + ta.value;
+                if (picked.indexOf(b.dataset.mention) < 0) picked.push(b.dataset.mention);
+            }
+            paint(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+            ta.scrollIntoView({block: 'center', behavior: 'smooth'});
+        });
+    });
+    paint();
+    // opened from a notification: jump to that comment, then drop the hash so later posts don't re-scroll
+    function jump() {
+        var h = /^#comment-\d+$/.test(location.hash) && document.querySelector(location.hash);
+        if (!h) return;
+        history.replaceState(null, '', location.pathname + location.search);
+        h.scrollIntoView({block: 'center'});
+        h.style.transition = 'box-shadow .4s'; h.style.boxShadow = '0 0 0 2px rgb(139 92 246)';
+        setTimeout(function () { h.style.boxShadow = 'none'; }, 3000);
+    }
+    if (window._commentJump) window.removeEventListener('hashchange', window._commentJump);
+    window._commentJump = jump;
+    window.addEventListener('hashchange', jump);  // click while already on this document: no reload happens
+    setTimeout(jump, 300);  // let the page layout settle first
+    if (window.lucide) lucide.createIcons();
+})();
+</script>

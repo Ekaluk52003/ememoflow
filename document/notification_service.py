@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.conf import settings
 from .notification_models import Notification
 
-def send_approval_notification(document, approver):
+def send_approval_notification(document, approver, message=None, anchor='', preview='', kind=''):
     """Create a notification in database and send via Redis pub/sub"""
     try:
         print(f"Creating notification for user: {approver.username}")
@@ -14,11 +14,13 @@ def send_approval_notification(document, approver):
         # Create notification in database
         notification = Notification.objects.create(
             user=approver,
-            message=f"Document #{document.document_reference} - {document.title}",
+            message=(message or f"Document #{document.document_reference} - {document.title}")[:255],
             document=document,
             workflow_name=document.workflow.name,
             url=reverse('document_approval:document_detail', 
-                     kwargs={'reference_id': document.document_reference}),
+                     kwargs={'reference_id': document.document_reference}) + anchor,
+            preview=preview[:200],
+            kind=kind,
             is_read=False  # Explicitly set is_read
         )
         
@@ -33,6 +35,8 @@ def send_approval_notification(document, approver):
                 'message': notification.message,
                 'workflow_name': notification.workflow_name,
                 'url': notification.url,
+                'preview': notification.preview,
+                'kind': notification.kind,
                 'timestamp': notification.timestamp.isoformat(),
                 'is_read': notification.is_read  # Include is_read in the notification data
             }

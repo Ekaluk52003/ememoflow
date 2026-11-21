@@ -1062,3 +1062,16 @@ class DynamicFieldValue(models.Model):
             if content_updated:
                 # Use update to avoid recursion
                 DynamicFieldValue.objects.filter(id=self.id).update(value=self.value)
+
+
+class Comment(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='document_comments')
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')  # one level: always the thread root
+    text = models.TextField(max_length=2000)
+    mentioned_users = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='comment_mentions')
+    is_deleted = models.BooleanField(default=False)  # soft delete keeps the audit trail
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']

@@ -7,6 +7,7 @@ from . import views_workflow
 from . import views_dynamic_fields
 from .views_statistics import approval_statistics
 from . import views_export
+from . import views_comments
 
 app_name = 'document_approval'  # This sets the application namespace
 
@@ -27,6 +28,7 @@ urlpatterns = [
     path('clear-toast/', views.clear_toast, name='clear_toasts'),
     path('view-file/<int:field_value_id>/', views.view_file, name='view_file'),
     path('view-editor-image/<int:image_id>/', views.view_editor_image, name='view_editor_image'),
+    path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/load/', views.load_notifications, name='load_notifications'),
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
@@ -71,6 +73,11 @@ urlpatterns = [
     path('statistics/', approval_statistics, name='approval_statistics'),
 
     path('user-group-diagram/', views.user_group_diagram, name='user_group_diagram'),
+
+    # Comments
+    path('<int:reference_id>/comments/', views_comments.comments, name='comments'),
+    path('<int:reference_id>/mention-users/', views_comments.mention_users, name='mention_users'),
+    path('comments/<int:comment_id>/delete/', views_comments.delete_comment, name='delete_comment'),
 
     # Export
     path('export/', views_export.export_documents, name='export_documents'),

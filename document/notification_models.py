@@ -8,6 +8,8 @@ class Notification(models.Model):
     document = models.ForeignKey('document.Document', on_delete=models.CASCADE, related_name='notifications')
     workflow_name = models.CharField(max_length=100)
     url = models.CharField(max_length=255)
+    kind = models.CharField(max_length=10, blank=True, default='')  # '' = approval, 'mention', 'reply'
+    preview = models.CharField(max_length=200, blank=True, default='')  # short comment excerpt for mention/reply notifications
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
