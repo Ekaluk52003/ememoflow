@@ -146,16 +146,21 @@
                 if (picked.indexOf(b.dataset.mention) < 0) picked.push(b.dataset.mention);
             }
             paint(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
-            ta.scrollIntoView({block: 'center', behavior: 'smooth'});
+            center(ta, true);
         });
     });
     paint();
+    // scrollIntoView also scrolls the overflow-hidden page wrappers on mobile (100vh > visible height), pushing the navbar off screen; scroll only #content-div
+    function center(el, smooth) {
+        var box = document.getElementById('content-div');
+        box.scrollTo({top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top - (box.clientHeight - el.offsetHeight) / 2, behavior: smooth ? 'smooth' : 'auto'});
+    }
     // opened from a notification: jump to that comment, then drop the hash so later posts don't re-scroll
     function jump() {
         var h = /^#comment-\d+$/.test(location.hash) && document.querySelector(location.hash);
         if (!h) return;
         history.replaceState(null, '', location.pathname + location.search);
-        h.scrollIntoView({block: 'center'});
+        center(h);
         h.style.transition = 'box-shadow .4s'; h.style.boxShadow = '0 0 0 2px rgb(139 92 246)';
         setTimeout(function () { h.style.boxShadow = 'none'; }, 3000);
     }
